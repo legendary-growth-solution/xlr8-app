@@ -16,6 +16,15 @@ export const UserPage = lazy(() => import('src/pages/user'));
 export const SignInPage = lazy(() => import('src/pages/sign-in'));
 export const ProductsPage = lazy(() => import('src/pages/products'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
+export const UserManagement = lazy(() => import('src/pages/user-management'));
+export const UserCreate = lazy(() => import('src/pages/user-create'));
+export const SessionManagementPage = lazy(() => import('src/pages/session-management'));
+export const SessionCreatePage = lazy(() => import('src/pages/session-create'));
+export const SessionHistoryPage = lazy(() => import('src/pages/session-history'));
+export const SessionDetailPage = lazy(() => import('src/pages/session-detail'));
+export const CartManagementPage = lazy(() => import('src/pages/cart-management'));
+export const CartMaintenancePage = lazy(() => import('src/pages/cart-maintenance'));
+export const CartFuelLogsPage = lazy(() => import('src/pages/cart-fuel-logs'));
 
 // ----------------------------------------------------------------------
 
@@ -47,6 +56,17 @@ export function Router() {
         { path: 'user', element: <UserPage /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'blog', element: <BlogPage /> },
+        
+        { path: 'users', element: <UserManagement /> },
+        { path: 'users/create', element: <UserCreate /> },
+        
+        { path: 'sessions', element: <SessionManagementPage /> },
+        { path: 'sessions/create', element: <SessionCreatePage /> },
+        { path: 'sessions/history', element: <SessionHistoryPage /> },
+        { path: 'sessions/:id', element: <SessionDetailPage /> },
+        { path: 'carts', element: <CartManagementPage /> },
+        { path: 'carts/maintenance', element: <CartMaintenancePage /> },
+        { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
       ],
     },
     {

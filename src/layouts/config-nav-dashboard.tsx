@@ -1,46 +1,46 @@
-import { Label } from 'src/components/label';
-import { SvgColor } from 'src/components/svg-color';
+import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
-const icon = (name: string) => (
-  <SvgColor width="100%" height="100%" src={`/assets/icons/navbar/${name}.svg`} />
-);
-
-export const navData = [
+const navConfig = [
   {
     title: 'Dashboard',
     path: '/',
-    icon: icon('ic-analytics'),
+    icon: <Iconify icon="solar:home-2-bold-duotone" />,
   },
   {
-    title: 'User',
-    path: '/user',
-    icon: icon('ic-user'),
+    title: 'User Management',
+    path: '/users',
+    icon: <Iconify icon="solar:users-group-rounded-bold-duotone" />,
   },
   {
-    title: 'Product',
-    path: '/products',
-    icon: icon('ic-cart'),
-    info: (
-      <Label color="error" variant="inverted">
-        +3
-      </Label>
-    ),
+    title: 'Session Management',
+    path: '/sessions',
+    icon: <Iconify icon="solar:clock-circle-bold-duotone" />,
+    children: [
+      {
+        title: 'Active Sessions',
+        path: '/sessions',
+      },
+      {
+        title: 'Session History',
+        path: '/sessions/history',
+      },
+    ],
   },
   {
-    title: 'Blog',
-    path: '/blog',
-    icon: icon('ic-blog'),
-  },
-  {
-    title: 'Sign in',
-    path: '/sign-in',
-    icon: icon('ic-lock'),
-  },
-  {
-    title: 'Not found',
-    path: '/404',
-    icon: icon('ic-disabled'),
+    title: 'Cart Management',
+    path: '/carts',
+    icon: <Iconify icon="solar:cart-3-bold-duotone" />,
+    children: [
+      {
+        title: 'All Carts',
+        path: '/carts',
+      },
+      {
+        title: 'Fuel Logs',
+        path: '/carts/fuel-logs',
+      },
+    ],
   },
 ];
+
+export default navConfig;

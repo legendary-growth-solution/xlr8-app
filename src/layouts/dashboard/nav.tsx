@@ -1,6 +1,6 @@
 import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import ListItem from '@mui/material/ListItem';
@@ -15,11 +15,7 @@ import { varAlpha } from 'src/theme/styles';
 
 import { Logo } from 'src/components/logo';
 import { Scrollbar } from 'src/components/scrollbar';
-
-import { NavUpgrade } from '../components/nav-upgrade';
-import { WorkspacesPopover } from '../components/workspaces-popover';
-
-import type { WorkspacesPopoverProps } from '../components/workspaces-popover';
+import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
@@ -29,12 +25,16 @@ export type NavContentProps = {
     title: string;
     icon: React.ReactNode;
     info?: React.ReactNode;
+    children?: {
+      path: string;
+      title: string;
+      icon?: React.ReactNode;
+    }[];
   }[];
   slots?: {
     topArea?: React.ReactNode;
     bottomArea?: React.ReactNode;
   };
-  workspaces: WorkspacesPopoverProps['data'];
   sx?: SxProps<Theme>;
 };
 
@@ -42,7 +42,6 @@ export function NavDesktop({
   sx,
   data,
   slots,
-  workspaces,
   layoutQuery,
 }: NavContentProps & { layoutQuery: Breakpoint }) {
   const theme = useTheme();
@@ -68,7 +67,7 @@ export function NavDesktop({
         ...sx,
       }}
     >
-      <NavContent data={data} slots={slots} workspaces={workspaces} />
+      <NavContent data={data} slots={slots} />
     </Box>
   );
 }
@@ -81,7 +80,6 @@ export function NavMobile({
   open,
   slots,
   onClose,
-  workspaces,
 }: NavContentProps & { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
@@ -107,15 +105,20 @@ export function NavMobile({
         },
       }}
     >
-      <NavContent data={data} slots={slots} workspaces={workspaces} />
+      <NavContent data={data} slots={slots}/>
     </Drawer>
   );
 }
 
 // ----------------------------------------------------------------------
 
-export function NavContent({ data, slots, workspaces, sx }: NavContentProps) {
+export function NavContent({ data, slots, sx }: NavContentProps) {
   const pathname = usePathname();
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+
+  const handleSubmenuClick = (title: string) => {
+    setOpenSubmenu(openSubmenu === title ? null : title);
+  };
 
   return (
     <>
@@ -123,51 +126,103 @@ export function NavContent({ data, slots, workspaces, sx }: NavContentProps) {
 
       {slots?.topArea}
 
-      <WorkspacesPopover data={workspaces} sx={{ my: 2 }} />
-
       <Scrollbar fillContent>
         <Box component="nav" display="flex" flex="1 1 auto" flexDirection="column" sx={sx}>
           <Box component="ul" gap={0.5} display="flex" flexDirection="column">
             {data.map((item) => {
               const isActived = item.path === pathname;
+              const hasChildren = item.children && item.children.length > 0;
+              const isSubmenuOpen = openSubmenu === item.title;
 
               return (
-                <ListItem disableGutters disablePadding key={item.title}>
-                  <ListItemButton
-                    disableGutters
-                    component={RouterLink}
-                    href={item.path}
-                    sx={{
-                      pl: 2,
-                      py: 1,
-                      gap: 2,
-                      pr: 1.5,
-                      borderRadius: 0.75,
-                      typography: 'body2',
-                      fontWeight: 'fontWeightMedium',
-                      color: 'var(--layout-nav-item-color)',
-                      minHeight: 'var(--layout-nav-item-height)',
-                      ...(isActived && {
-                        fontWeight: 'fontWeightSemiBold',
-                        bgcolor: 'var(--layout-nav-item-active-bg)',
-                        color: 'var(--layout-nav-item-active-color)',
-                        '&:hover': {
-                          bgcolor: 'var(--layout-nav-item-hover-bg)',
-                        },
-                      }),
-                    }}
-                  >
-                    <Box component="span" sx={{ width: 24, height: 24 }}>
-                      {item.icon}
-                    </Box>
+                <Box key={item.title}>
+                  <ListItem disableGutters disablePadding>
+                    <ListItemButton
+                      disableGutters
+                      component={hasChildren ? 'div' : RouterLink}
+                      href={hasChildren ? undefined : item.path}
+                      onClick={hasChildren ? () => handleSubmenuClick(item.title) : undefined}
+                      sx={{
+                        pl: 2,
+                        py: 1,
+                        gap: 2,
+                        pr: 1.5,
+                        borderRadius: 0.75,
+                        typography: 'body2',
+                        fontWeight: 'fontWeightMedium',
+                        color: 'var(--layout-nav-item-color)',
+                        minHeight: 'var(--layout-nav-item-height)',
+                        ...(isActived && {
+                          fontWeight: 'fontWeightSemiBold',
+                          bgcolor: 'var(--layout-nav-item-active-bg)',
+                          color: 'var(--layout-nav-item-active-color)',
+                          '&:hover': {
+                            bgcolor: 'var(--layout-nav-item-hover-bg)',
+                          },
+                        }),
+                      }}
+                    >
+                      <Box component="span" sx={{ width: 24, height: 24 }}>
+                        {item.icon}
+                      </Box>
 
-                    <Box component="span" flexGrow={1}>
-                      {item.title}
-                    </Box>
+                      <Box component="span" flexGrow={1}>
+                        {item.title}
+                      </Box>
 
-                    {item.info && item.info}
-                  </ListItemButton>
-                </ListItem>
+                      {hasChildren && (
+                        <Iconify
+                          width={16}
+                          icon={isSubmenuOpen ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-forward-fill'}
+                        />
+                      )}
+
+                      {item.info && item.info}
+                    </ListItemButton>
+                  </ListItem>
+
+                  {hasChildren && isSubmenuOpen && (
+                    <Box pl={4} sx={{ my: 1 }}>
+                      {item.children?.map((child) => (
+                        <ListItem key={child.title} sx={{ my: 0.5 }} disableGutters disablePadding>
+                          <ListItemButton
+                            disableGutters
+                            component={RouterLink}
+                            href={child.path}
+                            sx={{
+                              pl: 2,
+                              py: 1,
+                              gap: 2,
+                              pr: 1.5,
+                              borderRadius: 0.75,
+                              typography: 'body2',
+                              fontWeight: 'fontWeightMedium',
+                              color: 'var(--layout-nav-item-color)',
+                              minHeight: 'var(--layout-nav-item-height)',
+                              ...(pathname === child.path && {
+                                fontWeight: 'fontWeightSemiBold',
+                                bgcolor: 'var(--layout-nav-item-active-bg)',
+                                color: 'var(--layout-nav-item-active-color)',
+                                '&:hover': {
+                                  bgcolor: 'var(--layout-nav-item-hover-bg)',
+                                },
+                              }),
+                            }}
+                          >
+                            {child.icon && (
+                              <Box component="span" sx={{ width: 24, height: 24 }}>
+                                {child.icon}
+                              </Box>
+                            )}
+                            <Box component="span" flexGrow={1}>
+                              {child.title}
+                            </Box>
+                          </ListItemButton>
+                        </ListItem>
+                      ))}
+                    </Box>
+                  )}
+                </Box>
               );
             })}
           </Box>
@@ -175,8 +230,6 @@ export function NavContent({ data, slots, workspaces, sx }: NavContentProps) {
       </Scrollbar>
 
       {slots?.bottomArea}
-
-      <NavUpgrade />
     </>
   );
 }

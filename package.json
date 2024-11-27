@@ -30,6 +30,7 @@
     "@fontsource-variable/dm-sans": "^5.0.7",
     "@fontsource/barlow": "^5.0.14",
     "@iconify/react": "^5.0.2",
+    "@mui/icons-material": "^6.1.8",
     "@mui/lab": "^5.0.0-alpha.173",
     "@mui/material": "^5.16.7",
     "apexcharts": "^3.52.0",
@@ -40,7 +41,8 @@
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^6.26.1",
-    "simplebar-react": "^3.2.6"
+    "simplebar-react": "^3.2.6",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.5.0",
