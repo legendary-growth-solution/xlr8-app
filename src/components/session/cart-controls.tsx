@@ -77,6 +77,8 @@ export function CartControls({ userId, groupId, cartAssignments, onAssignCart }:
         clearInterval(interval);
       }
     };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, groupId, getUserMapping]);
 
   const formatTime = (seconds: number): string => {
