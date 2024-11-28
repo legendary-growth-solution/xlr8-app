@@ -12,9 +12,6 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: GroupCardProps) {
-  const mainUsers = group.users.slice(0, 2);
-  const remainingUsers = group.users.slice(2);
-  
   const getUserDuration = (userId: string) => {
     const mapping = MOCK_GROUP_USERS.find(gu => gu.groupId === group.id && gu.userId === userId);
     return mapping?.allowedDuration || 0;
@@ -49,7 +46,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
 
           {group.users.length > 0 ? (
             <Box sx={{ pt: 1, mt: "0px !important" }}>
-              {mainUsers.map((user) => (
+              {group.users.map((user) => (
                 <Stack
                   key={user.id}
                   direction="row"
@@ -111,32 +108,6 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
                   />
                 </Stack>
               ))}
-
-              {remainingUsers.length > 0 && (
-                <Stack direction="row" alignItems="center" spacing={2} mt={2}>
-                  <AvatarGroup
-                    max={3}
-                    sx={{
-                      '& .MuiAvatar-root': {
-                        width: 28,
-                        height: 28,
-                        fontSize: '0.75rem',
-                        border: (theme) => `solid 2px ${theme.palette.background.paper}`,
-                      },
-                    }}
-                  >
-                    {remainingUsers.map((user) => (
-                      <Avatar 
-                        key={user.id} 
-                        alt={user.name}
-                        sx={{ bgcolor: 'primary.main' }}
-                      >
-                        {user.name[0]}
-                      </Avatar>
-                    ))}
-                  </AvatarGroup>
-                </Stack>
-              )}
             </Box>
           ) : (
             <Box 
