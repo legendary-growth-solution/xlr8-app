@@ -21,6 +21,7 @@ import { LoadingButton } from '@mui/lab';
 import { Scrollbar } from 'src/components/scrollbar';
 import { Iconify } from 'src/components/iconify';
 import { User, Group } from 'src/types/session';
+import { MOCK_GROUP_USERS } from 'src/services/mock/mock-data';
 
 interface SelectedUser {
   userId: string;
@@ -71,6 +72,13 @@ export function ManageUsersDialog({
   const MIN_TIME = 5;
   const hasInvalidTimes = selectedUsers.some(user => !user.timeInMinutes || user.timeInMinutes < MIN_TIME);
 
+  const isUserRaceStarted = (userId: string, groupId: string) => {
+    const mapping = MOCK_GROUP_USERS.find(
+      gu => gu.groupId === groupId && gu.userId === userId
+    );
+    return mapping?.raceStatus === 'in_progress' || mapping?.raceStatus === 'completed';
+  };
+
   return (
     <Dialog fullWidth maxWidth="md" open={open} onClose={onClose}>
       <DialogTitle>Manage Group Users</DialogTitle>
@@ -112,13 +120,14 @@ export function ManageUsersDialog({
                 const isAssigned = otherGroups.some(g => 
                   g.id !== group?.id && g.users.some(u => u.id === user.id)
                 );
+                const hasRaceStarted = group && isUserRaceStarted(user.id, group.id);
 
                 return (
                   <TableRow key={user.id} hover>
                     <TableCell padding="checkbox">
                       <Checkbox
                         checked={isSelected}
-                        disabled={isAssigned}
+                        disabled={isAssigned || hasRaceStarted || false}
                         onChange={(e) => onSelectUser(user.id, e.target.checked)}
                       />
                     </TableCell>
@@ -159,8 +168,18 @@ export function ManageUsersDialog({
                     <TableCell align="center">
                       <Chip
                         size="small"
-                        label={isAssigned ? 'Assigned' : isSelected ? 'Selected' : 'Available'}
-                        color={isAssigned ? 'warning' : isSelected ? 'primary' : 'default'}
+                        label={
+                          hasRaceStarted ? 'Race Started' :
+                          isAssigned ? 'Assigned' : 
+                          isSelected ? 'Selected' : 
+                          'Available'
+                        }
+                        color={
+                          hasRaceStarted ? 'error' :
+                          isAssigned ? 'warning' : 
+                          isSelected ? 'primary' : 
+                          'default'
+                        }
                       />
                     </TableCell>
                   </TableRow>

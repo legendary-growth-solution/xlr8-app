@@ -143,6 +143,7 @@ export default function SessionManagementPage() {
         currentParticipants: 0,
         maxParticipants: createData.maxParticipants || 999,
         created_at: new Date().toISOString(),
+        raceStatus: 'not_started',
       };
 
       setSessions(prev => [newSession, ...prev]);

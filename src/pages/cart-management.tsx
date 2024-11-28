@@ -31,7 +31,7 @@ export default function CartManagementPage() {
       minWidth: 120,
       format: (value: Cart['status']) => (
         <Chip
-          label={value.toUpperCase()}
+          label={value?.toUpperCase()}
           color={
             value === 'available' ? 'success' :
             value === 'in-use' ? 'primary' :

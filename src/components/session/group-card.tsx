@@ -1,16 +1,28 @@
-import { Card, Box, Stack, Typography, Button, Avatar, AvatarGroup, Divider } from '@mui/material';
+import { Card, Box, Stack, Typography, Button, Avatar, AvatarGroup } from '@mui/material';
 import { Group } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
+import { MOCK_GROUP_USERS } from 'src/services/mock/mock-data';
+import { CartControls } from './cart-controls';
 
 interface GroupCardProps {
   group: Group;
   onManageUsers: (group: Group) => void;
   isActive: boolean;
+  onAssignCart: (groupId: string, userId: string, cartId: string) => void;
 }
 
-export function GroupCard({ group, onManageUsers, isActive }: GroupCardProps) {
+export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: GroupCardProps) {
   const mainUsers = group.users.slice(0, 2);
   const remainingUsers = group.users.slice(2);
+  
+  const getUserDuration = (userId: string) => {
+    const mapping = MOCK_GROUP_USERS.find(gu => gu.groupId === group.id && gu.userId === userId);
+    return mapping?.allowedDuration || 0;
+  };
+
+  const handleAssignCart = (userId: string, cartId: string) => {
+    onAssignCart(group.id, userId, cartId);
+  };
 
   return (
     <Card sx={{ height: '100%' }}>
@@ -78,9 +90,10 @@ export function GroupCard({ group, onManageUsers, isActive }: GroupCardProps) {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {user.timeInMinutes}m
+                      {getUserDuration(user.id)}m
                     </Typography>
                   </Box>
+
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Typography variant="subtitle2" noWrap>
                       {user.name}
@@ -89,35 +102,40 @@ export function GroupCard({ group, onManageUsers, isActive }: GroupCardProps) {
                       {user.email}
                     </Typography>
                   </Box>
+
+                  <CartControls 
+                    userId={user.id}
+                    groupId={group.id}
+                    cartAssignments={group.cartAssignments}
+                    onAssignCart={handleAssignCart}
+                  />
                 </Stack>
               ))}
 
               {remainingUsers.length > 0 && (
-                <>
-                  <Stack direction="row" alignItems="center" spacing={2} mt={2}>
-                    <AvatarGroup
-                      max={3}
-                      sx={{
-                        '& .MuiAvatar-root': {
-                          width: 28,
-                          height: 28,
-                          fontSize: '0.75rem',
-                          border: (theme) => `solid 2px ${theme.palette.background.paper}`,
-                        },
-                      }}
-                    >
-                      {remainingUsers.map((user) => (
-                        <Avatar 
-                          key={user.id} 
-                          alt={user.name}
-                          sx={{ bgcolor: 'primary.main' }}
-                        >
-                          {user.name[0]}
-                        </Avatar>
-                      ))}
-                    </AvatarGroup>
-                  </Stack>
-                </>
+                <Stack direction="row" alignItems="center" spacing={2} mt={2}>
+                  <AvatarGroup
+                    max={3}
+                    sx={{
+                      '& .MuiAvatar-root': {
+                        width: 28,
+                        height: 28,
+                        fontSize: '0.75rem',
+                        border: (theme) => `solid 2px ${theme.palette.background.paper}`,
+                      },
+                    }}
+                  >
+                    {remainingUsers.map((user) => (
+                      <Avatar 
+                        key={user.id} 
+                        alt={user.name}
+                        sx={{ bgcolor: 'primary.main' }}
+                      >
+                        {user.name[0]}
+                      </Avatar>
+                    ))}
+                  </AvatarGroup>
+                </Stack>
               )}
             </Box>
           ) : (

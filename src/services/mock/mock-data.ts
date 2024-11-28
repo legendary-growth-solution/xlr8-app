@@ -1,5 +1,6 @@
 import { Cart, FuelLog, MaintenanceLog } from 'src/types/cart';
-import { Session, Group, User } from 'src/types/session';
+import { GroupUserMapping } from 'src/types/mappings';
+import { Session, Group, User, CartAssignment } from 'src/types/session';
 
 export const MOCK_USERS: User[] = [
   {
@@ -59,9 +60,9 @@ export const MOCK_GROUPS: Record<string, Group[]> = {
       id: 'group-1',
       name: 'Group A',
       users: MOCK_USERS.slice(0, 4),
-      CartAssignments: [
-        { userId: '1', CartNumber: 1, assignedAt: new Date() },
-        { userId: '2', CartNumber: 2, assignedAt: new Date() },
+      cartAssignments: [
+        { userId: '1', cartNumber: 1, cartId: 'cart_001', assignedAt: new Date() },
+        { userId: '2', cartNumber: 2, cartId: 'cart_002', assignedAt: new Date() },
       ],
       timeInMinutes: 15,
       startTime: new Date('2024-03-15T10:00:00'),
@@ -80,6 +81,7 @@ export const MOCK_SESSIONS: Session[] = [
     currentParticipants: 4,
     maxParticipants: 44,
     created_at: '2024-03-15T09:45:00',
+    raceStatus: 'not_started',
   },
   {
     id: 'session-2',
@@ -89,6 +91,7 @@ export const MOCK_SESSIONS: Session[] = [
     currentParticipants: 0,
     maxParticipants: 30,
     created_at: '2024-03-15T13:45:00',
+    raceStatus: 'not_started',
   },
   {
     id: 'session-3',
@@ -100,6 +103,7 @@ export const MOCK_SESSIONS: Session[] = [
     maxParticipants: 25,
     created_at: '2024-03-15T17:45:00',
     totalParticipants: 25,
+    raceStatus: 'completed',
   },
 ];
 
@@ -158,6 +162,45 @@ export const MOCK_CARTS: Cart[] = [
     fuelEfficiency: 15,
     rfidTag: '1234567893',
   },
+  {
+    id: 'cart_005',
+    name: 'Cart 5',
+    status: 'available',
+    fuelLevel: 100,
+    totalDistance: 0,
+    lastMaintenanceDate: '2024-03-01',
+    lastRefuelDate: '2024-03-01',
+    model: 'XLR8-2024',
+    maxFuelCapacity: 20,
+    fuelEfficiency: 15,
+    rfidTag: '1234567894',
+  },
+  {
+    id: 'cart_006',
+    name: 'Cart 6',
+    status: 'available',
+    fuelLevel: 100,
+    totalDistance: 0,
+    lastMaintenanceDate: '2024-03-01',
+    lastRefuelDate: '2024-03-01',
+    model: 'XLR8-2024',
+    maxFuelCapacity: 20,
+    fuelEfficiency: 15,
+    rfidTag: '1234567895',
+  },
+  {
+    id: 'cart_007',
+    name: 'Cart 7',
+    status: 'available',
+    fuelLevel: 100,
+    totalDistance: 0,
+    lastMaintenanceDate: '2024-03-01',
+    lastRefuelDate: '2024-03-01',
+    model: 'XLR8-2024',
+    maxFuelCapacity: 20,
+    fuelEfficiency: 15,
+    rfidTag: '1234567896',
+  },
 ];
 
 export const MOCK_FUEL_LOGS: FuelLog[] = [
@@ -184,3 +227,10 @@ export const MOCK_FUEL_LOGS: FuelLog[] = [
 ];
 
 export const MOCK_MAINTENANCE_LOGS: MaintenanceLog[] = [];
+
+export const MOCK_GROUP_USERS: GroupUserMapping[] = [
+  { id: 'gu_001', groupId: 'group-1', userId: '1', cartId: 'cart_001', assignedAt: new Date().toISOString(), raceStatus: 'not_started', status: 'active', allowedDuration: 15 },
+  { id: 'gu_002', groupId: 'group-1', userId: '2', cartId: 'cart_002', assignedAt: (new Date( new Date().getTime() - 35 * 60 * 1000 )).toISOString(), raceStatus: 'not_started', status: 'active', allowedDuration: 15 },
+  { id: 'gu_003', groupId: 'group-1', userId: '3', raceStatus: 'not_started', status: 'active', allowedDuration: 15 },
+  { id: 'gu_004', groupId: 'group-1', userId: '4', raceStatus: 'not_started', status: 'active', allowedDuration: 15 },
+];

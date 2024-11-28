@@ -61,4 +61,22 @@ export const sessionApi = {
   },
   toggleStatus: async (id: string, active: boolean): Promise<Session> => 
     sessionApi.update(id, { status: active ? 'active' : 'completed' }),
+
+  startRace: async (id: string): Promise<Session> => {
+    const res = await fetch(API_ENDPOINTS.SESSIONS.START_RACE(id), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to start race');
+    return res.json();
+  },
+
+  stopRace: async (id: string): Promise<Session> => {
+    const res = await fetch(API_ENDPOINTS.SESSIONS.STOP_RACE(id), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to stop race');
+    return res.json();
+  },
 }; 

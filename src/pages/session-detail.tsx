@@ -27,13 +27,14 @@ import { LoadingButton } from '@mui/lab';
 import { Helmet } from 'react-helmet-async';
 import { Iconify } from 'src/components/iconify';
 import { Session, Group, User } from 'src/types/session';
-import { MOCK_SESSIONS, MOCK_GROUPS, MOCK_USERS } from 'src/services/mock/mock-data';
+import { MOCK_SESSIONS, MOCK_GROUPS, MOCK_USERS, MOCK_GROUP_USERS, MOCK_CARTS } from 'src/services/mock/mock-data';
 import { Scrollbar } from 'src/components/scrollbar';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { GroupCard } from 'src/components/session/group-card';
 import { ManageUsersDialog } from 'src/components/session/manage-users-dialog';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { CreateGroupDialog } from 'src/components/session/create-group-dialog';
+import { CartControls } from 'src/components/session/cart-controls';
 
 interface SelectedUser {
   userId: string;
@@ -123,7 +124,7 @@ export default function SessionDetailPage() {
         name: newGroupData.name,
         timeInMinutes: newGroupData.timeInMinutes,
         users: [],
-        CartAssignments: [],
+        cartAssignments: [],
         startTime: new Date(),
       };
       setGroups([...groups, newGroup]);
@@ -136,10 +137,15 @@ export default function SessionDetailPage() {
   const handleOpenManageUsers = (group: Group) => {
     setSelectedGroup(group);
     setSelectedUsers(
-      group.users.map(u => ({
-        userId: u.id,
-        timeInMinutes: u.timeInMinutes || 0,
-      }))
+      group.users.map(u => {
+        const mapping = MOCK_GROUP_USERS.find(
+          gu => gu.groupId === group.id && gu.userId === u.id
+        );
+        return {
+          userId: u.id,
+          timeInMinutes: mapping?.allowedDuration || 0,
+        };
+      })
     );
     manageUsers.onTrue();
   };
@@ -181,10 +187,42 @@ export default function SessionDetailPage() {
     
     setLoading(true);
     setTimeout(() => {
-      const selectedUserObjects = selectedUsers.map(su => ({
-        ...MOCK_USERS.find(u => u.id === su.userId)!,
-        timeInMinutes: su.timeInMinutes,
-      }));
+      const existingUsersWithRace = selectedGroup.users.filter(user => {
+        const mapping = MOCK_GROUP_USERS.find(
+          gu => gu.groupId === selectedGroup.id && gu.userId === user.id
+        );
+        return mapping?.raceStatus === 'in_progress' || mapping?.raceStatus === 'completed';
+      });
+
+      const selectedUserObjects = [
+        ...existingUsersWithRace,
+        ...selectedUsers
+          .filter(su => !existingUsersWithRace.some(eu => eu.id === su.userId))
+          .map(su => ({
+            ...MOCK_USERS.find(u => u.id === su.userId)!,
+          }))
+      ];
+
+      const updatedGroupUsers = [...MOCK_GROUP_USERS];
+      selectedUsers.forEach(su => {
+        const existingIndex = updatedGroupUsers.findIndex(
+          gu => gu.groupId === selectedGroup.id && gu.userId === su.userId
+        );
+        
+        if (existingIndex >= 0) {
+          updatedGroupUsers[existingIndex].allowedDuration = su.timeInMinutes;
+        } else {
+          updatedGroupUsers.push({
+            id: `gu_${Date.now()}_${su.userId}`,
+            groupId: selectedGroup.id,
+            userId: su.userId,
+            raceStatus: 'not_started',
+            status: 'active',
+            allowedDuration: su.timeInMinutes,
+            assignedAt: new Date().toISOString()
+          });
+        }
+      });
 
       const updatedGroups = groups.map(group => 
         group.id === selectedGroup.id 
@@ -208,6 +246,86 @@ export default function SessionDetailPage() {
 
   const handleNewGroupChange = (field: string, value: string | number) => {
     setNewGroupData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAssignCart = (groupId: string, userId: string, cartId: string) => {
+    const updatedGroups = groups.map(group => {
+      if (group.id !== groupId) return group;
+
+      const updatedAssignments = [...group.cartAssignments];
+      const existingIndex = updatedAssignments.findIndex(ca => ca.userId === userId);
+      
+      const previousCartId = existingIndex >= 0 ? updatedAssignments[existingIndex].cartId : undefined;
+      
+      if (existingIndex >= 0) {
+        updatedAssignments[existingIndex] = {
+          ...updatedAssignments[existingIndex],
+          cartId,
+          assignedAt: new Date()
+        };
+      } else {
+        updatedAssignments.push({
+          userId,
+          cartId,
+          cartNumber: updatedAssignments.length + 1,
+          assignedAt: new Date()
+        });
+      }
+
+      if (previousCartId) {
+        const previousCartIndex = MOCK_CARTS.findIndex(c => c.id === previousCartId);
+        if (previousCartIndex >= 0) {
+          MOCK_CARTS[previousCartIndex] = {
+            ...MOCK_CARTS[previousCartIndex],
+            status: 'available',
+            currentUser: undefined,
+            currentSession: undefined
+          };
+        }
+      }
+
+      return {
+        ...group,
+        cartAssignments: updatedAssignments
+      };
+    });
+
+    const userMappingIndex = MOCK_GROUP_USERS.findIndex(
+      gu => gu.groupId === groupId && gu.userId === userId
+    );
+
+    const previousCartId = userMappingIndex >= 0 ? MOCK_GROUP_USERS[userMappingIndex].cartId : undefined;
+
+    if (userMappingIndex >= 0) {
+      MOCK_GROUP_USERS[userMappingIndex] = {
+        ...MOCK_GROUP_USERS[userMappingIndex],
+        cartId
+      };
+    }
+
+    if (previousCartId) {
+      const previousCartIndex = MOCK_CARTS.findIndex(c => c.id === previousCartId);
+      if (previousCartIndex >= 0) {
+        MOCK_CARTS[previousCartIndex] = {
+          ...MOCK_CARTS[previousCartIndex],
+          status: 'available',
+          currentUser: undefined,
+          currentSession: undefined
+        };
+      }
+    }
+
+    const cartIndex = MOCK_CARTS.findIndex(c => c.id === cartId);
+    if (cartIndex >= 0) {
+      MOCK_CARTS[cartIndex] = {
+        ...MOCK_CARTS[cartIndex],
+        status: 'in-use',
+        currentUser: userId,
+        currentSession: session?.id
+      };
+    }
+
+    setGroups(updatedGroups);
   };
 
   if (!session) return null;
@@ -319,6 +437,7 @@ export default function SessionDetailPage() {
                   group={group}
                   onManageUsers={handleOpenManageUsers}
                   isActive={session.status === 'active'}
+                  onAssignCart={handleAssignCart}
                 />
               </Grid>
             ))}
