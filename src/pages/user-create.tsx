@@ -19,11 +19,13 @@ export default function UserCreatePage() {
     e.preventDefault();
     try {
       setLoading(true);
-      await userApi.create({
-        ...formData,
-        createdAt: new Date(),
-      });
-      navigate('/users');
+      // await userApi.create({
+      //   ...formData,
+      //   createdAt: new Date(),
+      // });
+      setTimeout(() => {
+        navigate('/users');
+      }, 1000);
     } catch (error) {
       console.error('Error creating user:', error);
     } finally {

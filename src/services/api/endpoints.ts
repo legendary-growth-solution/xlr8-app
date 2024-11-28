@@ -1,4 +1,4 @@
-const BASE_URL = process?.env?.API_BASE_URL || console.error('API URI is not set');
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || console.error('API URI is not set');
 
 const createEndpoint = (path: string) => `${BASE_URL}${path}`;
 
