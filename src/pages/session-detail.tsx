@@ -204,13 +204,31 @@ export default function SessionDetailPage() {
       ];
 
       const updatedGroupUsers = [...MOCK_GROUP_USERS];
+
+      const removedUsers = selectedGroup.users.filter(user => 
+        !existingUsersWithRace.some(eu => eu.id === user.id) && 
+        !selectedUsers.some(su => su.userId === user.id)
+      );
+
+      removedUsers.forEach(user => {
+        const idx = updatedGroupUsers.findIndex(
+          gu => gu.groupId === selectedGroup.id && gu.userId === user.id
+        );
+        if (idx >= 0) {
+          updatedGroupUsers.splice(idx, 1);
+        }
+      });
+
       selectedUsers.forEach(su => {
         const existingIndex = updatedGroupUsers.findIndex(
           gu => gu.groupId === selectedGroup.id && gu.userId === su.userId
         );
         
         if (existingIndex >= 0) {
-          updatedGroupUsers[existingIndex].allowedDuration = su.timeInMinutes;
+          updatedGroupUsers[existingIndex] = {
+            ...updatedGroupUsers[existingIndex],
+            allowedDuration: su.timeInMinutes
+          };
         } else {
           updatedGroupUsers.push({
             id: `gu_${Date.now()}_${su.userId}`,
@@ -223,6 +241,8 @@ export default function SessionDetailPage() {
           });
         }
       });
+
+      MOCK_GROUP_USERS.splice(0, MOCK_GROUP_USERS.length, ...updatedGroupUsers);
 
       const updatedGroups = groups.map(group => 
         group.id === selectedGroup.id 

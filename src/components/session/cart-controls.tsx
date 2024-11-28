@@ -180,7 +180,7 @@ export function CartControls({ userId, groupId, cartAssignments, onAssignCart }:
               bgcolor: timeLeft === 0 ? 'error.lighter' : 'warning.lighter',
               borderRadius: 1,
               px: 1,
-              minWidth: 50,
+              minWidth: 55,
               color: timeLeft === 0 ? 'error.dark' : 'warning.dark',
               textAlign: 'center',
               fontSize: '0.9rem'

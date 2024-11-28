@@ -79,6 +79,13 @@ export function ManageUsersDialog({
     return mapping?.raceStatus === 'in_progress' || mapping?.raceStatus === 'completed';
   };
 
+  const getUserExistingTime = (userId: string, groupId: string) => {
+    const mapping = MOCK_GROUP_USERS.find(
+      gu => gu.groupId === groupId && gu.userId === userId
+    );
+    return mapping?.allowedDuration || 0;
+  };
+
   return (
     <Dialog fullWidth maxWidth="md" open={open} onClose={onClose}>
       <DialogTitle>Manage Group Users</DialogTitle>
@@ -121,12 +128,13 @@ export function ManageUsersDialog({
                   g.id !== group?.id && g.users.some(u => u.id === user.id)
                 );
                 const hasRaceStarted = group && isUserRaceStarted(user.id, group.id);
+                const existingTime = group ? getUserExistingTime(user.id, group.id) : 0;
 
                 return (
                   <TableRow key={user.id} hover>
                     <TableCell padding="checkbox">
                       <Checkbox
-                        checked={isSelected}
+                        checked={isSelected || hasRaceStarted || false}
                         disabled={isAssigned || hasRaceStarted || false}
                         onChange={(e) => onSelectUser(user.id, e.target.checked)}
                       />
@@ -149,18 +157,25 @@ export function ManageUsersDialog({
                     </TableCell>
 
                     <TableCell align="center">
-                      {isSelected && (
+                      {(isSelected || hasRaceStarted) && (
                         <TextField
                           type="number"
                           size="small"
-                          value={selectedUser.timeInMinutes || ''}
+                          value={hasRaceStarted ? existingTime : (selectedUser?.timeInMinutes || '')}
                           onChange={(e) => onTimeChange(user.id, Number(e.target.value))}
                           InputProps={{
                             endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                            inputProps: { min: MIN_TIME }
+                            inputProps: { min: MIN_TIME },
+                            readOnly: hasRaceStarted || false
                           }}
-                          sx={{ width: 120 }}
-                          error={!selectedUser.timeInMinutes || selectedUser.timeInMinutes < MIN_TIME}
+                          sx={{ 
+                            width: 120,
+                            '& .MuiInputBase-input.Mui-disabled': {
+                              WebkitTextFillColor: hasRaceStarted ? 'text.primary' : 'inherit',
+                            }
+                          }}
+                          disabled={hasRaceStarted || false}
+                          error={!hasRaceStarted && (!selectedUser?.timeInMinutes || selectedUser.timeInMinutes < MIN_TIME)}
                         />
                       )}
                     </TableCell>
