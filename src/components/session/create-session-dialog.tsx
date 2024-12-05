@@ -13,7 +13,6 @@ interface CreateSessionDialogProps {
   open: boolean;
   loading: boolean;
   data: {
-    name?: string;
     maxParticipants?: number;
   };
   onClose: () => void;
@@ -34,14 +33,6 @@ export function CreateSessionDialog({
       <DialogTitle>Create New Session</DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label="Session Name"
-            value={data.name || ''}
-            onChange={(e) => onChange('name', e.target.value)}
-            placeholder="e.g., Morning Race Session"
-            helperText="Optional: Give this session a memorable name"
-          />
           <TextField
             fullWidth
             type="number"

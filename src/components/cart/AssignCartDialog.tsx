@@ -8,9 +8,10 @@ interface AssignCartDialogProps {
   open: boolean;
   onClose: () => void;
   cart: Cart | null;
+  onAssign?: any;
 }
 
-export default function AssignCartDialog({ open, onClose, cart }: AssignCartDialogProps) {
+export default function AssignCartDialog({ open, onClose, cart, onAssign }: AssignCartDialogProps) {
   const [selectedSession, setSelectedSession] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
 

@@ -39,6 +39,10 @@ const navConfig = [
         title: 'Fuel Logs',
         path: '/carts/fuel-logs',
       },
+      {
+        title: 'Lap Logs',
+        path: '/carts/lap-logs',
+      },
     ],
   },
 ];

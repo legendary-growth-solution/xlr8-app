@@ -1,4 +1,5 @@
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, CircularProgress, Box } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, CircularProgress, Box, Typography } from '@mui/material';
+import { Iconify } from '../iconify';
 
 export interface Column {
   id: string;
@@ -39,10 +40,23 @@ export default function DataTable({
     onRowsPerPageChange?.(parseInt(event.target.value, 10));
   };
 
+  const adjustedPage = Math.min(page, Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1));
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3 }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Iconify icon="mdi:database-off" width={24} height={24} />
+          <Typography variant="h6">No Data Available</Typography>
+        </Box>
       </Box>
     );
   }
@@ -121,7 +135,7 @@ export default function DataTable({
           component="div"
           count={rows.length}
           rowsPerPage={rowsPerPage}
-          page={page}
+          page={adjustedPage}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />

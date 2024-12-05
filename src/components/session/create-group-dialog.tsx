@@ -8,6 +8,7 @@ import {
   Button,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import { useState } from 'react';
 
 interface CreateGroupDialogProps {
   open: boolean;
@@ -28,6 +29,17 @@ export function CreateGroupDialog({
   onChange,
   onSubmit,
 }: CreateGroupDialogProps) {
+  const [error, setError] = useState('');
+
+  const handleSubmit = () => {
+    if (!data.name?.trim()) {
+      setError('Group name is required');
+      return;
+    }
+    setError('');
+    onSubmit();
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Create New Group</DialogTitle>
@@ -38,13 +50,18 @@ export function CreateGroupDialog({
             label="Group Name"
             value={data.name}
             required
-            onChange={(e) => onChange('name', e.target.value)}
+            error={!!error}
+            helperText={error}
+            onChange={(e) => {
+              onChange('name', e.target.value);
+              if (error) setError('');
+            }}
           />
         </Stack>
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
         <Button onClick={onClose}>Cancel</Button>
-        <LoadingButton loading={loading} onClick={onSubmit} variant="contained">
+        <LoadingButton loading={loading} onClick={handleSubmit} variant="contained">
           Create
         </LoadingButton>
       </DialogActions>

@@ -30,7 +30,7 @@ export function SessionInfo({ session }: SessionInfoProps) {
               Participants
             </Typography>
             <Typography variant="body1">
-              {session.currentParticipants}/{session.maxParticipants}
+              {session.current_participants}/{session.max_participants}
             </Typography>
           </Stack>
         </Grid>

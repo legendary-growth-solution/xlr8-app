@@ -7,6 +7,12 @@ import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgr
 import { varAlpha } from 'src/theme/styles';
 import { AuthLayout } from 'src/layouts/auth';
 import { DashboardLayout } from 'src/layouts/dashboard';
+import AuthGuard from 'src/guards/AuthGuard';
+import GuestGuard from 'src/guards/GuestGuard';
+import CartLapLogsPage from 'src/pages/cart-lap-logs';
+import PasswordHashPage from 'src/pages/password-hash';
+import AuthPage from 'src/pages/auth';
+import { DataProvider } from 'src/contexts/DataContext';
 
 // ----------------------------------------------------------------------
 
@@ -23,7 +29,6 @@ export const SessionCreatePage = lazy(() => import('src/pages/session-create'));
 export const SessionHistoryPage = lazy(() => import('src/pages/session-history'));
 export const SessionDetailPage = lazy(() => import('src/pages/session-detail'));
 export const CartManagementPage = lazy(() => import('src/pages/cart-management'));
-export const CartMaintenancePage = lazy(() => import('src/pages/cart-maintenance'));
 export const CartFuelLogsPage = lazy(() => import('src/pages/cart-fuel-logs'));
 
 // ----------------------------------------------------------------------
@@ -44,12 +49,26 @@ const renderFallback = (
 export function Router() {
   return useRoutes([
     {
+      path: 'auth',
       element: (
-        <DashboardLayout>
-          <Suspense fallback={renderFallback}>
-            <Outlet />
-          </Suspense>
-        </DashboardLayout>
+        <GuestGuard>
+          <AuthLayout>
+            <AuthPage />
+          </AuthLayout>
+        </GuestGuard>
+      ),
+    },
+
+    // Dashboard Routes
+    {
+      element: (
+        <AuthGuard>
+          <DashboardLayout>
+            <Suspense fallback={renderFallback}>
+              <Outlet />
+            </Suspense>
+          </DashboardLayout>
+        </AuthGuard>
       ),
       children: [
         { element: <HomePage />, index: true },
@@ -63,20 +82,17 @@ export function Router() {
         { path: 'sessions', element: <SessionManagementPage /> },
         { path: 'sessions/create', element: <SessionCreatePage /> },
         { path: 'sessions/history', element: <SessionHistoryPage /> },
-        { path: 'sessions/:id', element: <SessionDetailPage /> },
+        { path: 'sessions/:id', element: <DataProvider><SessionDetailPage /></DataProvider> },
+        
         { path: 'carts', element: <CartManagementPage /> },
-        { path: 'carts/maintenance', element: <CartMaintenancePage /> },
         { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
+        { path: 'carts/lap-logs', element: <CartLapLogsPage /> },
+        
+        { path: 'password-hash', element: <PasswordHashPage /> },
       ],
     },
-    {
-      path: 'sign-in',
-      element: (
-        <AuthLayout>
-          <SignInPage />
-        </AuthLayout>
-      ),
-    },
+
+    // Error Routes
     {
       path: '404',
       element: <Page404 />,

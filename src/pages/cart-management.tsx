@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Card, Chip, Stack } from '@mui/material';
 import { Cart } from 'src/types/cart';
 import DataTable from 'src/components/table/DataTable';
-import { MOCK_CARTS } from 'src/services/mock/mock-data';
+import { cartApi } from 'src/services/api/cart.api';
 import RefuelCartDialog from 'src/components/cart/RefuelCartDialog';
 import AssignCartDialog from 'src/components/cart/AssignCartDialog';
 import NewCartDialog from 'src/components/cart/NewCartDialog';
@@ -19,11 +19,23 @@ export default function CartManagementPage() {
   const [selectedCart, setSelectedCart] = useState<Cart | null>(null);
   const [openNewCartDialog, setOpenNewCartDialog] = useState(false);
 
+  const fetchCarts = async () => {
+    try {
+      setLoading(true);
+      const response = await cartApi.list({});
+      setCarts(response.carts);
+    } catch (error) {
+      console.error('Failed to fetch carts', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const columns = [
-    { 
-      id: 'name', 
+    {
+      id: 'name',
       label: 'Cart Name',
-      minWidth: 120 
+      minWidth: 120,
     },
     {
       id: 'status',
@@ -33,9 +45,13 @@ export default function CartManagementPage() {
         <Chip
           label={value?.toUpperCase()}
           color={
-            value === 'available' ? 'success' :
-            value === 'in-use' ? 'primary' :
-            value === 'maintenance' ? 'warning' : 'error'
+            value === 'available'
+              ? 'success'
+              : value === 'in-use'
+                ? 'primary'
+                : value === 'maintenance'
+                  ? 'warning'
+                  : 'error'
           }
           size="small"
         />
@@ -51,7 +67,7 @@ export default function CartManagementPage() {
       id: 'totalDistance',
       label: 'Total Distance',
       minWidth: 120,
-      format: (value: number) => `${value.toFixed(1)} km`,
+      format: (value: number) => `${(value || 0).toFixed(1)} km`,
     },
     {
       id: 'currentUser',
@@ -71,30 +87,73 @@ export default function CartManagementPage() {
     setOpenRefuelDialog(true);
   };
 
-  const handleAddCart = (cartData: { name: string; rfidtag: string }) => {
-    const newCart: Cart = {
-      id: `cart-${carts.length + 1}`,
-      name: cartData.name,
-      status: 'available',
-      fuelLevel: 100,
-      totalDistance: 0,
-      currentUser: '',
-      rfidTag: cartData.rfidtag,
-    };
+  const handleAssignSubmit = async (
+    cartId: string,
+    data: { userId: string; groupUserMappingId: string }
+  ) => {
+    try {
+      await cartApi.assign(cartId, {
+        userId: data.userId,
+        groupUserMappingId: data.groupUserMappingId,
+      });
+      fetchCarts();
+    } catch (error) {
+      console.error('Failed to assign cart', error);
+    }
+    setOpenAssignDialog(false);
+  };
 
-    setCarts([...carts, newCart]);
+  const handleRefuelSubmit = async (cartId: string, data: { amount: number; cost: number }) => {
+    try {
+      if (!cartId) {
+        console.error('No cart selected for refuel');
+        return;
+      }
+
+      const refuelData = {
+        ...data,
+        date: new Date().toISOString(),
+      };
+
+      const rfidNumber = (carts.find((cart) => cart.id === cartId) as any)?.rfid_number;
+      if (!rfidNumber) {
+        console.error('No rfid number found for cart');
+        return;
+      }
+      await cartApi.refuel(rfidNumber, refuelData);
+      await fetchCarts();
+      setSelectedCart(null);
+    } catch (error) {
+      console.error('Failed to refuel cart:', error);
+    } finally {
+      setOpenRefuelDialog(false);
+    }
+  };
+
+  const handleAddCart = async (cartData: { name: string; rfidtag: string }) => {
+    try {
+      await cartApi.create({
+        name: cartData.name,
+        status: 'available',
+        rfid_number: cartData.rfidtag,
+      });
+      fetchCarts();
+    } catch (error) {
+      console.error('Failed to add cart', error);
+    }
+    setOpenNewCartDialog(false);
   };
 
   const actions = (cart: Cart) => (
-    <Stack direction="row" spacing={1}>
-      <Button
+    <Stack direction="row" spacing={1} justifyContent="flex-end">
+      {/* <Button
         size="small"
         variant="outlined"
         onClick={() => handleAssignCart(cart)}
         disabled={cart.status !== 'available'}
       >
         Assign
-      </Button>
+      </Button> */}
       <Button
         size="small"
         variant="outlined"
@@ -108,44 +167,42 @@ export default function CartManagementPage() {
   );
 
   useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setCarts(MOCK_CARTS);
-      setLoading(false);
-    }, 500);
+    fetchCarts();
   }, []);
 
   return (
     <PageContainer title="Cart Management">
-      <PageHeader 
+      <PageHeader
         title="Cart Management"
         action={{
-          label: "New Cart",
-          onClick: () => setOpenNewCartDialog(true)
+          label: 'New Cart',
+          onClick: () => setOpenNewCartDialog(true),
         }}
       />
 
       <CartStatsGrid carts={carts} />
 
       <Card>
-        <DataTable
-          loading={loading}
-          columns={columns}
-          rows={carts}
-          actions={actions}
-        />
+        <DataTable loading={loading} columns={columns} rows={carts} actions={actions} />
       </Card>
 
       <AssignCartDialog
         open={openAssignDialog}
         onClose={() => setOpenAssignDialog(false)}
         cart={selectedCart}
+        onAssign={handleAssignSubmit}
       />
 
       <RefuelCartDialog
         open={openRefuelDialog}
-        onClose={() => setOpenRefuelDialog(false)}
+        onClose={() => {
+          setOpenRefuelDialog(false);
+          setSelectedCart(null);
+        }}
         cart={selectedCart}
+        onRefuel={(data: { amount: number; cost: number; notes?: string }) =>
+          selectedCart && handleRefuelSubmit(selectedCart?.id || '', data)
+        }
       />
 
       <NewCartDialog
@@ -155,4 +212,4 @@ export default function CartManagementPage() {
       />
     </PageContainer>
   );
-} 
+}

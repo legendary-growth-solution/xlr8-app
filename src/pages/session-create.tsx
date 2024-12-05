@@ -18,10 +18,7 @@ export default function SessionCreatePage() {
     try {
       setLoading(true);
       await sessionApi.create({
-        ...formData,
-        status: 'active',
-        currentParticipants: 0,
-        start_time: new Date().toISOString(),
+        max_participants: formData.maxParticipants,
       });
       navigate('/sessions');
     } catch (error) {

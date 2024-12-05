@@ -1,6 +1,7 @@
-import { Cart, FuelLog, MaintenanceLog } from 'src/types/cart';
+import { Cart, FuelLog, MaintenanceLog, LapLog } from 'src/types/cart';
 import { API_ENDPOINTS } from './endpoints';
 import { CartResponse, CartQueryParams, AssignCartData, RefuelData } from './api.types';
+import { apiClient } from './api-client';
 
 export const cartApi = {
   list: async (params: CartQueryParams): Promise<CartResponse> => {
@@ -11,73 +12,46 @@ export const cartApi = {
       ...(params.status && { status: params.status }),
     });
 
-    const res = await fetch(`${API_ENDPOINTS.CARTS.LIST}?${searchParams}`);
-    if (!res.ok) throw new Error('Failed to fetch carts');
-    return res.json();
+    const response = await apiClient.get(`${API_ENDPOINTS.CARTS.LIST}?${searchParams}`);
+    return response.data;
   },
 
   getById: async (id: string): Promise<Cart> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.DETAIL(id));
-    if (!res.ok) throw new Error('Failed to fetch cart details');
-    return res.json();
+    const response = await apiClient.get(API_ENDPOINTS.CARTS.DETAIL(id));
+    return response.data;
   },
 
-  create: async (data: Partial<Cart>): Promise<Cart> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.CREATE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to create cart');
-    return res.json();
+  create: async (data: Partial<any>): Promise<any> => {
+    const response = await apiClient.post(API_ENDPOINTS.CARTS.CREATE, data);
+    return response.data;
   },
 
   update: async (id: string, data: Partial<Cart>): Promise<Cart> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.UPDATE(id), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to update cart');
-    return res.json();
+    const response = await apiClient.put(API_ENDPOINTS.CARTS.UPDATE(id), data);
+    return response.data;
   },
 
   assign: async (id: string, data: AssignCartData): Promise<Cart> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.ASSIGN(id), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to assign cart');
-    return res.json();
+    const response = await apiClient.post(API_ENDPOINTS.CARTS.ASSIGN(id), data);
+    return response.data;
   },
 
   refuel: async (id: string, data: RefuelData): Promise<FuelLog> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.REFUEL(id), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to refuel cart');
-    return res.json();
+    const response = await apiClient.post(API_ENDPOINTS.CARTS.REFUEL(id), data);
+    return response.data;
   },
 
-  getFuelLogs: async (id: string): Promise<FuelLog[]> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.FUEL_LOGS(id));
-    if (!res.ok) throw new Error('Failed to fetch fuel logs');
-    return res.json();
+  getFuelLogs: async (): Promise<FuelLog[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.CARTS.FUEL_LOGS());
+    return response.data;
   },
 
-  getMaintenanceLogs: async (id: string): Promise<MaintenanceLog[]> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.MAINTENANCE_LOGS(id));
-    if (!res.ok) throw new Error('Failed to fetch maintenance logs');
-    return res.json();
+  getLapLogs: async (): Promise<LapLog[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.CARTS.LAP_LOGS());
+    return response.data;
   },
 
   delete: async (id: string): Promise<void> => {
-    const res = await fetch(API_ENDPOINTS.CARTS.DELETE(id), {
-      method: 'DELETE',
-    });
-    if (!res.ok) throw new Error('Failed to delete cart');
+    await apiClient.delete(API_ENDPOINTS.CARTS.DELETE(id));
   },
 }; 

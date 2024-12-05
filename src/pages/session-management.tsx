@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { MOCK_SESSIONS } from 'src/services/mock/mock-data';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { CreateSessionDialog } from 'src/components/session/create-session-dialog';
+import { sessionApi } from 'src/services/api/session.api';
 
 export default function SessionManagementPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -19,9 +20,12 @@ export default function SessionManagementPage() {
   const [endSessionLoading, setEndSessionLoading] = useState(false);
   const [openCreate, setOpenCreate] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   const [createData, setCreateData] = useState<{
     name?: string;
     maxParticipants?: number;
+    race_duration_minutes?: number;
+    laps?: number;
   }>({});
 
   const navigate = useNavigate();
@@ -36,7 +40,7 @@ export default function SessionManagementPage() {
       sx: { whiteSpace: 'nowrap' },
     },
     { 
-      id: 'name', 
+      id: 'session_name', 
       label: 'Session Name', 
       minWidth: 170, 
       noWrap: true,
@@ -73,10 +77,10 @@ export default function SessionManagementPage() {
       sx: { whiteSpace: 'nowrap' },
     },
     {
-      id: 'currentParticipants',
+      id: 'current_participants',
       label: 'Participants',
       minWidth: 120,
-      format: (value: number, row: Session) => `${value}/${row.maxParticipants}`,
+      format: (value: number, row: Session) => `${value}/${row.max_participants ?? "-"}`,
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
     },
@@ -96,20 +100,26 @@ export default function SessionManagementPage() {
   }, [page, rowsPerPage, searchQuery]);
 
   const fetchSessions = async () => {
+
     try {
       setLoading(true);
-      setTimeout(() => {
-        const filteredSessions = MOCK_SESSIONS
-          .filter(session => 
-            session.status === 'active' &&
-            (session.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             session.id.toLowerCase().includes(searchQuery.toLowerCase()))
-          );
-        setSessions(filteredSessions);
-        setLoading(false);
-      }, 500);
+      
+      try {
+        const response = await sessionApi.list({
+          page,
+          pageSize: rowsPerPage,
+          search: searchQuery,
+        });
+        
+        setSessions([...response.sessions]);
+        setTotalPages(response.total);
+      } catch (apiError) {
+        console.error('API Error:', apiError);
+        setSessions([]);
+      }
     } catch (error) {
       console.error('Error fetching sessions:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -119,9 +129,10 @@ export default function SessionManagementPage() {
 
     try {
       setEndSessionLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setSessions(prev => prev.filter(s => s.id !== selectedSession.id));
+      await sessionApi.update(selectedSession.id, { status: 'completed' });
+      
+      await fetchSessions();
       setSelectedSession(null);
     } catch (error) {
       console.error('Error ending session:', error);
@@ -133,20 +144,13 @@ export default function SessionManagementPage() {
   const handleCreateSession = async () => {
     try {
       setCreateLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const newSession: Session = {
-        id: `session-${Date.now()}`,
-        name: createData.name ?? '',
-        status: 'active',
-        start_time: new Date().toISOString(),
-        currentParticipants: 0,
-        maxParticipants: createData.maxParticipants || 999,
-        created_at: new Date().toISOString(),
-        raceStatus: 'not_started',
-      };
+      const newSession = await sessionApi.create({
+        max_participants: createData.maxParticipants,
+      });
 
-      setSessions(prev => [newSession, ...prev]);
+      setSessions([...sessions, newSession]);
+      
       setOpenCreate(false);
       setCreateData({});
     } catch (error) {
@@ -225,7 +229,7 @@ export default function SessionManagementPage() {
       <ConfirmDialog
         open={!!selectedSession}
         title="End Session"
-        content={`Are you sure you want to end session "${selectedSession?.name || ''}"? This action cannot be undone.`}
+        content={`Are you sure you want to end session "${selectedSession?.session_name || ''}"? This action cannot be undone.`}
         confirmText="End Session"
         confirmColor="error"
         loading={endSessionLoading}

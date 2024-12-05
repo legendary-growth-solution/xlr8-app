@@ -1,4 +1,4 @@
-import { Cart, FuelLog, MaintenanceLog } from 'src/types/cart';
+import { Cart } from 'src/types/cart';
 import { Session, User } from 'src/types/session';
 
 export interface CartResponse {
@@ -15,13 +15,13 @@ export interface CartQueryParams {
 
 export interface AssignCartData {
   userId: string;
+  groupUserMappingId: string;
   sessionId?: string;
 }
 
 export interface RefuelData {
   amount: number;
   cost: number;
-  operatorId: string;
   notes?: string;
 }
 
@@ -45,4 +45,19 @@ export interface UserQueryParams {
   page?: number;
   pageSize?: number;
   search?: string;
+}
+
+
+export interface GroupUserMappingData {
+  user_id: string;
+  time_in_minutes: number;
+  cart_id?: string;
+}
+
+
+export interface CartAssignmentData {
+  user_id: string;
+  cart_id: string;
+  status?: 'assigned' | 'unassigned';
+  assigned_to?: string;
 }

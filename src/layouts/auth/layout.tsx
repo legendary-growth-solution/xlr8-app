@@ -88,7 +88,7 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
         ...sx,
       }}
     >
-      <Main layoutQuery={layoutQuery}>{children}</Main>
+     {children}
     </LayoutSection>
   );
 }

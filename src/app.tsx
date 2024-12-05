@@ -10,14 +10,19 @@ import { ThemeProvider } from 'src/theme/theme-provider';
 
 import { Iconify } from 'src/components/iconify';
 
+import { AuthProvider } from 'src/hooks/use-auth';
+
+
 // ----------------------------------------------------------------------
 
 export default function App() {
   useScrollToTop();
 
   return (
-    <ThemeProvider>
-      <Router />
-    </ThemeProvider>
+    <AuthProvider>
+        <ThemeProvider>
+          <Router />
+        </ThemeProvider>
+    </AuthProvider>
   );
 }

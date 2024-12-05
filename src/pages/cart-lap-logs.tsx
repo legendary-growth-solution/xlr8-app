@@ -1,37 +1,38 @@
 import { useState, useEffect } from 'react';
 import { Card, Stack, Button, TextField, Box } from '@mui/material';
-import { FuelLog } from 'src/types/cart';
 import DataTable from 'src/components/table/DataTable';
-import { cartApi } from 'src/services/api/cart.api';
 import PageContainer from 'src/components/common/PageContainer';
 import PageHeader from 'src/components/common/PageHeader';
 import { Iconify } from 'src/components/iconify';
 import ExportMenu from 'src/components/export/ExportMenu';
+import { LapLog } from 'src/types/cart';
+import { cartApi } from 'src/services/api/cart.api';
 
-export default function CartFuelLogsPage() {
-  const [logs, setLogs] = useState<FuelLog[]>([]);
+export default function CartLapLogsPage() {
+  const [logs, setLogs] = useState<LapLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const fetchFuelLogs = async () => {
+  const fetchLapLogs = async () => {
     try {
       setLoading(true);
-      const response = await cartApi.getFuelLogs();
+      const response = await cartApi.getLapLogs();
       setLogs(response);
     } catch (error) {
-      console.error('Failed to fetch fuel logs:', error);
+      console.error('Failed to fetch lap logs:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFuelLogs();
+    fetchLapLogs();
   }, []);
 
   const filteredLogs = logs.filter(log => 
-    log.cartName?.toLowerCase().includes(searchQuery.toLowerCase())
+    log.cartName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    log.sessionId?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleExportClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -42,32 +43,31 @@ export default function CartFuelLogsPage() {
     setAnchorEl(null);
   };
 
-  const transformLogData = (logsArg: FuelLog[]) => logsArg.map(log => ({
+  const transformLogData = (logsArg: LapLog[]) => logsArg.map(log => ({
     'Cart Name': log.cartName,
-    'Date': new Date(log.date).toLocaleString(),
-    'Amount (L)': log.amount,
-    'Cost (₹)': log.cost.toFixed(2),
-    'Previous Level': `${log.previousLevel}%`,
-    'Current Level': `${log.currentLevel}%`,
+    'Session ID': log.sessionId,
+    'Lap Number': log.lapNumber,
+    'Lap Time': log.lapTime,
+    'Timestamp': new Date(log.timestamp).toLocaleString(),
   }));
 
   const columns = [
     { id: 'cartName', label: 'Cart Name', minWidth: 100 },
-    { id: 'date', label: 'Date', minWidth: 120 },
-    { id: 'amount', label: 'Amount (L)', minWidth: 100 },
-    { id: 'cost', label: 'Cost', minWidth: 100, format: (value: number) => `₹${value.toFixed(2)}` },
+    { id: 'sessionId', label: 'Session ID', minWidth: 120 },
+    { id: 'lapNumber', label: 'Lap #', minWidth: 80 },
+    { id: 'lapTime', label: 'Lap Time', minWidth: 120 },
     { 
-      id: 'fuelLevel', 
-      label: 'Fuel Level',
-      minWidth: 150,
-      format: (value: number, row: FuelLog) => `${row.previousLevel}% → ${row.currentLevel}%`,
+      id: 'timestamp', 
+      label: 'Timestamp',
+      minWidth: 180,
+      format: (value: string) => new Date(value).toLocaleString(),
     },
   ];
 
   return (
-    <PageContainer title="Fuel Logs">
+    <PageContainer title="Lap Logs">
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <PageHeader title="Fuel Logs" />
+        <PageHeader title="Lap Logs" />
         <Button
           variant="outlined"
           startIcon={<Iconify icon="eva:download-fill" />}
@@ -81,7 +81,7 @@ export default function CartFuelLogsPage() {
         anchorEl={anchorEl}
         onClose={handleExportClose}
         data={filteredLogs}
-        filename="fuel-logs"
+        filename="lap-logs"
         transformData={transformLogData}
       />
 

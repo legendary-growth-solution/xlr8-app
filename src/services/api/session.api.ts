@@ -1,6 +1,7 @@
-import { Session } from 'src/types/session';
+import { Session, CreateSessionData, Group } from 'src/types/session';
 import { API_ENDPOINTS } from './endpoints';
 import { SessionResponse, SessionQueryParams } from './api.types';
+import { apiClient } from './api-client';
 
 export const sessionApi = {
   list: async (params: SessionQueryParams): Promise<SessionResponse> => {
@@ -10,9 +11,8 @@ export const sessionApi = {
       ...(params.search && { search: params.search }),
     });
 
-    const res = await fetch(`${API_ENDPOINTS.SESSIONS.LIST}?${searchParams}`);
-    if (!res.ok) throw new Error('Failed to fetch sessions');
-    return res.json();
+    const response = await apiClient.get(`${API_ENDPOINTS.SESSIONS.LIST}?${searchParams}`);
+    return response.data;
   },
 
   history: async (params: SessionQueryParams): Promise<SessionResponse> => {
@@ -22,61 +22,57 @@ export const sessionApi = {
       ...(params.search && { search: params.search }),
     });
 
-    const res = await fetch(`${API_ENDPOINTS.SESSIONS.HISTORY}?${searchParams}`);
-    if (!res.ok) throw new Error('Failed to fetch session history');
-    return res.json();
+    const response = await apiClient.get(`${API_ENDPOINTS.SESSIONS.HISTORY}?${searchParams}`);
+    return response.data;
   },
 
   getById: async (id: string): Promise<Session> => {
-    const res = await fetch(API_ENDPOINTS.SESSIONS.DETAIL(id));
-    if (!res.ok) throw new Error('Failed to fetch session details');
-    return res.json();
+    const response = await apiClient.get(API_ENDPOINTS.SESSIONS.DETAIL(id));
+    return response.data;
   },
 
-  create: async (data: Partial<Session>): Promise<Session> => {
-    const res = await fetch(API_ENDPOINTS.SESSIONS.CREATE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to create session');
-    return res.json();
+  create: async (data: CreateSessionData): Promise<Session> => {
+    const response = await apiClient.post(API_ENDPOINTS.SESSIONS.CREATE, data);
+    return response.data;
   },
 
   update: async (id: string, data: Partial<Session>): Promise<Session> => {
-    const res = await fetch(API_ENDPOINTS.SESSIONS.UPDATE(id), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to update session');
-    return res.json();
+    const response = await apiClient.put(API_ENDPOINTS.SESSIONS.UPDATE(id), data);
+    return response.data;
   },
 
   delete: async (id: string): Promise<void> => {
-    const res = await fetch(API_ENDPOINTS.SESSIONS.DELETE(id), {
-      method: 'DELETE',
-    });
-    if (!res.ok) throw new Error('Failed to delete session');
+    await apiClient.delete(API_ENDPOINTS.SESSIONS.DELETE(id));
   },
+
   toggleStatus: async (id: string, active: boolean): Promise<Session> => 
     sessionApi.update(id, { status: active ? 'active' : 'completed' }),
 
-  startRace: async (id: string): Promise<Session> => {
-    const res = await fetch(API_ENDPOINTS.SESSIONS.START_RACE(id), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!res.ok) throw new Error('Failed to start race');
-    return res.json();
+  stopRace: async (id: string): Promise<Session> => {
+    const response = await apiClient.post(API_ENDPOINTS.SESSIONS.STOP_RACE(id));
+    return response.data;
   },
 
-  stopRace: async (id: string): Promise<Session> => {
-    const res = await fetch(API_ENDPOINTS.SESSIONS.STOP_RACE(id), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!res.ok) throw new Error('Failed to stop race');
-    return res.json();
+  createGroup: async (sessionId: string, data: { name: string }): Promise<Group> => {
+    const response = await apiClient.post(`${API_ENDPOINTS.SESSIONS.DETAIL(sessionId)}/groups`, data);
+    return response.data;
+  },
+
+  updateGroup: async (sessionId: string, groupId: string, data: Partial<Group>): Promise<Group> => {
+    const response = await apiClient.put(`${API_ENDPOINTS.SESSIONS.DETAIL(sessionId)}/groups/${groupId}`, data);
+    return response.data;
+  },
+
+  deleteGroup: async (sessionId: string, groupId: string): Promise<void> => {
+    await apiClient.delete(`${API_ENDPOINTS.SESSIONS.DETAIL(sessionId)}/groups/${groupId}`);
+  },
+
+  startRace: async (groupId: string, data: { 
+    userId: string;
+    groupUserId: string;
+    cartId: string;
+  }) => {
+    const response = await apiClient.post(`${API_ENDPOINTS.SESSIONS.START_RACE(groupId, data.userId)}`, data);
+    return response.data;
   },
 }; 

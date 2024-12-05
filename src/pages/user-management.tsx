@@ -5,9 +5,9 @@ import { User } from 'src/types/session';
 import DataTable from 'src/components/table/DataTable';
 import { Iconify } from 'src/components/iconify';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_USERS } from 'src/services/mock/mock-data';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { LoadingButton } from '@mui/lab';
+import { userApi } from 'src/services/api/user.api';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -21,15 +21,16 @@ export default function UserManagementPage() {
   const [editData, setEditData] = useState<Partial<User>>({});
   const [openEdit, setOpenEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   
   const navigate = useNavigate();
 
   const columns = [
     { 
-      id: 'id', 
-      label: 'User ID', 
+      id: 'sno', 
+      label: 'S.No', 
       minWidth: 130,
-      format: (value: string) => value.toUpperCase(),
+      format: (value: number) => value.toString(),
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
     },
@@ -39,6 +40,7 @@ export default function UserManagementPage() {
       minWidth: 170, 
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
+      format: (value: string) => value.charAt(0).toUpperCase() + value.slice(1),
     },
     { 
       id: 'email', 
@@ -55,10 +57,18 @@ export default function UserManagementPage() {
       sx: { whiteSpace: 'nowrap' },
     },
     { 
-      id: 'createdAt', 
+      id: 'dob', 
+      label: 'Date of Birth',
+      minWidth: 120,
+      format: (value: string) => value ? new Date(value).toLocaleDateString() : '-',
+      noWrap: true,
+      sx: { whiteSpace: 'nowrap' },
+    },
+    { 
+      id: 'created_at', 
       label: 'Joined',
       minWidth: 160,
-      format: (value: Date) => value.toLocaleString(),
+      format: (value: string) => new Date(value).toLocaleString(),
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
     },
@@ -72,17 +82,19 @@ export default function UserManagementPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      setTimeout(() => {
-        const filteredUsers = MOCK_USERS.filter(user => 
-          user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (user.phone && user.phone.includes(searchQuery))
-        );
-        setUsers(filteredUsers);
-        setLoading(false);
-      }, 500);
+      
+      const response = await userApi.list({
+        page,
+        pageSize: rowsPerPage,
+        search: searchQuery,
+      });
+      
+      setUsers(response.users);
+      setTotalPages(response.total);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -91,17 +103,17 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
 
     try {
-      setIsDeleting(true);
       setDeleteLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+      await userApi.delete(selectedUser.id);
+      
+      await fetchUsers();
       setSelectedUser(null);
+      setIsDeleting(false);
     } catch (error) {
       console.error('Error deleting user:', error);
     } finally {
       setDeleteLoading(false);
-      setIsDeleting(false);
     }
   };
 
@@ -110,13 +122,14 @@ export default function UserManagementPage() {
 
     try {
       setEditLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setUsers(prev => prev.map(u => 
-        u.id === selectedUser.id 
-          ? { ...u, ...editData }
-          : u
-      ));
+      const cleanedData = Object.fromEntries(
+        Object.entries(editData).filter(([_, v]) => v !== undefined && v !== '')
+      );
+      
+      await userApi.update(selectedUser.id, cleanedData);
+      
+      await fetchUsers();
       setOpenEdit(false);
       setSelectedUser(null);
       setEditData({});
@@ -133,6 +146,7 @@ export default function UserManagementPage() {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      dob: user.dob || '',
     });
     setOpenEdit(true);
     setIsDeleting(false);
@@ -176,7 +190,10 @@ export default function UserManagementPage() {
             <DataTable
               loading={loading}
               columns={columns}
-              rows={users}
+              rows={users.map((user, index) => ({
+                ...user,
+                sno: (page - 1) * rowsPerPage + index + 1,
+              }))}
               page={page}
               rowsPerPage={rowsPerPage}
               onPageChange={setPage}
@@ -227,6 +244,16 @@ export default function UserManagementPage() {
               label="Phone"
               value={editData.phone || ''}
               onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
+            />
+            <TextField
+              fullWidth
+              type="date"
+              label="Date of Birth"
+              value={editData.dob || ''}
+              onChange={(e) => setEditData(prev => ({ ...prev, dob: e.target.value }))}
+              InputLabelProps={{
+                shrink: true,
+              }}
             />
           </Stack>
         </DialogContent>

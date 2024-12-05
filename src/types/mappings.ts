@@ -1,3 +1,5 @@
+import { Cart } from "./cart";
+
 export interface SessionGroupMapping {
   id: string;
   sessionId: string;
@@ -10,16 +12,18 @@ export interface SessionGroupMapping {
 
 export interface GroupUserMapping {
   id: string;
-  groupId: string;
-  userId: string;
-  cartId?: string;
-  assignedAt?: string;
-  status: 'active' | 'inactive';
-  raceStatus: 'not_started' | 'in_progress' | 'completed';
-  allowedDuration: number;
-  startTime?: string;
-  endTime?: string;
-  lapCount?: number;
-  bestLapTime?: number;
-  totalTime?: number;
-} 
+  group_id: string;
+  user_id: string;
+  cart_id?: Cart['id'];
+  allowed_duration?: number;
+  time_in_minutes?: number;
+  assigned_at?: Date;
+  start_time?: Date;
+  end_time?: Date;
+  lap_count?: number;
+  best_lap_time?: number;
+  total_time?: number;
+  race_status?: 'not_started' | 'in_progress' | 'completed' | 'cancelled';
+  race_start_time?: Date;
+  race_end_time?: Date;
+}

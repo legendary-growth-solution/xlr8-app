@@ -12,11 +12,19 @@ export interface Cart {
   maxFuelCapacity?: number;
   fuelEfficiency?: number;
   rfidTag: string;
+  current_level?: number;
+  rfid_number?: string;
+  assigned_to?: string;
+  current_user?: string;
+  cart_number?: number;
+  last_refuel_date?: string;
+  total_distance?: number;
 }
 
 export interface FuelLog {
   id: string;
   cartId: string;
+  cartName: string;
   date: string;
   amount: number;
   cost: number;
@@ -35,3 +43,13 @@ export interface MaintenanceLog {
   technicianId: string;
   nextMaintenanceDate: string;
 } 
+
+export interface LapLog {
+  id: string;
+  cartId: string;
+  cartName: string;
+  sessionId: string;
+  lapNumber: number;
+  lapTime: string;
+  timestamp: string;
+}

@@ -7,6 +7,7 @@ import { Iconify } from 'src/components/iconify';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_SESSIONS } from 'src/services/mock/mock-data';
 import ExportMenu from 'src/components/export/ExportMenu';
+import { sessionApi } from 'src/services/api/session.api';
 
 export default function SessionHistoryPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -15,6 +16,7 @@ export default function SessionHistoryPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [totalPages, setTotalPages] = useState(1);
   
   const navigate = useNavigate();
 
@@ -35,11 +37,11 @@ export default function SessionHistoryPage() {
 
   const transformSessionData = (sessionsArg: Session[]) => sessionsArg.map(session => ({
     'Session ID': session.id,
-    'Name': session.name,
+    'Name': session.session_name,
     'Start Time': new Date(session.start_time).toLocaleString(),
     'End Time': session.end_time ? new Date(session.end_time).toLocaleString() : '-',
     'Duration (mins)': calculateDuration(session),
-    'Participants': `${session.currentParticipants}/${session.maxParticipants}`,
+    'Participants': `${session.current_participants}/${session.max_participants}`,
   }));
 
   const columns = [
@@ -49,7 +51,7 @@ export default function SessionHistoryPage() {
       minWidth: 130,
       format: (value: string) => value?.toUpperCase(),
     },
-    { id: 'name', label: 'Session Name', minWidth: 170 },
+    { id: 'session_name', label: 'Session Name', minWidth: 170 },
     { 
       id: 'start_time', 
       label: 'Start Time',
@@ -75,10 +77,10 @@ export default function SessionHistoryPage() {
       },
     },
     {
-      id: 'currentParticipants',
+      id: 'current_participants',
       label: 'Participants',
       minWidth: 120,
-      format: (value: number, row: Session) => `${value}/${row.maxParticipants}`,
+      format: (value: number, row: Session) => `${value}/${row.max_participants ?? '-'}`,
     },
   ];
 
@@ -88,20 +90,31 @@ export default function SessionHistoryPage() {
   }, [page, rowsPerPage, searchQuery]);
 
   const fetchSessionHistory = async () => {
+    const filteredMSessions = MOCK_SESSIONS.filter(session => 
+      session.status === 'completed' &&
+      (session.session_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       session.id.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
     try {
       setLoading(true);
-      setTimeout(() => {
-        const filteredSessions = MOCK_SESSIONS
-          .filter(session => 
-            session.status === 'completed' &&
-            (session.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             session.id.toLowerCase().includes(searchQuery.toLowerCase()))
-          );
-        setSessions(filteredSessions);
-        setLoading(false);
-      }, 500);
+      
+      try {
+        const response = await sessionApi.history({
+          page,
+          pageSize: rowsPerPage,
+          search: searchQuery,
+        });
+        
+        setSessions(response.sessions);
+        setTotalPages(response.total);
+      } catch (apiError) {
+        console.error('API Error:', apiError);
+        setSessions(filteredMSessions);
+      }
     } catch (error) {
       console.error('Error fetching session history:', error);
+    } finally {
       setLoading(false);
     }
   };
