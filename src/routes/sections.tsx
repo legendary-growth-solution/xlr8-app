@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Outlet, Navigate, useRoutes } from 'react-router-dom';
+import { useAuth } from 'src/hooks/use-auth';
 
 import Box from '@mui/material/Box';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
@@ -13,6 +14,8 @@ import CartLapLogsPage from 'src/pages/cart-lap-logs';
 import PasswordHashPage from 'src/pages/password-hash';
 import AuthPage from 'src/pages/auth';
 import { DataProvider } from 'src/contexts/DataContext';
+import CartMaintenanceLogsPage from 'src/pages/cart-maintenance-logs';
+import LiveLeaderboard from 'src/pages/live-leaderboard';
 
 // ----------------------------------------------------------------------
 
@@ -45,6 +48,19 @@ const renderFallback = (
     />
   </Box>
 );
+
+const LogoutRoute = () => {
+  const { logout } = useAuth();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  handleLogout();
+  return <Navigate to="/auth" replace />;
+};
 
 export function Router() {
   return useRoutes([
@@ -83,11 +99,11 @@ export function Router() {
         { path: 'sessions/create', element: <SessionCreatePage /> },
         { path: 'sessions/history', element: <SessionHistoryPage /> },
         { path: 'sessions/:id', element: <DataProvider><SessionDetailPage /></DataProvider> },
-        
+        { path: 'sessions/:id/live-leaderboard', element: <DataProvider><LiveLeaderboard /></DataProvider> },
         { path: 'carts', element: <CartManagementPage /> },
         { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
         { path: 'carts/lap-logs', element: <CartLapLogsPage /> },
-        
+        { path: 'carts/maintenance-logs', element: <CartMaintenanceLogsPage /> },
         { path: 'password-hash', element: <PasswordHashPage /> },
       ],
     },

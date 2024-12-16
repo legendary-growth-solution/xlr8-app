@@ -8,7 +8,7 @@ import { useTheme } from '@mui/material/styles';
 import ListItemButton from '@mui/material/ListItemButton';
 import Drawer, { drawerClasses } from '@mui/material/Drawer';
 
-import { usePathname } from 'src/routes/hooks';
+import { usePathname, useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { varAlpha } from 'src/theme/styles';
@@ -16,6 +16,7 @@ import logo from 'public/assets/logo/logo.jpg'
 import { Logo } from 'src/components/logo';
 import { Scrollbar } from 'src/components/scrollbar';
 import { Iconify } from 'src/components/iconify';
+import { useAuth } from 'src/hooks/use-auth';
 
 // ----------------------------------------------------------------------
 
@@ -115,14 +116,26 @@ export function NavMobile({
 export function NavContent({ data, slots, sx }: NavContentProps) {
   const pathname = usePathname();
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const { logout } = useAuth();
+  const router = useRouter();
 
   const handleSubmenuClick = (title: string) => {
     setOpenSubmenu(openSubmenu === title ? null : title);
   };
 
+  const handleItemClick = async (item: any) => {
+    if (item.title === 'Logout') {
+      try {
+        await logout();
+        router.push('/auth');
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+
   return (
     <>
-      {/* <Logo /> */}
       <img src='/public/assets/logo/logo.jpg' alt='logo' />
 
       {slots?.topArea}
@@ -134,15 +147,20 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
               const isActived = item.path === pathname;
               const hasChildren = item.children && item.children.length > 0;
               const isSubmenuOpen = openSubmenu === item.title;
+              const isLogout = item.title === 'Logout';
 
               return (
                 <Box key={item.title}>
                   <ListItem disableGutters disablePadding>
                     <ListItemButton
                       disableGutters
-                      component={hasChildren ? 'div' : RouterLink}
-                      href={hasChildren ? undefined : item.path}
-                      onClick={hasChildren ? () => handleSubmenuClick(item.title) : undefined}
+                      component={hasChildren || isLogout ? 'div' : RouterLink}
+                      href={hasChildren || isLogout ? undefined : item.path}
+                      onClick={isLogout 
+                        ? () => handleItemClick(item) 
+                        : hasChildren 
+                        ? () => handleSubmenuClick(item.title) 
+                        : undefined}
                       sx={{
                         pl: 2,
                         py: 1,
@@ -151,7 +169,7 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
                         borderRadius: 0.75,
                         typography: 'body2',
                         fontWeight: 'fontWeightMedium',
-                        color: 'var(--layout-nav-item-color)',
+                        color: isLogout ? 'error.main' : 'var(--layout-nav-item-color)',
                         minHeight: 'var(--layout-nav-item-height)',
                         ...(isActived && {
                           fontWeight: 'fontWeightSemiBold',

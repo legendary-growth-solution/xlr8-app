@@ -19,6 +19,9 @@ export interface Cart {
   cart_number?: number;
   last_refuel_date?: string;
   total_distance?: number;
+  fuelCapacity: number;
+  current_user_name?: string;
+  variant?: string;
 }
 
 export interface FuelLog {
@@ -34,14 +37,12 @@ export interface FuelLog {
 }
 
 export interface MaintenanceLog {
-  id: string;
+  id?: string;
   cartId: string;
+  cartName: string;
+  status: 'maintenance' | 'refueling';
+  notes?: string;
   date: string;
-  type: 'routine' | 'repair' | 'inspection';
-  description: string;
-  cost: number;
-  technicianId: string;
-  nextMaintenanceDate: string;
 } 
 
 export interface LapLog {

@@ -43,6 +43,20 @@ const navConfig = [
         title: 'Lap Logs',
         path: '/carts/lap-logs',
       },
+      {
+        title: 'Maintenance Logs',
+        path: '/carts/maintenance-logs',
+      },
+    ],
+  },
+  {
+    subheader: 'account',
+    items: [
+      {
+        title: 'Logout',
+        path: '#',
+        icon: <Iconify icon="solar:logout-2-bold-duotone" />,
+      },
     ],
   },
 ];

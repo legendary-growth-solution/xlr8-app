@@ -41,6 +41,7 @@ import { useGUCData } from 'src/contexts/DataContext';
 import LoadingScreen from 'src/components/loading-screen/LoadingScreen';
 import { cartApi } from 'src/services/api/cart.api';
 import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
+import { usePathname } from 'src/routes/hooks';
 
 interface SelectedUser {
   userId: string;
@@ -67,6 +68,7 @@ export default function SessionDetailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { users: allUsers, refreshGroupUsers, refreshCarts } = useGUCData();
   const [initialLoading, setInitialLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetchSessionDetails();
@@ -252,7 +254,7 @@ export default function SessionDetailPage() {
       });
 
       if (response.errors?.length > 0) {
-        console.error('Errors adding users:', response.errors);
+        console.error('Errors alets add a view leaderboad CTA in @session-detail.tsx dding users:', response.errors);
         return;
       }
 
@@ -318,6 +320,14 @@ export default function SessionDetailPage() {
               onClick={() => navigate('/sessions')}
             >
               Back
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Iconify icon="material-symbols:leaderboard" />}
+              onClick={() => navigate( `${pathname}/live-leaderboard`)}
+            >
+              View Leaderboard
             </Button>
             {session.status === 'active' && (
               <Button

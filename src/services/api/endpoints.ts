@@ -44,7 +44,12 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => createEndpoint(`/api/carts/${id}`),
     ASSIGN: (id: string) => createEndpoint(`/api/carts/${id}/assign`),
     REFUEL: (id: string) => createEndpoint(`/api/carts/${id}/refuel`),
+    MAINTENANCE: {
+      GET: (id?: string) => createEndpoint(`/api/carts/maintenance-logs${id ? `/${id}` : ''}`),
+      UPDATE: (id: string) => createEndpoint(`/api/carts/${id}/maintenance`),
+    },
     FUEL_LOGS: (id?: string) => createEndpoint(`/api/carts/fuel-logs${id ? `/${id}` : ''}`),
     LAP_LOGS: (id?: string) => createEndpoint(`/api/carts/lap-logs${id ? `/${id}` : ''}`),
   },
+  GET_LIVE_LEADERBOARD: (sessionId: string) => createEndpoint(`/api/results/session/${sessionId}/live-leaderboard`),
 } as const; 

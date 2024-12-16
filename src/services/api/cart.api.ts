@@ -41,6 +41,11 @@ export const cartApi = {
     return response.data;
   },
 
+  updateMaintenance: async (id: string, data: Partial<MaintenanceLog>): Promise<MaintenanceLog> => {
+    const response = await apiClient.put(API_ENDPOINTS.CARTS.MAINTENANCE.UPDATE(id), data);
+    return response.data;
+  },
+
   getFuelLogs: async (): Promise<FuelLog[]> => {
     const response = await apiClient.get(API_ENDPOINTS.CARTS.FUEL_LOGS());
     return response.data;
@@ -54,4 +59,9 @@ export const cartApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(API_ENDPOINTS.CARTS.DELETE(id));
   },
+  getMaintenanceLogs: () =>
+    apiClient.get<MaintenanceLog[]>(`${API_ENDPOINTS.CARTS.MAINTENANCE.GET()}`)
+      .then((response) => response.data),
+  getCartMaintenanceLogs: (cartId: string) =>
+    apiClient.get<MaintenanceLog[]>(`${API_ENDPOINTS.CARTS.MAINTENANCE.GET(cartId)}`).then((response) => response.data),
 }; 

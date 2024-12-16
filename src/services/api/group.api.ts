@@ -28,6 +28,16 @@ interface GroupUserResponse {
   }[];
 }
 
+interface LiveLeaderboardEntry {
+    rank: number;
+    name: string;
+    cartName: string;
+    groupName: string;
+    totalLaps: number;
+    bestLapTime: number | null;
+    timeRemaining: number | null;
+}
+
 export const groupApi = {
   addUsers: async (groupId: string, data: AddUsersRequest): Promise<AddUsersResponse> => {
     const response = await apiClient.post(
@@ -72,6 +82,16 @@ export const groupApi = {
     lap_time: number;
   }): Promise<void> => {
     await apiClient.post(API_ENDPOINTS.SESSIONS.GROUPS.RECORD_LAP(groupId, userId), data);
+  },
+
+  getLiveLeaderboard: async (sessionId: string): Promise<{
+    sessionStatus: string;
+    sessionName: string;
+    sessionId: string;
+    data: LiveLeaderboardEntry[];
+  }> => {
+    const response = await apiClient.get(API_ENDPOINTS.GET_LIVE_LEADERBOARD(sessionId));
+    return response.data;
   },
 
 }; 

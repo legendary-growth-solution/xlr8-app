@@ -53,7 +53,7 @@ export default function CartFuelLogsPage() {
 
   const columns = [
     { id: 'cartName', label: 'Cart Name', minWidth: 100 },
-    { id: 'date', label: 'Date', minWidth: 120 },
+    { id: 'date', label: 'Date', minWidth: 120, format: (value: string) => new Date(value).toLocaleString() },
     { id: 'amount', label: 'Amount (L)', minWidth: 100 },
     { id: 'cost', label: 'Cost', minWidth: 100, format: (value: number) => `₹${value.toFixed(2)}` },
     { 

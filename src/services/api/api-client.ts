@@ -17,37 +17,37 @@ export const createApiClient = (): AxiosInstance => {
     (error) => Promise.reject(error)
   );
 
-//   api.interceptors.response.use(
-//     (response) => response,
-//     async (error) => {
-//       const originalRequest = error.config;
+  api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
 
-//       if (error.response?.status === 401 && !originalRequest._retry) {
-//         originalRequest._retry = true;
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
 
-//         try {
-//           const refreshToken = localStorage.getItem('refreshToken');
-//           const response = await axios.post('/api/auth/refresh-token', {
-//             refresh_token: refreshToken
-//           });
+        try {
+          const refreshToken = localStorage.getItem('refreshToken');
+          const response = await axios.post('/api/auth/refresh-token', {
+            refresh_token: refreshToken
+          });
 
-//           const { access_token } = response.data;
-//           localStorage.setItem('accessToken', access_token);
+          const { access_token } = response.data;
+          localStorage.setItem('accessToken', access_token);
 
-//           originalRequest.headers.Authorization = `Bearer ${access_token}`;
-//           return await axios(originalRequest);
-//         } catch (err) {
-//           localStorage.removeItem('accessToken');
-//           localStorage.removeItem('refreshToken');
-//           localStorage.removeItem('userRole');
-//           window.location.href = '/auth';
-//           return Promise.reject(error);
-//         }
-//       }
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          return await axios(originalRequest);
+        } catch (err) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userRole');
+          window.location.href = '/auth';
+          return Promise.reject(error);
+        }
+      }
 
-//       return Promise.reject(error);
-//     }
-//   );
+      return Promise.reject(error);
+    }
+  );
 
   return api;
 };

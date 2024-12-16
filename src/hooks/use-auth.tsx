@@ -1,4 +1,5 @@
 import { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'src/routes/hooks';
 import { mainApi } from 'src/services/api/main.api';
 
 interface User {
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
 
   const login = useCallback(async (code: string) => {
     try {
@@ -35,14 +37,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+      console.log('Logout');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      router.push('/auth');
     } catch (error) {
       console.error('Logout failed:', error);
       throw error;
     }
-  }, []);
+  }, [router]);
 
   const checkAuth = useCallback(async () => {
     const userStr = localStorage.getItem('user');
