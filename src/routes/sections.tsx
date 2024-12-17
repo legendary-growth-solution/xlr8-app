@@ -14,8 +14,6 @@ import CartLapLogsPage from 'src/pages/cart-lap-logs';
 import PasswordHashPage from 'src/pages/password-hash';
 import AuthPage from 'src/pages/auth';
 import { DataProvider } from 'src/contexts/DataContext';
-import CartMaintenanceLogsPage from 'src/pages/cart-maintenance-logs';
-import LiveLeaderboard from 'src/pages/live-leaderboard';
 
 // ----------------------------------------------------------------------
 
@@ -33,6 +31,9 @@ export const SessionHistoryPage = lazy(() => import('src/pages/session-history')
 export const SessionDetailPage = lazy(() => import('src/pages/session-detail'));
 export const CartManagementPage = lazy(() => import('src/pages/cart-management'));
 export const CartFuelLogsPage = lazy(() => import('src/pages/cart-fuel-logs'));
+export const TimeManagementPage = lazy(() => import('src/pages/time-management'));
+export const LiveLeaderboard = lazy(() => import('src/pages/live-leaderboard'));
+export const CartMaintenanceLogsPage = lazy(() => import('src/pages/cart-maintenance-logs'));
 
 // ----------------------------------------------------------------------
 
@@ -105,6 +106,8 @@ export function Router() {
         { path: 'carts/lap-logs', element: <CartLapLogsPage /> },
         { path: 'carts/maintenance-logs', element: <CartMaintenanceLogsPage /> },
         { path: 'password-hash', element: <PasswordHashPage /> },
+        { path: 'plans', element: <TimeManagementPage /> },
+        { path: '/logout', element: <LogoutRoute /> }
       ],
     },
 

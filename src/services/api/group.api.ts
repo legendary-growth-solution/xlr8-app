@@ -14,6 +14,7 @@ interface AddUsersRequest {
   users: {
     userId: string;
     timeInMinutes: number;
+    planId?: string;
   }[];
 }
 

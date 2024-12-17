@@ -46,6 +46,7 @@ import { usePathname } from 'src/routes/hooks';
 interface SelectedUser {
   userId: string;
   timeInMinutes: number;
+  planId?: string;
 }
 
 export default function SessionDetailPage() {
@@ -199,12 +200,11 @@ export default function SessionDetailPage() {
 
   const handleOpenManageUsers = (group: Group) => {
     setSelectedGroup(group);
-    setSelectedUsers(
-      group.users.map(u => ({
-        userId: u.id,
-        timeInMinutes: u.allowed_duration || 0,
-      }))
-    );
+    const initialSelectedUsers = group.users.map((u : any) => ({
+      userId: u.id,
+      timeInMinutes: u.time_in_minutes || u.timeInMinutes || 0,
+    }));
+    setSelectedUsers(initialSelectedUsers);
     manageUsers.onTrue();
   };
 
@@ -240,21 +240,22 @@ export default function SessionDetailPage() {
     }
   };
 
-  const handleManageUsers = async () => {
+  const handleManageUsers = async (usersToUpdate: SelectedUser[]) => {
     if (!selectedGroup) return;
     
     try {
       setLoading(true);
       
       const response = await groupApi.addUsers(selectedGroup.id, {
-        users: selectedUsers.map(su => ({
+        users: usersToUpdate.map(su => ({
           userId: su.userId,
-          timeInMinutes: su.timeInMinutes
+          timeInMinutes: su.timeInMinutes,
+          planId: su.planId
         }))
       });
 
       if (response.errors?.length > 0) {
-        console.error('Errors alets add a view leaderboad CTA in @session-detail.tsx dding users:', response.errors);
+        console.error('Errors adding users:', response.errors);
         return;
       }
 

@@ -17,6 +17,7 @@ import {
   Stack,
   InputAdornment,
   IconButton,
+  MenuItem,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -25,6 +26,8 @@ import { User, Group } from 'src/types/session';
 import { useState, useEffect, useCallback } from 'react';
 import { groupApi } from 'src/services/api/group.api';
 import { useGUCData } from 'src/contexts/DataContext';
+import { Plan } from 'src/types/billing';
+import { billingApi } from 'src/services/api/billing.api';
 
 interface SelectedUser {
   userId: string;
@@ -41,13 +44,14 @@ interface ManageUsersDialogProps {
   onClose: () => void;
   onSearch: (query: string) => void;
   onSelectUser: (userId: string, checked: boolean) => void;
-  onTimeChange: (userId: string, minutes: number) => void;
+  onTimeChange: (userId: string, minutes: number, planId?: string) => void;
   onSelectAll: (checked: boolean) => void;
-  onSave: () => void;
+  onSave: (users: any[]) => void;
   otherGroups: Group[];
 }
 
 const MIN_TIME = 5;
+const MIN_TIME_ALLOWED = 5;
 const DEFAULT_TIME = 10;
 
 interface GroupUserMapping {
@@ -80,6 +84,10 @@ export function ManageUsersDialog({
   const { isUserInActiveRace, getGroupUsers, activeGroupUsers : fullGroupUsers, refreshGroupUsers } = useGUCData();
   const [pendingTimeChanges, setPendingTimeChanges] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({});
 
   const allGroupUsers = getGroupUsers(group?.id || '');
 
@@ -95,12 +103,12 @@ export function ManageUsersDialog({
       
       const existingUsers = response.users.map(user => ({
         userId: user.user_id,
-        timeInMinutes: user.time_in_minutes
+        timeInMinutes: user.time_in_minutes,
+        planId: user.id
       }));
       
       existingUsers.forEach(user => {
         onSelectUser(user.userId, true);
-        onTimeChange(user.userId, user.timeInMinutes);
       });
       
       await refreshGroupUsers();
@@ -110,15 +118,59 @@ export function ManageUsersDialog({
     } finally {
       setLoadingUsers(false);
     }
-  }, [group, onSelectAll, onSelectUser, onTimeChange, refreshGroupUsers]);
+  }, [group, onSelectAll, onSelectUser, refreshGroupUsers]);
 
   useEffect(() => {
     if (open && group) {
       fetchGroupUsers();
     }
+    if (open && group && allGroupUsers) {
+      const initialTimes: Record<string, number> = {};
+      allGroupUsers.forEach(gu => {
+        if (gu.time_in_minutes) {
+          initialTimes[gu.user_id] = gu.time_in_minutes;
+        }
+      });
+      setPendingTimeChanges(initialTimes);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, group]);
 
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setLoadingPlans(true);
+        setPlanError(null);
+        const response = await billingApi.getPlans() as any;
+        const availablePlans = response?.data?.filter((plan: any) => plan.is_visible);
+        setPlans(
+          availablePlans?.map((plan: any) => ({
+            ...plan,
+            defaultTime: plan.default_time,
+            isVisible: plan.is_visible,
+          }))
+        );
+        
+        if (availablePlans.length > 0) {
+          selectedUsers.forEach(user => {
+            if (!selectedPlans[user.userId]) {
+              handlePlanChange(user.userId, availablePlans[0].id);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+        setPlanError('Failed to load plans');
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    if (open) {
+      fetchPlans();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, selectedUsers]);
 
   const isUserRaceStarted = (userId: string) => {
     const userMapping = groupUsers.find(gu => gu.user_id === userId);
@@ -136,10 +188,17 @@ export function ManageUsersDialog({
     }
     if (checked) {
       onSelectUser(userId, checked);
-      const existingTime = getUserExistingTime(userId);
-      onTimeChange(userId, existingTime || DEFAULT_TIME);
+      if (plans.length > 0) {
+        const defaultPlan = plans[0];
+        handlePlanChange(userId, defaultPlan.id);
+      }
     } else {
       onSelectUser(userId, checked);
+      setSelectedPlans(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     }
   };
 
@@ -178,35 +237,45 @@ export function ManageUsersDialog({
   const handleSave = async () => {
     if (!group) return;
 
-    const invalidUsers = selectedUsers.filter(user => !user.timeInMinutes || user.timeInMinutes < MIN_TIME);
+    const usersWithoutPlans = selectedUsers.filter(user => !selectedPlans[user.userId]);
+    if (usersWithoutPlans.length > 0) {
+      setErrors(['Please select a plan for all users']);
+      return;
+    }
+
+    const invalidUsers = selectedUsers.filter(user => {
+      const existingTime = allGroupUsers.find(gu => gu.user_id === user.userId)?.time_in_minutes;
+      const pendingTime = pendingTimeChanges[user.userId];
+      const currentTime = pendingTime ?? existingTime ?? user.timeInMinutes;
+      return !currentTime || currentTime < MIN_TIME_ALLOWED;
+    });
+    
     if (invalidUsers.length > 0) {
-      setErrors([`Please set valid time (minimum ${MIN_TIME} minutes) for all selected users`]);
+      setErrors([`Please set valid time (minimum ${MIN_TIME_ALLOWED} minutes) for all selected users`]);
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const usersToUpdate = [
-        ...selectedUsers,
-        ...Object.entries(pendingTimeChanges).map(([userId, minutes]) => ({
-          userId,
-          timeInMinutes: minutes
-        }))
-      ];
-
-      const response = await groupApi.addUsers(group.id, {
-        users: usersToUpdate
+      
+      const userUpdatesMap = new Map();
+      
+      selectedUsers.forEach(user => {
+        const existingTime = allGroupUsers.find(gu => gu.user_id === user.userId)?.time_in_minutes;
+        userUpdatesMap.set(user.userId, {
+          userId: user.userId,
+          timeInMinutes: pendingTimeChanges[user.userId] ?? existingTime ?? user.timeInMinutes,
+          planId: selectedPlans[user.userId]
+        });
       });
 
-      if (response.errors?.length > 0) {
-        setErrors(response.errors);
-        return;
-      }
+      const usersToUpdate = Array.from(userUpdatesMap.values());
 
+      onSave(usersToUpdate);
+      
       setPendingTimeChanges({});
       await refreshGroupUsers();
       await fetchGroupUsers();
-      onSave();
       onClose();
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -240,7 +309,47 @@ export function ManageUsersDialog({
   };
 
   const filteredUsers = getFilteredUsers();
-  const hasInvalidTimes = selectedUsers.some(user => !user.timeInMinutes || user.timeInMinutes < MIN_TIME);
+  const getInvalidTimeUsers = () => [
+      ...selectedUsers.filter(user => {
+        const time = pendingTimeChanges[user.userId] || user.timeInMinutes;
+        return !time || time < MIN_TIME_ALLOWED;
+      }),
+      ...Object.entries(pendingTimeChanges)
+        .filter(([userId]) => !selectedUsers.find(u => u.userId === userId))
+        .filter(([_, minutes]) => !minutes || minutes < MIN_TIME_ALLOWED)
+    ];
+
+
+  const getMissingPlanUsers = () => selectedUsers.filter(user => !selectedPlans[user.userId]);
+  
+
+  const invalidTimeUsers = getInvalidTimeUsers();
+  const missingPlanUsers = getMissingPlanUsers();
+  const hasErrors = invalidTimeUsers.length > 0 || missingPlanUsers.length > 0;
+
+  const handlePlanChange = (userId: string, planId: string) => {
+    setSelectedPlans(prev => ({ ...prev, [userId]: planId }));
+    const plan = plans.find(p => p.id === planId);
+    if (plan) {
+      const minutes = plan.defaultTime;
+      handleTimeChange(userId, minutes);
+      onTimeChange(userId, minutes);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const filteredUser = getFilteredUsers();
+      filteredUser.forEach(user => {
+        if (!isUserInActiveRace(user.id)) {
+          handleSelectUser(user.id, true);
+        }
+      });
+    } else {
+      onSelectAll(false);
+      setSelectedPlans({});
+    }
+  };
 
   return (
     <Dialog fullWidth maxWidth="md" open={open} onClose={onClose}>
@@ -285,7 +394,7 @@ export function ManageUsersDialog({
                 </TableRow>
               ) : (
                 filteredUsers.map((user) => {
-                  const selectedUser = allGroupUsers.find(su => su.user_id === user.id) ?  {
+                  const selectedUser = allGroupUsers.find(su => su.user_id === user.id) ? {
                     timeInMinutes: allGroupUsers.find(su => su.user_id === user.id)?.time_in_minutes || 0,
                     userId: user.id
                   } : selectedUsers.find(su => su.userId === user.id);
@@ -341,34 +450,63 @@ export function ManageUsersDialog({
 
                       <TableCell align="center">
                         {(isSelected || isExistingGroupUser) && (
-                          <TextField
-                            type="number"
-                            size="small"
-                            value={
-                              hasRaceStarted ? existingTime : 
-                              pendingTimeChanges[user.id] !== undefined ? pendingTimeChanges[user.id] :
-                              isExistingGroupUser ? getUserExistingTime(user.id) :
-                              selectedUser?.timeInMinutes || ''
-                            }
-                            onChange={(e) => handleTimeChange(user.id, Number(e.target.value))}
-                            InputProps={{
-                              endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                              inputProps: { min: MIN_TIME },
-                              readOnly: hasRaceStarted || false
-                            }}
-                            sx={{ 
-                              width: 120,
-                              '& .MuiInputBase-input.Mui-disabled': {
-                                WebkitTextFillColor: hasRaceStarted ? 'text.primary' : 'inherit',
-                              }
-                            }}
-                            disabled={hasRaceStarted || false}
-                            error={!hasRaceStarted && (
-                              isExistingGroupUser ? 
-                              (pendingTimeChanges[user.id] || getUserExistingTime(user.id)) < MIN_TIME :
-                              (!selectedUser?.timeInMinutes || selectedUser?.timeInMinutes < MIN_TIME)
+                          <Stack direction="row" spacing={1} justifyContent="center">
+                            {loadingPlans ? (
+                              <TextField
+                                disabled
+                                size="small"
+                                value="Loading plans..."
+                                sx={{ width: '50%' }}
+                              />
+                            ) : planError ? (
+                              <TextField
+                                error
+                                disabled
+                                size="small"
+                                value={planError}
+                                sx={{ width: '50%' }}
+                              />
+                            ) : (
+                              <TextField
+                                select
+                                size="small"
+                                value={selectedPlans[user.id] || ''}
+                                onChange={(e) => handlePlanChange(user.id, e.target.value)}
+                                disabled={hasRaceStarted || false}
+                                sx={{ width: '50%', maxWidth: '180px' }}
+                                error={!selectedPlans[user.id] && isSelected}
+                                helperText={!selectedPlans[user.id] && isSelected ? 'Plan is required' : ''}
+                              >
+                                {plans.map((plan) => (
+                                  <MenuItem key={plan.id} value={plan.id}>
+                                    {plan.name} ({plan.defaultTime} mins)
+                                  </MenuItem>
+                                ))}
+                              </TextField>
                             )}
-                          />
+                            <TextField
+                              type="number"
+                              size="small"
+                              value={
+                                hasRaceStarted ? existingTime :
+                                pendingTimeChanges[user.id] !== undefined ? pendingTimeChanges[user.id] :
+                                isExistingGroupUser ? getUserExistingTime(user.id) :
+                                selectedUser?.timeInMinutes || ''
+                              }
+                              onChange={(e) => handleTimeChange(user.id, Number(e.target.value))}
+                              disabled={hasRaceStarted || false}
+                              sx={{ width: '40%', maxWidth: '120px' }}
+                              InputProps={{
+                                endAdornment: <InputAdornment position="end">min</InputAdornment>,
+                                inputProps: { min: 0 }
+                              }}
+                              error={!hasRaceStarted && (
+                                isExistingGroupUser ? 
+                                (pendingTimeChanges[user.id] || getUserExistingTime(user.id)) < MIN_TIME_ALLOWED :
+                                (!selectedUser?.timeInMinutes || selectedUser?.timeInMinutes < MIN_TIME_ALLOWED)
+                              )}
+                            />
+                          </Stack>
                         )}
                       </TableCell>
 
@@ -410,6 +548,20 @@ export function ManageUsersDialog({
             ))}
           </Stack>
         )}
+        {!loadingUsers && hasErrors && !errors.length && (
+          <Stack sx={{ flexGrow: 1 }}>
+            {invalidTimeUsers.length > 0 && (
+              <Typography variant="caption" color="error">
+                {`Please set valid time (minimum ${MIN_TIME_ALLOWED} minutes) for all users`}
+              </Typography>
+            )}
+            {missingPlanUsers.length > 0 && (
+              <Typography variant="caption" color="error">
+                Please select a plan for all users
+              </Typography>
+            )}
+          </Stack>
+        )}
         <Button 
           variant="outlined" 
           onClick={onClose}
@@ -421,7 +573,7 @@ export function ManageUsersDialog({
           variant="contained" 
           loading={isSubmitting} 
           onClick={handleSave}
-          disabled={hasInvalidTimes || isSubmitting}
+          disabled={isSubmitting || hasErrors || !group || loadingUsers}
         >
           Save Changes
         </LoadingButton>

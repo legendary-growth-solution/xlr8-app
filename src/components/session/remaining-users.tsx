@@ -28,7 +28,7 @@ export function RemainingUsers({
 
   const getUserDuration = (userId: string) => {
     const mapping = users.find(gu => gu.group_id === groupId && gu.user_id === userId);
-    return mapping?.allowed_duration || 0;
+    return (mapping?.time_in_minutes || mapping?.allowed_duration || 0);
   };
 
   return (

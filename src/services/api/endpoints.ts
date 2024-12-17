@@ -52,4 +52,10 @@ export const API_ENDPOINTS = {
     LAP_LOGS: (id?: string) => createEndpoint(`/api/carts/lap-logs${id ? `/${id}` : ''}`),
   },
   GET_LIVE_LEADERBOARD: (sessionId: string) => createEndpoint(`/api/results/session/${sessionId}/live-leaderboard`),
+  billing: {
+    plans: '/api/billing/plans',
+    discountCodes: '/api/billing/discount-codes',
+    validateDiscountCode: '/api/billing/discount-codes/validate',
+    generateBill: (groupId: string) => `/api/billing/groups/${groupId}/bill`,
+  },
 } as const; 

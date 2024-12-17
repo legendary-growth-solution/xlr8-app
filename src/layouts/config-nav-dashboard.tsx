@@ -50,14 +50,14 @@ const navConfig = [
     ],
   },
   {
-    subheader: 'account',
-    items: [
-      {
-        title: 'Logout',
-        path: '#',
-        icon: <Iconify icon="solar:logout-2-bold-duotone" />,
-      },
-    ],
+    title: 'Plans',
+    path: '/plans',
+    icon: <Iconify icon="mdi:clock-time-four-outline" />,
+  },
+  {
+    title: 'Logout',
+    path: '/logout',
+    icon: <Iconify icon="solar:logout-2-bold-duotone" />,
   },
 ];
 
