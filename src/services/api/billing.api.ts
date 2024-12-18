@@ -7,7 +7,16 @@ export const billingApi = {
     apiClient.get<{ data: any }>(API_ENDPOINTS.billing.plans),
 
   getDiscountCodes: () => 
-    apiClient.get<DiscountCode[]>(API_ENDPOINTS.billing.discountCodes),
+    apiClient.get<{ data: DiscountCode[] }>(API_ENDPOINTS.billing.discountCodes),
+
+  createDiscountCode: (data: Omit<DiscountCode, 'id'>) => 
+    apiClient.post<{ data: DiscountCode }>(API_ENDPOINTS.billing.discountCodes, data),
+
+  updateDiscountCode: (codeId: string, data: Partial<Omit<DiscountCode, 'id'>>) => 
+    apiClient.put<{ data: DiscountCode }>(`${API_ENDPOINTS.billing.discountCodes}/${codeId}`, data),
+
+  deleteDiscountCode: (codeId: string) => 
+    apiClient.delete(`${API_ENDPOINTS.billing.discountCodes}/${codeId}`),
 
   validateDiscountCode: (code: string) => 
     apiClient.post<{ valid: boolean; discount?: DiscountCode }>(API_ENDPOINTS.billing.validateDiscountCode, { code }),
@@ -23,4 +32,16 @@ export const billingApi = {
 
   deletePlan: (planId: string) => 
     apiClient.delete(`${API_ENDPOINTS.billing.plans}/${planId}`),
+
+  generateInvoice: (groupId: string, billingDetails: any) => 
+    apiClient.post(
+      API_ENDPOINTS.billing.generateBill(groupId), 
+      billingDetails,
+      {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/pdf'
+        }
+      }
+    ),
 }; 

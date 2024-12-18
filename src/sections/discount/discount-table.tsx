@@ -1,0 +1,84 @@
+import { Box, Button, IconButton, Switch, Typography } from '@mui/material';
+import { Iconify } from 'src/components/iconify';
+import DataTable, { Column } from 'src/components/table/DataTable';
+import { DiscountCode } from 'src/types/billing';
+
+interface DiscountTableProps {
+  discounts: DiscountCode[];
+  onEdit: (discount: DiscountCode) => void;
+  onDelete: (id: string) => void;
+  onAdd: () => void;
+  loading?: boolean;
+}
+
+export function DiscountTable({ 
+  discounts, 
+  onEdit, 
+  onDelete, 
+  onAdd,
+  loading = false 
+}: DiscountTableProps) {
+  const columns: Column[] = [
+    { id: 'code', label: 'Code' },
+    { id: 'description', label: 'Description' },
+    { 
+      id: 'type', 
+      label: 'Type',
+      align: 'center' 
+    },
+    { 
+      id: 'value', 
+      label: 'Value',
+      align: 'right',
+      format: (value, row) => row.type === 'percent' ? `${value}%` : `₹${value}`
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      align: 'center',
+      format: (value) => (
+        <Switch checked={value === 'active'} disabled />
+      )
+    }
+  ];
+
+  const renderEmptyState = () => (
+    <Box sx={{ textAlign: 'center', py: 3 }}>
+      <Typography variant="h6" paragraph>
+        No Discount Codes Yet
+      </Typography>
+      <Button variant="contained" onClick={onAdd}>
+        Create Discount Code
+      </Button>
+    </Box>
+  );
+
+  const renderActions = (row: DiscountCode) => (
+    <>
+      <IconButton onClick={() => onEdit(row)}>
+        <Iconify icon="eva:edit-fill" />
+      </IconButton>
+      <IconButton onClick={() => onDelete(row.id)} color="error">
+        <Iconify icon="eva:trash-2-outline" />
+      </IconButton>
+    </>
+  );
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={discounts}
+      actions={renderActions}
+      loading={loading}
+      emptyState={{
+        icon: 'mdi:ticket-percent-outline',
+        title: 'No Discount Codes Added Yet',
+        content: (
+          <Button variant="contained" onClick={onAdd}>
+            Create Discount Code
+          </Button>
+        )
+      }}
+    />
+  );
+} 

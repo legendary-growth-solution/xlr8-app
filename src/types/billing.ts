@@ -21,4 +21,20 @@ export interface BillingDetails {
   remarks?: string;
   discountCode?: string;
   plan: Plan;
-} 
+}
+
+export interface DiscountFormData {
+  code: string;
+  description: string;
+  type: 'absolute' | 'percent';
+  value: number;
+  status: 'active' | 'inactive';
+}
+
+export const defaultDiscountData: DiscountFormData = {
+  code: '',
+  description: '',
+  type: 'absolute',
+  value: 0,
+  status: 'active',
+};

@@ -56,6 +56,6 @@ export const API_ENDPOINTS = {
     plans: '/api/billing/plans',
     discountCodes: '/api/billing/discount-codes',
     validateDiscountCode: '/api/billing/discount-codes/validate',
-    generateBill: (groupId: string) => `/api/billing/groups/${groupId}/bill`,
+    generateBill: (groupId: string) => `/api/billing/groups/${groupId}/generate`,
   },
 } as const; 

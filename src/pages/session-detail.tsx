@@ -6,34 +6,17 @@ import {
   Grid,
   Stack,
   Button,
-  Dialog,
-  TextField,
   Typography,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Badge,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Checkbox,
-  DialogContentText,
-  Avatar,
-  Chip,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
 import { Helmet } from 'react-helmet-async';
 import { Iconify } from 'src/components/iconify';
 import { Session, Group, User } from 'src/types/session';
-import { Scrollbar } from 'src/components/scrollbar';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { GroupCard } from 'src/components/session/group-card';
 import { ManageUsersDialog } from 'src/components/session/manage-users-dialog';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { CreateGroupDialog } from 'src/components/session/create-group-dialog';
-import { CartControls } from 'src/components/session/cart-controls';
 import { sessionApi } from 'src/services/api/session.api';
 import { groupApi } from 'src/services/api/group.api';
 import { userApi } from 'src/services/api/user.api';
@@ -309,7 +292,7 @@ export default function SessionDetailPage() {
       </Helmet>
 
       <Box sx={{ p: 3 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" spacing={2} mb={5}>
           <Stack direction="column" spacing={2}>
             <Typography variant="h4">{session.session_name ? session.session_name.toUpperCase() : session.id.toUpperCase()}</Typography>
             <Typography variant='subtitle2' color="text.secondary" marginTop="-2px !important">SID #{session.id.toUpperCase()}</Typography>

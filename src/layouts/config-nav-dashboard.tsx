@@ -55,6 +55,11 @@ const navConfig = [
     icon: <Iconify icon="mdi:clock-time-four-outline" />,
   },
   {
+    title: 'Discount Codes',
+    path: '/discounts',
+    icon: <Iconify icon="mdi:ticket-percent-outline" />,
+  },
+  {
     title: 'Logout',
     path: '/logout',
     icon: <Iconify icon="solar:logout-2-bold-duotone" />,

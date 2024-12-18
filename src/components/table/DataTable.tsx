@@ -20,6 +20,11 @@ interface DataTableProps {
   onPageChange?: (page: number) => void;
   onRowsPerPageChange?: (pageSize: number) => void;
   actions?: (row: any) => JSX.Element;
+  emptyState?: {
+    icon?: string;
+    title: string;
+    content?: React.ReactNode;
+  };
 }
 
 export default function DataTable({
@@ -31,6 +36,7 @@ export default function DataTable({
   onPageChange,
   onRowsPerPageChange,
   actions,
+  emptyState,
 }: DataTableProps) {
   const handleChangePage = (_: unknown, newPage: number) => {
     onPageChange?.(newPage);
@@ -50,7 +56,26 @@ export default function DataTable({
     );
   }
 
-  if (rows.length === 0) {
+  const renderEmptyState = () => {
+    if (emptyState) {
+      return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3 }}>
+          {emptyState.icon && (
+            <Iconify 
+              icon={emptyState.icon} 
+              width={40} 
+              height={40} 
+              sx={{ color: 'text.secondary', mb: 2 }} 
+            />
+          )}
+          <Typography variant="h6" paragraph>
+            {emptyState.title}
+          </Typography>
+          {emptyState.content}
+        </Box>
+      );
+    }
+
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3 }}>
         <Box sx={{ textAlign: 'center' }}>
@@ -59,7 +84,7 @@ export default function DataTable({
         </Box>
       </Box>
     );
-  }
+  };
 
   return (
     <Box sx={{ bgcolor: 'background.default', borderRadius: '0 0 8px 8px' }}>
@@ -101,30 +126,38 @@ export default function DataTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow hover tabIndex={-1} key={row.id}>
-                {columns.map((column) => {
-                  const value = row[column.id];
-                  return (
-                    <TableCell 
-                      key={column.id} 
-                      align={column.align}
-                      sx={{
-                        whiteSpace: column.noWrap ? 'nowrap' : 'normal',
-                        ...column.sx,
-                      }}
-                    >
-                      {column.format ? column.format(value, row) : value}
-                    </TableCell>
-                  );
-                })}
-                {actions && (
-                  <TableCell align="right">
-                    {actions(row)}
-                  </TableCell>
-                )}
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + (actions ? 1 : 0)}>
+                  {renderEmptyState()}
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              rows.map((row) => (
+                <TableRow hover tabIndex={-1} key={row.id}>
+                  {columns.map((column) => {
+                    const value = row[column.id];
+                    return (
+                      <TableCell 
+                        key={column.id} 
+                        align={column.align}
+                        sx={{
+                          whiteSpace: column.noWrap ? 'nowrap' : 'normal',
+                          ...column.sx,
+                        }}
+                      >
+                        {column.format ? column.format(value, row) : value}
+                      </TableCell>
+                    );
+                  })}
+                  {actions && (
+                    <TableCell align="right">
+                      {actions(row)}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>

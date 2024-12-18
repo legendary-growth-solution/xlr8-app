@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Card, Box, Stack, Typography, Button, Avatar, AvatarGroup } from '@mui/material';
+import { Card, Box, Stack, Typography, Button } from '@mui/material';
 import { Group } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
+import { billingApi } from 'src/services/api/billing.api';
 import { useGUCData } from 'src/contexts/DataContext';
-import { CartControls } from './cart-controls';
-import { RemainingUsers } from './remaining-users';
+import { BillingDialog } from './billing-dialog';
+import { GroupUserList } from './group-user-list';
 
 interface GroupCardProps {
   group: Group;
@@ -13,10 +14,25 @@ interface GroupCardProps {
   onAssignCart: (groupId: string, userId: string, cartId: string, groupUserId: string) => Promise<void>;
 }
 
+interface BillingData {
+  gstNumber?: string;
+  remarks?: string;
+  discountCode?: string;
+  discountAmount: number;
+  totalAmount: number;
+}
+
 export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: GroupCardProps) {
   const { getGroupUsers, activeGroupUsers, availableCarts } = useGUCData();
   const groupUsers = getGroupUsers(group.id);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [openBilling, setOpenBilling] = useState(false);
+  const [billingData, setBillingData] = useState<BillingData>({
+    discountAmount: 0,
+    totalAmount: 0
+  });
+  const [isGeneratingBill, setIsGeneratingBill] = useState(false);
+  const [billGenError, setBillGenError] = useState<string | null>(null);
 
   const getUserDuration = (userId: string) => {
     const activeUser = activeGroupUsers.find(gu => 
@@ -38,6 +54,66 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
 
   const getActiveUserData = (userId: string) => 
     activeGroupUsers.find(gu => gu.user_id === userId && gu.group_id === group.id);
+
+  const handleGenerateBill = async () => {
+    try {
+      const totalAmount = groupUsers.reduce((sum, user) => {
+        const duration = getUserDuration(user.user_id);
+        return sum + (70000 * (duration / 60)); 
+      }, 0);
+
+      setBillingData(prev => ({
+        ...prev,
+        totalAmount
+      }));
+      setOpenBilling(true);
+    } catch (error) {
+      console.error('Error generating bill:', error);
+    }
+  };
+
+  const handleDiscountCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBillGenError(null);
+    setBillingData(prev => ({ ...prev, discountCode: e.target.value }));
+  };
+
+  const handleDownloadBill = async () => {
+    try {
+      setIsGeneratingBill(true);
+      setBillGenError(null);
+      
+      const usersWithDurations = groupUsers.map(user => ({
+        user_id: user.user_id,
+        time_in_minutes: getUserDuration(user.user_id)
+      }));
+
+      const response = await billingApi.generateInvoice(group.id, {
+        billingData: {
+          gstNumber: billingData.gstNumber,
+          remarks: billingData.remarks,
+          discountCode: billingData.discountCode
+        },
+        users: usersWithDurations
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${group.name}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      setOpenBilling(false);
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setBillGenError(error.response.data.error || 'Error generating bill. Check coupon/details & try again.');
+      } else {
+        setBillGenError('An error occurred while generating the bill');
+      }
+    } finally {
+      setIsGeneratingBill(false);
+    }
+  };
 
   return (
     <Box sx={{ position: 'relative', height: '100%' }}>
@@ -100,116 +176,52 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
               </Typography>
             </Stack>
 
-            {groupUsers.length > 0 ? (
-              <Box sx={{ pt: 0.5, mt: "0px !important" }}>
-                {mainUsers.map((user) => (
-                  <Stack
-                    key={user.id}
-                    direction="row"
-                    alignItems="center"
-                    spacing={2}
-                    sx={{
-                      py: 1.5,
-                      '&:not(:last-child)': {
-                        borderBottom: (theme) => `dashed 1px ${theme.palette.divider}`,
-                      },
-                    }}
-                  >
-                    <Box sx={{ position: 'relative' }}>
-                      <Avatar 
-                        sx={{ 
-                          width: 36, 
-                          height: 36,
-                          bgcolor: 'primary.main',
-                          fontSize: '1rem',
-                        }}
-                      >
-                        {user.user.name[0]}
-                      </Avatar>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          position: 'absolute',
-                          bottom: -8,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          px: 1,
-                          py: 0.25,
-                          borderRadius: 0.75,
-                          bgcolor: 'success.lighter',
-                          color: 'success.dark',
-                          fontSize: '0.65rem',
-                          fontWeight: 'bold',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {(user?.time_in_minutes || user?.allowed_duration || 0)}m
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                      <Typography variant="subtitle2" noWrap>
-                        {user.user.name}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
-                        {user.user.email}
-                      </Typography>
-                    </Box>
-
-                    <CartControls 
-                      userId={user?.user?.id}
-                      groupId={group.id}
-                      groupUserId={user.id}
-                      cartAssignments={group.cartAssignments}
-                      availableCarts={availableCarts}
-                      onAssignCart={handleAssignCart}
-                      activeUser={getActiveUserData(user?.user?.id) as any}
-                    />
-                  </Stack>
-                ))}
-                
-                <RemainingUsers 
-                  users={remainingUsers}
-                  groupId={group.id}
-                  cartAssignments={group.cartAssignments}
-                  onAssignCart={handleAssignCart}
-                  isExpanded={isExpanded}
-                  availableCarts={availableCarts}
-                  onExpand={setIsExpanded}
-                />
-              </Box>
-            ) : (
-              <Box 
-                sx={{ 
-                  py: 5, 
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  bgcolor: 'background.neutral',
-                  borderRadius: 1,
-                  flexGrow: 1
-                }}
-              >
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  No racers assigned yet
-                </Typography>
-              </Box>
-            )}
+            <GroupUserList 
+              mainUsers={mainUsers}
+              remainingUsers={remainingUsers}
+              group={group}
+              availableCarts={availableCarts}
+              onAssignCart={handleAssignCart}
+              getActiveUserData={getActiveUserData}
+              isExpanded={isExpanded}
+              onExpand={setIsExpanded}
+            />
           </Stack>
 
-          <Button
-            fullWidth
-            variant="contained"
-            color="primary"
-            startIcon={<Iconify icon="solar:users-group-rounded-bold" />}
-            onClick={() => onManageUsers(group)}
-            disabled={!isActive}
-            sx={{ mt: mainUsers.length > 0 && !isExpanded ? 0 : 3 }}
-          >
-            Manage Group Users
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row', lg: 'column' }} spacing={2} sx={{ mt: mainUsers.length > 0 && !isExpanded ? 0 : 3 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Iconify icon="solar:users-group-rounded-bold" />}
+              onClick={() => onManageUsers(group)}
+              disabled={!isActive}
+            >
+              Manage Group Users
+            </Button>
+            
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<Iconify icon="solar:bill-list-bold" />}
+              onClick={handleGenerateBill}
+              disabled={!isActive || groupUsers.length === 0}
+            >
+              Generate Bill
+            </Button>
+          </Stack>
         </Box>
       </Card>
+
+      <BillingDialog 
+        open={openBilling}
+        onClose={() => setOpenBilling(false)}
+        groupName={group.name}
+        billingData={billingData}
+        onBillingDataChange={(data) => setBillingData(prev => ({ ...prev, ...data }))}
+        onDownload={handleDownloadBill}
+        isGenerating={isGeneratingBill}
+        billGenError={billGenError}
+      />
     </Box>
   );
 } 

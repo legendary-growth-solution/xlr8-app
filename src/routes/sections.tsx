@@ -14,6 +14,7 @@ import CartLapLogsPage from 'src/pages/cart-lap-logs';
 import PasswordHashPage from 'src/pages/password-hash';
 import AuthPage from 'src/pages/auth';
 import { DataProvider } from 'src/contexts/DataContext';
+import DiscountManagementPage from 'src/pages/discount-management';
 
 // ----------------------------------------------------------------------
 
@@ -107,6 +108,7 @@ export function Router() {
         { path: 'carts/maintenance-logs', element: <CartMaintenanceLogsPage /> },
         { path: 'password-hash', element: <PasswordHashPage /> },
         { path: 'plans', element: <TimeManagementPage /> },
+        { path: 'discounts', element: <DiscountManagementPage /> },
         { path: '/logout', element: <LogoutRoute /> }
       ],
     },
