@@ -166,11 +166,11 @@ export function ManageUsersDialog({
       }
     };
 
-    if (open && !plans.length) {
+    if (open) {
       fetchPlans();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedUsers, plans]);
+  }, [open, selectedUsers]);
 
   const isUserRaceStarted = (userId: string) => {
     const userMapping = groupUsers.find(gu => gu.user_id === userId);
