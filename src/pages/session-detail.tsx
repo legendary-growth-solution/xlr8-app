@@ -25,6 +25,7 @@ import LoadingScreen from 'src/components/loading-screen/LoadingScreen';
 import { cartApi } from 'src/services/api/cart.api';
 import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
 import { usePathname } from 'src/routes/hooks';
+import LiveLeaderboard from './live-leaderboard';
 
 interface SelectedUser {
   userId: string;
@@ -305,14 +306,14 @@ export default function SessionDetailPage() {
             >
               Back
             </Button>
-            <Button
+            {/* {session.status !== 'active' && <Button
               variant="contained"
               color="primary"
               startIcon={<Iconify icon="material-symbols:leaderboard" />}
               onClick={() => navigate( `${pathname}/live-leaderboard`)}
             >
               View Leaderboard
-            </Button>
+            </Button>} */}
             {session.status === 'active' && (
               <Button
                 variant="contained"
@@ -366,6 +367,7 @@ export default function SessionDetailPage() {
           </Grid>
         </Card>
 
+       {session.status === 'active' && <>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
           <Typography variant="h6">Groups</Typography>
           {session.status === 'active' && (
@@ -373,6 +375,7 @@ export default function SessionDetailPage() {
               variant="contained"
               startIcon={<Iconify icon="eva:plus-fill" />}
               onClick={() => setOpenNewGroup(true)}
+              disabled={session.current_participants === session.max_participants}
             >
               New Group
             </Button>
@@ -408,6 +411,8 @@ export default function SessionDetailPage() {
             ))}
           </Grid>
         )}
+      </>}
+      {session.status !== 'active' && <LiveLeaderboard />}
       </Box>
 
       <CreateGroupDialog

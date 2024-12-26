@@ -199,15 +199,16 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
               Manage Group Users
             </Button>
             
-            <Button
+            {/* <Button
               variant="contained"
               color="secondary"
               startIcon={<Iconify icon="solar:bill-list-bold" />}
               onClick={handleGenerateBill}
-              disabled={!isActive || groupUsers.length === 0}
+              // disabled={!isActive || groupUsers.length === 0}
+              disabled
             >
               Generate Bill
-            </Button>
+            </Button> */}
           </Stack>
         </Box>
       </Card>
