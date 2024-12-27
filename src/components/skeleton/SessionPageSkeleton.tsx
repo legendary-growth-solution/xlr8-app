@@ -1,4 +1,5 @@
 import { Box, Card, Grid, Skeleton, Stack } from '@mui/material';
+import { GroupSkeleton } from './GroupSkeleton';
 
 export function SessionPageSkeleton() {
   return (
@@ -42,17 +43,7 @@ export function SessionPageSkeleton() {
         <Skeleton variant="rectangular" width={120} height={36} />
       </Stack>
 
-      <Grid container spacing={3}>
-        {[...Array(3)].map((_, index) => (
-          <Grid key={index} item xs={12} md={6} lg={4}>
-            <Card sx={{ p: 3 }}>
-              <Skeleton variant="text" width="80%" height={30} />
-              <Skeleton variant="text" width="60%" height={20} sx={{ my: 1 }} />
-              <Skeleton variant="rectangular" width="100%" height={150} />
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <GroupSkeleton />
     </Box>
   );
 }

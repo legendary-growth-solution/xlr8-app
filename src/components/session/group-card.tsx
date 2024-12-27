@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { Card, Box, Stack, Typography, Button } from '@mui/material';
+import { Card, Box, Stack, Typography, Button, Skeleton } from '@mui/material';
 import { Group } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
 import { billingApi } from 'src/services/api/billing.api';
 import { useGUCData } from 'src/contexts/DataContext';
 import { BillingDialog } from './billing-dialog';
 import { GroupUserList } from './group-user-list';
+import { GroupUserListSkeleton } from '../skeleton/GroupUserListSkeleton';
 
 interface GroupCardProps {
   group: Group;
   onManageUsers: (group: Group) => void;
   isActive: boolean;
-  onAssignCart: (groupId: string, userId: string, cartId: string, groupUserId: string) => Promise<void>;
+  onAssignCart: (
+    groupId: string,
+    userId: string,
+    cartId: string,
+    groupUserId: string
+  ) => Promise<void>;
 }
 
 interface BillingData {
@@ -23,25 +29,43 @@ interface BillingData {
 }
 
 export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: GroupCardProps) {
-  const { getGroupUsers, activeGroupUsers, availableCarts } = useGUCData();
+  const { getGroupUsers, activeGroupUsers, availableCarts, loading: gucDataLoading } = useGUCData();
   const groupUsers = getGroupUsers(group.id);
   const [isExpanded, setIsExpanded] = useState(false);
   const [openBilling, setOpenBilling] = useState(false);
   const [billingData, setBillingData] = useState<BillingData>({
     discountAmount: 0,
-    totalAmount: 0
+    totalAmount: 0,
   });
   const [isGeneratingBill, setIsGeneratingBill] = useState(false);
   const [billGenError, setBillGenError] = useState<string | null>(null);
+  const [loadingBilling, setLoadingBilling] = useState(false);
+  const [hasBillingData, setHasBillingData] = useState(false);
+
+  const getBillingData = async () => {
+    try {
+      setLoadingBilling(true);
+      const response = await billingApi.getBillingData(group.id);
+      if (response.data && Object.keys(response.data).length > 0) {
+        setBillingData(response.data as any);
+        setHasBillingData(true);
+      } else {
+        setHasBillingData(false);
+      }
+      setLoadingBilling(false);
+    } catch (error) {
+      console.error('Error fetching billing data:', error);
+    }
+  };
 
   const getUserDuration = (userId: string) => {
-    const activeUser = activeGroupUsers.find(gu => 
-      gu.user_id === userId && gu.group_id === group.id
+    const activeUser = activeGroupUsers.find(
+      (gu) => gu.user_id === userId && gu.group_id === group.id
     );
     if (activeUser) {
       return activeUser?.time_in_minutes || activeUser?.allowed_duration || 0;
     }
-    const groupUser = groupUsers.find(gu => gu.user_id === userId);
+    const groupUser = groupUsers.find((gu) => gu.user_id === userId);
     return groupUser?.time_in_minutes || groupUser?.allowed_duration || 0;
   };
 
@@ -52,19 +76,19 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
   const mainUsers = groupUsers.length > 3 ? groupUsers.slice(0, 2) : groupUsers;
   const remainingUsers = groupUsers.length > 3 ? groupUsers.slice(2) : [];
 
-  const getActiveUserData = (userId: string) => 
-    activeGroupUsers.find(gu => gu.user_id === userId && gu.group_id === group.id);
+  const getActiveUserData = (userId: string) =>
+    activeGroupUsers.find((gu) => gu.user_id === userId && gu.group_id === group.id);
 
   const handleGenerateBill = async () => {
     try {
       const totalAmount = groupUsers.reduce((sum, user) => {
         const duration = getUserDuration(user.user_id);
-        return sum + (70000 * (duration / 60)); 
+        return sum + 70000 * (duration / 60);
       }, 0);
 
-      setBillingData(prev => ({
+      setBillingData((prev) => ({
         ...prev,
-        totalAmount
+        totalAmount,
       }));
       setOpenBilling(true);
     } catch (error) {
@@ -74,26 +98,26 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
 
   const handleDiscountCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBillGenError(null);
-    setBillingData(prev => ({ ...prev, discountCode: e.target.value }));
+    setBillingData((prev) => ({ ...prev, discountCode: e.target.value }));
   };
 
   const handleDownloadBill = async () => {
     try {
       setIsGeneratingBill(true);
       setBillGenError(null);
-      
-      const usersWithDurations = groupUsers.map(user => ({
+
+      const usersWithDurations = groupUsers.map((user) => ({
         user_id: user.user_id,
-        time_in_minutes: getUserDuration(user.user_id)
+        time_in_minutes: getUserDuration(user.user_id),
       }));
 
       const response = await billingApi.generateInvoice(group.id, {
         billingData: {
           gstNumber: billingData.gstNumber,
           remarks: billingData.remarks,
-          discountCode: billingData.discountCode
+          discountCode: billingData.discountCode,
         },
-        users: usersWithDurations
+        users: usersWithDurations,
       });
 
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -106,7 +130,9 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
       setOpenBilling(false);
     } catch (error: any) {
       if (error.response?.status === 400) {
-        setBillGenError(error.response.data.error || 'Error generating bill. Check coupon/details & try again.');
+        setBillGenError(
+          error.response.data.error || 'Error generating bill. Check coupon/details & try again.'
+        );
       } else {
         setBillGenError('An error occurred while generating the bill');
       }
@@ -132,9 +158,9 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
           onClick={() => setIsExpanded(false)}
         />
       )}
-      <Card 
-        sx={{ 
-          height: '330px',
+      <Card
+        sx={{
+          height: '380px',
           transition: 'none',
           ...(isExpanded && {
             position: 'absolute',
@@ -146,83 +172,94 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
             boxShadow: 24,
             overflow: 'visible',
             mb: 3,
-          })
+          }),
         }}
       >
-        <Box sx={{ 
-          p: 3, 
-          height: '100%',
-          display: 'flex', 
-          flexDirection: 'column',
-          position: 'relative',
-        }}>
+        <Box
+          sx={{
+            p: 3,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+          }}
+        >
           <Stack spacing={3} sx={{ flexGrow: 1 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Typography variant="h6">
-                {group.name}
-              </Typography>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  px: 1.5, 
-                  py: 0.5, 
+              <Typography variant="h6">{group.name}</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  px: 1.5,
+                  py: 0.5,
                   borderRadius: 1,
                   bgcolor: 'primary.lighter',
                   color: 'primary.dark',
                   fontWeight: 'bold',
                 }}
               >
-                {groupUsers.length} Racer{groupUsers.length > 1 ? 's' : ''}
+                {gucDataLoading ? <Skeleton variant="text" width="40px" height={24} /> : `${groupUsers.length} Racer${groupUsers.length > 1 ? 's' : ''}`}
               </Typography>
             </Stack>
 
-            <GroupUserList 
-              mainUsers={mainUsers}
-              remainingUsers={remainingUsers}
-              group={group}
-              availableCarts={availableCarts}
-              onAssignCart={handleAssignCart}
-              getActiveUserData={getActiveUserData}
-              isExpanded={isExpanded}
-              onExpand={setIsExpanded}
-            />
+            {gucDataLoading ? (
+              <GroupUserListSkeleton />
+            ) : (
+              <GroupUserList
+                mainUsers={mainUsers}
+                remainingUsers={remainingUsers}
+                group={group}
+                availableCarts={availableCarts}
+                onAssignCart={handleAssignCart}
+                getActiveUserData={getActiveUserData}
+                isExpanded={isExpanded}
+                onExpand={setIsExpanded}
+              />
+            )}
           </Stack>
 
-          <Stack direction={{ xs: 'column', sm: 'row', lg: 'column' }} spacing={2} sx={{ mt: mainUsers.length > 0 && !isExpanded ? 0 : 3 }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row', lg: 'column' }}
+            spacing={2}
+            sx={{ mt: mainUsers.length > 0 && !isExpanded ? 0 : 3 }}
+          >
             <Button
               variant="contained"
               color="primary"
               startIcon={<Iconify icon="solar:users-group-rounded-bold" />}
               onClick={() => onManageUsers(group)}
-              disabled={!isActive}
+              disabled={!isActive || gucDataLoading}
             >
               Manage Group Users
             </Button>
-            
-            {/* <Button
+
+            <Button
               variant="contained"
               color="secondary"
               startIcon={<Iconify icon="solar:bill-list-bold" />}
               onClick={handleGenerateBill}
-              // disabled={!isActive || groupUsers.length === 0}
-              disabled
+              disabled={groupUsers.length === 0}
+              // disabled
             >
               Generate Bill
-            </Button> */}
+            </Button>
           </Stack>
         </Box>
       </Card>
 
-      <BillingDialog 
+      <BillingDialog
         open={openBilling}
         onClose={() => setOpenBilling(false)}
         groupName={group.name}
         billingData={billingData}
-        onBillingDataChange={(data) => setBillingData(prev => ({ ...prev, ...data }))}
+        onBillingDataChange={(data) => setBillingData((prev) => ({ ...prev, ...data }))}
         onDownload={handleDownloadBill}
         isGenerating={isGeneratingBill}
         billGenError={billGenError}
+        loading={loadingBilling}
+        hasBillingData={hasBillingData}
+        fetchBillingData={getBillingData}
       />
     </Box>
   );
-} 
+}

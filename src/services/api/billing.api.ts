@@ -21,6 +21,9 @@ export const billingApi = {
   validateDiscountCode: (code: string) => 
     apiClient.post<{ valid: boolean; discount?: DiscountCode }>(API_ENDPOINTS.billing.validateDiscountCode, { code }),
 
+  getBillingData: (groupId: string) => 
+    apiClient.get<{ data: any }>(API_ENDPOINTS.billing.getBillingData(groupId)),
+
   generateBill: (groupId: string, billingDetails: BillingDetails) => 
     apiClient.post<{ url: string }>(API_ENDPOINTS.billing.generateBill(groupId), billingDetails),
 

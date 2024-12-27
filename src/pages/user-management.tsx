@@ -224,8 +224,8 @@ export default function UserManagementPage() {
 
       <Dialog open={openEdit} onClose={() => setOpenEdit(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit User</DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Stack spacing={3}>
+        <DialogContent>
+          <Stack spacing={3} mt={1}>
             <TextField
               fullWidth
               label="Name"

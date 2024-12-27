@@ -14,7 +14,8 @@ export const API_ENDPOINTS = {
     CREATE: createEndpoint('/api/sessions/'),
     UPDATE: (id: string) => createEndpoint(`/api/sessions/${id}`),
     DELETE: (id: string) => createEndpoint(`/api/sessions/${id}`),
-    START_RACE: (id: string, userId: string) => createEndpoint(`/api/sessions/${id}/race/${userId}/start`),
+    START_RACE: (id: string, userId: string) =>
+      createEndpoint(`/api/sessions/${id}/race/${userId}/start`),
     STOP_RACE: (id: string) => createEndpoint(`/api/sessions/${id}/race/stop`),
     GROUPS: {
       CREATE: (sessionId: string) => createEndpoint(`/api/sessions/${sessionId}/groups`),
@@ -22,11 +23,21 @@ export const API_ENDPOINTS = {
       DELETE: (groupId: string) => createEndpoint(`/api/groups/${groupId}`),
       ADD_USERS: (groupId: string) => createEndpoint(`/api/groups/${groupId}/users`),
       GET_USERS: (groupId: string) => createEndpoint(`/api/groups/${groupId}/users`),
-      DELETE_MEMBER: (groupId: string, userId: string) => createEndpoint(`/api/groups/${groupId}/users/${userId}`),
+      DELETE_MEMBER: (groupId: string, userId: string) =>
+        createEndpoint(`/api/groups/${groupId}/users/${userId}`),
       ACTIVE_USERS: createEndpoint('/api/groups/active-users'),
-      START_RACE: (id: string, userId: string, groupUserId?: string) => groupUserId ? createEndpoint(`/api/groups/user/${groupUserId}/race/start`) : createEndpoint(`/api/groups/${id}/race/${userId}/start`),
-      STOP_RACE: (id: string, userId: string, groupUserId?: string) => groupUserId ? createEndpoint(`/api/groups/user/${groupUserId}/race/stop`) : createEndpoint(`/api/groups/${id}/race/${userId}/stop`),
-      RECORD_LAP: (id: string, userId: string, groupUserId?: string) => groupUserId ? createEndpoint(`/api/groups/user/${groupUserId}/race/lap`) : createEndpoint(`/api/groups/${id}/race/${userId}/lap`),
+      START_RACE: (id: string, userId: string, groupUserId?: string) =>
+        groupUserId
+          ? createEndpoint(`/api/groups/user/${groupUserId}/race/start`)
+          : createEndpoint(`/api/groups/${id}/race/${userId}/start`),
+      STOP_RACE: (id: string, userId: string, groupUserId?: string) =>
+        groupUserId
+          ? createEndpoint(`/api/groups/user/${groupUserId}/race/stop`)
+          : createEndpoint(`/api/groups/${id}/race/${userId}/stop`),
+      RECORD_LAP: (id: string, userId: string, groupUserId?: string) =>
+        groupUserId
+          ? createEndpoint(`/api/groups/user/${groupUserId}/race/lap`)
+          : createEndpoint(`/api/groups/${id}/race/${userId}/lap`),
     },
   },
   USERS: {
@@ -51,11 +62,13 @@ export const API_ENDPOINTS = {
     FUEL_LOGS: (id?: string) => createEndpoint(`/api/carts/fuel-logs${id ? `/${id}` : ''}`),
     LAP_LOGS: (id?: string) => createEndpoint(`/api/carts/lap-logs${id ? `/${id}` : ''}`),
   },
-  GET_LIVE_LEADERBOARD: (sessionId: string) => createEndpoint(`/api/results/session/${sessionId}/live-leaderboard`),
+  GET_LIVE_LEADERBOARD: (sessionId: string) =>
+    createEndpoint(`/api/results/session/${sessionId}/live-leaderboard`),
   billing: {
     plans: '/api/billing/plans',
     discountCodes: '/api/billing/discount-codes',
     validateDiscountCode: '/api/billing/discount-codes/validate',
     generateBill: (groupId: string) => `/api/billing/groups/${groupId}/generate`,
+    getBillingData: (groupId: string) => `/api/billing/groups/${groupId}/data`,
   },
-} as const; 
+} as const;

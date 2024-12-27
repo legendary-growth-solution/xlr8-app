@@ -105,7 +105,10 @@ export default function CartManagementPage() {
     setOpenAssignDialog(false);
   };
 
-  const handleRefuelSubmit = async (cartId: string, data: { amount: number; cost: number; operation: string }) => {
+  const handleRefuelSubmit = async (
+    cartId: string,
+    data: { amount: number; cost: number; operation: string }
+  ) => {
     try {
       if (!cartId) {
         console.error('No cart selected for refuel');
@@ -157,7 +160,10 @@ export default function CartManagementPage() {
     setOpenNewCartDialog(false);
   };
 
-  const handleMaintenanceSubmit = async (cartId: string, data: { status: 'maintenance' | 'refueling'; notes?: string }) => {
+  const handleMaintenanceSubmit = async (
+    cartId: string,
+    data: { status: 'maintenance' | 'refueling'; notes?: string }
+  ) => {
     try {
       if (!cartId) {
         console.error('No cart selected for maintenance');
@@ -191,7 +197,9 @@ export default function CartManagementPage() {
         variant="outlined"
         color="warning"
         onClick={() => handleRefuelCart(cart)}
-        disabled={cart.status === 'in-use' || cart.status === 'maintenance' || cart.status === 'refueling'}
+        disabled={
+          cart.status === 'in-use' || cart.status === 'maintenance' || cart.status === 'refueling'
+        }
       >
         Update Fuel
       </Button>
@@ -205,11 +213,11 @@ export default function CartManagementPage() {
         }}
         disabled={cart.status === 'in-use'}
       >
-        {cart.status === 'maintenance' 
-          ? 'Complete Maintenance' 
-          : cart.status === 'refueling' 
-            ? 'Complete Refueling' 
-            : 'Maintenance'}
+        {cart.status === 'maintenance'
+          ? 'Complete Maintenance'
+          : cart.status === 'refueling'
+            ? 'Complete Refueling'
+            : 'Update Status'}
       </Button>
     </Stack>
   );
@@ -266,7 +274,13 @@ export default function CartManagementPage() {
           setSelectedCart(null);
         }}
         cart={selectedCart}
-        onSubmit={(data) => selectedCart && handleMaintenanceSubmit(selectedCart?.id || '', data as { status: 'maintenance' | 'refueling'; notes?: string })}
+        onSubmit={(data) =>
+          selectedCart &&
+          handleMaintenanceSubmit(
+            selectedCart?.id || '',
+            data as { status: 'maintenance' | 'refueling'; notes?: string }
+          )
+        }
       />
     </PageContainer>
   );

@@ -21,19 +21,23 @@ export function GroupUserList({
   onAssignCart,
   getActiveUserData,
   isExpanded,
-  onExpand
+  onExpand,
 }: GroupUserListProps) {
+  const getUserDuration = (userId: string) => {
+    const mapping = mainUsers.find(gu => gu.user_id === userId);
+    return (mapping?.time_in_minutes || mapping?.allowed_duration || 0);
+  };
   if (mainUsers.length === 0) {
     return (
-      <Box 
-        sx={{ 
-          py: 5, 
+      <Box
+        sx={{
+          py: 5,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           bgcolor: 'background.neutral',
           borderRadius: 1,
-          flexGrow: 1
+          flexGrow: 1,
         }}
       >
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -44,7 +48,7 @@ export function GroupUserList({
   }
 
   return (
-    <Box sx={{ pt: 0.5, mt: "0px !important" }}>
+    <Box sx={{ pt: 0.5, mt: '0px !important' }}>
       {mainUsers.map((user) => (
         <Stack
           key={user.id}
@@ -59,9 +63,9 @@ export function GroupUserList({
           }}
         >
           <Box sx={{ position: 'relative' }}>
-            <Avatar 
-              sx={{ 
-                width: 36, 
+            <Avatar
+              sx={{
+                width: 36,
                 height: 36,
                 bgcolor: 'primary.main',
                 fontSize: '1rem',
@@ -69,6 +73,25 @@ export function GroupUserList({
             >
               {user.user.name[0]}
             </Avatar>
+            <Typography
+                  variant="caption"
+                  sx={{
+                    position: 'absolute',
+                    bottom: -8,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 0.75,
+                    bgcolor: 'success.lighter',
+                    color: 'success.dark',
+                    fontSize: '0.65rem',
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  { user?.time_in_minutes ? `${user.time_in_minutes}m` : `${getUserDuration(user.id)}m`}
+                </Typography>
           </Box>
 
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -80,7 +103,7 @@ export function GroupUserList({
             </Typography>
           </Box>
 
-          <CartControls 
+          <CartControls
             userId={user?.user?.id}
             groupId={group.id}
             groupUserId={user.id}
@@ -91,8 +114,8 @@ export function GroupUserList({
           />
         </Stack>
       ))}
-      
-      <RemainingUsers 
+
+      <RemainingUsers
         users={remainingUsers}
         groupId={group.id}
         cartAssignments={group.cartAssignments}
@@ -103,4 +126,4 @@ export function GroupUserList({
       />
     </Box>
   );
-} 
+}

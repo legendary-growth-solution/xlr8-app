@@ -43,7 +43,7 @@ export default function CartMaintenanceLogsPage() {
       id: 'date',
       label: 'Date',
       minWidth: 160,
-      format: (value: string) => new Date(value).toLocaleDateString(),
+      format: (value: string) => new Date(value).toLocaleString(),
     },
   ];
 

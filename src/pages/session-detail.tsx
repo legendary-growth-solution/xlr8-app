@@ -12,6 +12,7 @@ import {
 import { Helmet } from 'react-helmet-async';
 import { Iconify } from 'src/components/iconify';
 import { Session, Group, User } from 'src/types/session';
+import { GroupSkeleton } from 'src/components/skeleton/GroupSkeleton';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { GroupCard } from 'src/components/session/group-card';
 import { ManageUsersDialog } from 'src/components/session/manage-users-dialog';
@@ -54,6 +55,8 @@ export default function SessionDetailPage() {
   const { users: allUsers, refreshGroupUsers, refreshCarts } = useGUCData();
   const [initialLoading, setInitialLoading] = useState(true);
   const pathname = usePathname();
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [groupDataLoad, setGroupDataLoad] = useState(true);
 
   useEffect(() => {
     fetchSessionDetails();
@@ -64,12 +67,18 @@ export default function SessionDetailPage() {
     try {
       const sessionData = await sessionApi.getById(id);
       setSession(sessionData);
+      setSessionLoading(false);
+      setGroupDataLoad(false);
       
       if (sessionData.groups) {
         setGroups(sessionData.groups);
       }
+
+      await Promise.all([
+        refreshCarts(),
+        refreshGroupUsers()
+      ]);
       
-      await refreshCarts();
     } catch (error) {
       console.error('Error fetching session details:', error);
       setSession(null);
@@ -282,8 +291,7 @@ export default function SessionDetailPage() {
     }
   };
 
-  if (initialLoading) return <SessionPageSkeleton />;
-  if (loading) return <LoadingScreen />;
+  if (sessionLoading) return <SessionPageSkeleton />;
   if (!session) return null;
 
   return (
@@ -382,34 +390,38 @@ export default function SessionDetailPage() {
           )}
         </Stack>
 
-        {groups.length === 0 ? (
-          <Card sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="subtitle1" sx={{ color: 'text.secondary', mb: 2 }}>
-              No groups created yet
-            </Typography>
-            {session.status === 'active' && (
-              <Button
-                variant="outlined"
-                startIcon={<Iconify icon="eva:plus-fill" />}
-                onClick={() => setOpenNewGroup(true)}
-              >
-                Create First Group
-              </Button>
-            )}
-          </Card>
+        {groupDataLoad ? (
+          <GroupSkeleton />
         ) : (
-          <Grid container spacing={3}>
-            {groups.map((group) => (
-              <Grid key={group.id} item xs={12} md={6} lg={4}>
-                <GroupCard
-                  group={group}
-                  onManageUsers={handleOpenManageUsers}
-                  isActive={session.status === 'active'}
-                  onAssignCart={handleAssignCart}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          groups.length === 0 ? (
+            <Card sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="subtitle1" sx={{ color: 'text.secondary', mb: 2 }}>
+                No groups created yet
+              </Typography>
+              {session.status === 'active' && (
+                <Button
+                  variant="outlined"
+                  startIcon={<Iconify icon="eva:plus-fill" />}
+                  onClick={() => setOpenNewGroup(true)}
+                >
+                  Create First Group
+                </Button>
+              )}
+            </Card>
+          ) : (
+            <Grid container spacing={3}>
+              {groups.map((group) => (
+                <Grid key={group.id} item xs={12} md={6} lg={4}>
+                  <GroupCard
+                    group={group}
+                    onManageUsers={handleOpenManageUsers}
+                    isActive={session.status === 'active'}
+                    onAssignCart={handleAssignCart}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )
         )}
       </>}
       {session.status !== 'active' && <LiveLeaderboard />}
