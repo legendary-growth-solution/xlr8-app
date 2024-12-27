@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
     CREATE: createEndpoint('/api/sessions/'),
     UPDATE: (id: string) => createEndpoint(`/api/sessions/${id}`),
     DELETE: (id: string) => createEndpoint(`/api/sessions/${id}`),
+    LATEST: createEndpoint('/api/sessions/latest'),
     START_RACE: (id: string, userId: string) =>
       createEndpoint(`/api/sessions/${id}/race/${userId}/start`),
     STOP_RACE: (id: string) => createEndpoint(`/api/sessions/${id}/race/stop`),

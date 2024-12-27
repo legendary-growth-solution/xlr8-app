@@ -119,15 +119,18 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
         },
         users: usersWithDurations,
       });
+      if (response.data) {
+        console.log(response.data)
+      }
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice-${group.name}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      setOpenBilling(false);
+      // const blob = new Blob([response.data], { type: 'application/pdf' });
+      // const url = window.URL.createObjectURL(blob);
+      // const a = document.createElement('a');
+      // a.href = url;
+      // a.download = `invoice-${group.name}.pdf`;
+      // a.click();
+      // window.URL.revokeObjectURL(url);
+      // setOpenBilling(false);
     } catch (error: any) {
       if (error.response?.status === 400) {
         setBillGenError(

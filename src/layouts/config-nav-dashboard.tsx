@@ -50,6 +50,11 @@ const navConfig = [
     ],
   },
   {
+    title: 'Leaderboard',
+    path: '/leaderboard',
+    icon: <Iconify icon="mdi:trophy-outline" />,
+  },
+  {
     title: 'Plans',
     path: '/plans',
     icon: <Iconify icon="mdi:clock-time-four-outline" />,

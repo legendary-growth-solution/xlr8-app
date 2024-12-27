@@ -15,6 +15,7 @@ import PasswordHashPage from 'src/pages/password-hash';
 import AuthPage from 'src/pages/auth';
 import { DataProvider } from 'src/contexts/DataContext';
 import DiscountManagementPage from 'src/pages/discount-management';
+import RegisterUserPage from 'src/pages/register-user';
 
 // ----------------------------------------------------------------------
 
@@ -35,7 +36,7 @@ export const CartFuelLogsPage = lazy(() => import('src/pages/cart-fuel-logs'));
 export const TimeManagementPage = lazy(() => import('src/pages/time-management'));
 export const LiveLeaderboard = lazy(() => import('src/pages/live-leaderboard'));
 export const CartMaintenanceLogsPage = lazy(() => import('src/pages/cart-maintenance-logs'));
-
+export const DisplayLeaderboard = lazy(() => import('src/pages/display-leaderboard'));
 // ----------------------------------------------------------------------
 
 const renderFallback = (
@@ -109,9 +110,13 @@ export function Router() {
         { path: 'password-hash', element: <PasswordHashPage /> },
         { path: 'plans', element: <TimeManagementPage /> },
         { path: 'discounts', element: <DiscountManagementPage /> },
+        { path: 'leaderboard', element: <DisplayLeaderboard /> },
         { path: '/logout', element: <LogoutRoute /> }
       ],
     },
+
+    // public routes
+    { path: 'register-user', element: <RegisterUserPage /> },
 
     // Error Routes
     {

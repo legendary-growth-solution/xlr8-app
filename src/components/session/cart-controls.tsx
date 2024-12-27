@@ -60,18 +60,18 @@ export function CartControls({ userId, groupId, groupUserId, cartAssignments, on
   }, [groupId, userId, getGroupUsers]);
   
   useEffect(() => {
-    if (activeUser?.race_status === 'in_progress' && activeUser.expected_end_time) {
-      setIsRaceStarted(true);
-      setRaceStatus('in_progress');
+    if (activeUser) {
+      setIsRaceStarted(activeUser.race_status === 'in_progress');
+      setRaceStatus(activeUser.race_status);
       setStartTime(activeUser.race_start_time || null);
 
-      const endTime = new Date(activeUser.expected_end_time).getTime();
-      const now = new Date().getTime();
-      const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-      
-      setTimeLeft(remaining);
+      if (activeUser.race_status === 'in_progress' && activeUser.expected_end_time) {
+        const endTime = new Date(activeUser.expected_end_time).getTime();
+        const now = new Date().getTime();
+        const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+        
+        setTimeLeft(remaining);
 
-      if (remaining > 0) {
         const interval = setInterval(() => {
           const nowTime = new Date().getTime();
           const remainingTime = Math.max(0, Math.floor((endTime - nowTime) / 1000));
@@ -86,10 +86,12 @@ export function CartControls({ userId, groupId, groupUserId, cartAssignments, on
         }, 1000);
 
         return () => clearInterval(interval);
-      } 
-      setRaceStatus('completed');
+      }
+      if (activeUser.race_status === 'completed') {
+        setTimeLeft(0);
+      }
     }
-    return undefined;
+    return () => {};
   }, [activeUser]);
 
   const formatTime = (seconds: number): string => {
@@ -105,10 +107,23 @@ export function CartControls({ userId, groupId, groupUserId, cartAssignments, on
 
       await userApi.startRace(userId, groupId);
 
+      const duration = getUserDuration() * 60;
+      setTimeLeft(duration);
       setIsRaceStarted(true);
       setRaceStatus('in_progress');
       setStartTime(new Date().toISOString());
-      setTimeLeft(getUserDuration() * 60);
+
+      const interval = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          if (prevTime === null || prevTime <= 0) {
+            clearInterval(interval);
+            setRaceStatus('completed');
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+
     } catch (e) {
       console.error('Error starting race:', e);
     }

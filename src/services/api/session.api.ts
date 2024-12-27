@@ -45,6 +45,11 @@ export const sessionApi = {
     await apiClient.delete(API_ENDPOINTS.SESSIONS.DELETE(id));
   },
 
+  getLatestSsnId: async (): Promise<any> => {
+    const response = await apiClient.get(API_ENDPOINTS.SESSIONS.LATEST);
+    return response.data;
+  },
+
   toggleStatus: async (id: string, active: boolean): Promise<Session> => 
     sessionApi.update(id, { status: active ? 'active' : 'completed' }),
 
