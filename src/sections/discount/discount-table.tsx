@@ -32,13 +32,20 @@ export function DiscountTable({
       align: 'right',
       format: (value, row) => row.type === 'percent' ? `${value}%` : `₹${value}`
     },
+    { 
+      id: 'usage_count', 
+      label: 'Usage Count',
+      align: 'right',
+      format: (value) => value ?? '-'
+    },
     {
       id: 'status',
       label: 'Status',
       align: 'center',
-      format: (value) => (
-        <Switch checked={value === 'active'} disabled />
-      )
+      format: (value) => value?.toUpperCase() ?? "-"
+      // format: (value) => (
+      //   <Switch checked={value === 'active'} disabled />
+      // )
     }
   ];
 
