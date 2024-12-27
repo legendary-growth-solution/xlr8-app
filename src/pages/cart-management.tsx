@@ -70,13 +70,7 @@ export default function CartManagementPage() {
       label: 'Total Distance',
       minWidth: 120,
       format: (value: number) => `${(value || 0).toFixed(1)} km`,
-    },
-    {
-      id: 'current_user',
-      label: 'Assigned To',
-      minWidth: 150,
-      format: (value: string, row: Cart) => row.current_user_name || 'Unassigned',
-    },
+    }
   ];
 
   const handleAssignCart = (cart: Cart) => {
