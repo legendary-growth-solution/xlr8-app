@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { Stack, Avatar, Box, Typography, Collapse, AvatarGroup } from '@mui/material';
+import { Avatar, AvatarGroup, Box, Collapse, Stack, Typography } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
-import { GroupUserMappingWithUser } from 'src/types/session';
 import { Cart } from 'src/types/cart';
+import { GroupUserMappingWithUser } from 'src/types/session';
 import { CartControls } from './cart-controls';
 import { UserInfo } from './user-info';
 
@@ -134,7 +133,7 @@ export function RemainingUsers({
                 </Typography>
               </Box>
 
-              <UserInfo name={user.user.name} email={user.user.email} />
+              <UserInfo name={user.user.name} email={user.user.email} userId={user.user.id} />
 
               <CartControls 
                 userId={user.user_id}

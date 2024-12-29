@@ -1,31 +1,30 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
+  Badge,
   Box,
+  Button,
   Card,
   Grid,
   Stack,
-  Button,
   Typography,
-  Badge,
 } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { Iconify } from 'src/components/iconify';
-import { Session, Group, User } from 'src/types/session';
-import { GroupSkeleton } from 'src/components/skeleton/GroupSkeleton';
-import { useBoolean } from 'src/hooks/use-boolean';
+import { CreateGroupDialog } from 'src/components/session/create-group-dialog';
 import { GroupCard } from 'src/components/session/group-card';
 import { ManageUsersDialog } from 'src/components/session/manage-users-dialog';
-import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
-import { CreateGroupDialog } from 'src/components/session/create-group-dialog';
-import { sessionApi } from 'src/services/api/session.api';
-import { groupApi } from 'src/services/api/group.api';
-import { userApi } from 'src/services/api/user.api';
-import { useGUCData } from 'src/contexts/DataContext';
-import LoadingScreen from 'src/components/loading-screen/LoadingScreen';
-import { cartApi } from 'src/services/api/cart.api';
+import { GroupSkeleton } from 'src/components/skeleton/GroupSkeleton';
 import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
+import { useGUCData } from 'src/contexts/DataContext';
+import { useBoolean } from 'src/hooks/use-boolean';
 import { usePathname } from 'src/routes/hooks';
+import { cartApi } from 'src/services/api/cart.api';
+import { groupApi } from 'src/services/api/group.api';
+import { sessionApi } from 'src/services/api/session.api';
+import { userApi } from 'src/services/api/user.api';
+import { Group, Session } from 'src/types/session';
 import LiveLeaderboard from './live-leaderboard';
 
 interface SelectedUser {
@@ -317,6 +316,14 @@ export default function SessionDetailPage() {
             >
               View Leaderboard
             </Button>} */}
+              <Button
+                variant="contained"
+                // color="error"
+                onClick={() => navigate('lap-data')}
+              >
+                Lap Data
+              </Button>
+
             {session.status === 'active' && (
               <Button
                 variant="contained"

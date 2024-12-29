@@ -17,7 +17,7 @@ const navConfig = [
     icon: <Iconify icon="solar:clock-circle-bold-duotone" />,
     children: [
       {
-        title: 'Active Sessions',
+        title: 'Active Session',
         path: '/sessions',
       },
       {

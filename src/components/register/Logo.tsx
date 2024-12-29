@@ -7,11 +7,11 @@ export function Logo() {
       src="/assets/logo/logo.jpg"
       alt="XLR8 Logo"
       sx={{
-        width: 120,
+        width: 450,
         height: 'auto',
-        mb: 4,
+        // mb: 4,
         borderRadius: 2,
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        // boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
       }}
     />
   );

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Card, CardContent, CardActions, Typography, Button, Box } from '@mui/material';
 import { AccessTime, Group } from '@mui/icons-material';
+import { Button, Card, CardActions, CardContent, Typography } from '@mui/material';
+import { useState } from 'react';
 import { ConfirmDialog } from '../dialog/confirm-dialog';
 
 interface Session {
@@ -17,7 +17,7 @@ const SessionCard = ({ startTime, name, numParticipants, maxParticipants, onView
     const [open, setOpen] = useState<boolean>(false);
 
     return (
-        <Card sx={{ maxWidth: 345, margin: '20px', boxShadow: 3, borderRadius: 2 }}>
+        <Card sx={{ margin: '20px', boxShadow: 3, borderRadius: 2 }}>
             <CardContent>
                 <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>
                     {name}
@@ -32,12 +32,12 @@ const SessionCard = ({ startTime, name, numParticipants, maxParticipants, onView
                 </Typography>
             </CardContent>
             <CardActions sx={{ justifyContent: 'space-between', padding: '16px' }}>
-                <Button size="small" variant="contained" color="primary" onClick={onView}>
+                <Button size="large" variant="contained" color="primary" onClick={onView}>
                     View Details
                 </Button>
-                <Button size="small" variant="outlined" color="error" onClick={()=>setOpen(true)}>
+                {/* <Button size="small" variant="outlined" color="error" onClick={()=>setOpen(true)}>
                     End Session
-                </Button>
+                </Button> */}
             </CardActions>
 
             <ConfirmDialog

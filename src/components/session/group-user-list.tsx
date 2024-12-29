@@ -1,4 +1,4 @@
-import { Stack, Box, Avatar, Typography, Tooltip } from '@mui/material';
+import { Avatar, Box, Stack, Typography } from '@mui/material';
 import { CartControls } from './cart-controls';
 import { RemainingUsers } from './remaining-users';
 import { UserInfo } from './user-info';
@@ -95,7 +95,7 @@ export function GroupUserList({
             </Typography>
           </Box>
 
-          <UserInfo name={user.user.name} email={user.user.email} />
+          <UserInfo name={user.user.name} email={user.user.email} userId={user.user.id}/>
 
           <Box sx={{ flexShrink: 0 }}>
             <CartControls

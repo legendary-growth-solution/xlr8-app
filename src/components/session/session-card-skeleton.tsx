@@ -1,7 +1,7 @@
-import { Card, CardContent, CardActions, Skeleton, Stack } from '@mui/material';
+import { Card, CardActions, CardContent, Skeleton, Stack } from '@mui/material';
 
 const SessionCardSkeleton = () => (
-    <Card sx={{ maxWidth: 345, margin: '20px', boxShadow: 3, borderRadius: 2 }}>
+    <Card sx={{ margin: '20px', boxShadow: 3, borderRadius: 2 }}>
         <CardContent>
             {/* Session Name */}
             <Skeleton variant="text" width={250} height={40} />
