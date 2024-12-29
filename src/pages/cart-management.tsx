@@ -66,6 +66,13 @@ export default function CartManagementPage() {
       format: (value: number) => <FuelLevelIndicator value={value} />,
     },
     {
+      id: 'current_level',
+      label: 'Remaining Fuel (L)',
+      minWidth: 120,
+      format: (value: number, row: Cart) =>
+        `${((value * ((row as any)?.fuel_capacity || 0) / 100).toFixed(1))} L`,
+    },
+    {
       id: 'total_distance',
       label: 'Total Distance',
       minWidth: 120,

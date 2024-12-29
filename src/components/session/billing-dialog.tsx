@@ -9,9 +9,11 @@ import {
   InputAdornment,
   CircularProgress,
   FormHelperText,
+  Typography,
 } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
 import { useEffect, useState } from 'react';
+import { BillingDetailsTable } from './billing-details-table';
 
 interface BillingData {
   gstNumber?: string;
@@ -75,54 +77,66 @@ export function BillingDialog({
   }, [open]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Generate Bill for {groupName}</DialogTitle>
       <DialogContent>
         {loading ? (
           <CircularProgress />
         ) : (
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            <TextField
-              label="GST Number (Optional)"
-              fullWidth
-              value={hasBillingData ? billingData?.billing_data?.gstNumber : billingData?.gstNumber}
-              onChange={(e) => handleGstChange(e.target.value)}
-              error={!!gstError}
-              helperText={gstError}
-              disabled={hasBillingData}
-            />
+          <>
+            <Stack spacing={3} sx={{ mt: 2 }}>
+              <TextField
+                label="GST Number (Optional)"
+                fullWidth
+                value={hasBillingData ? billingData?.billing_data?.gstNumber : billingData?.gstNumber}
+                onChange={(e) => handleGstChange(e.target.value)}
+                error={!!gstError}
+                helperText={gstError}
+                disabled={hasBillingData}
+              />
 
-            <TextField
-              label="Discount Code"
-              fullWidth
-              value={
-                hasBillingData ? billingData?.billing_data?.discountCode : billingData?.discountCode
-              }
-              onChange={(e) =>
-                !hasBillingData && onBillingDataChange({ discountCode: e.target.value })
-              }
-              disabled={hasBillingData}
-            />
+              <TextField
+                label="Discount Code"
+                fullWidth
+                value={
+                  hasBillingData ? billingData?.billing_data?.discountCode : billingData?.discountCode
+                }
+                onChange={(e) =>
+                  !hasBillingData && onBillingDataChange({ discountCode: e.target.value })
+                }
+                disabled={hasBillingData}
+              />
 
-            <TextField
-              label="Remarks (Optional)"
-              fullWidth
-              multiline
-              rows={3}
-              value={billingData?.remarks}
-              onChange={(e) => onBillingDataChange({ remarks: e.target.value })}
-            />
+              <TextField
+                label="Remarks (Optional)"
+                fullWidth
+                multiline
+                rows={3}
+                value={hasBillingData ? billingData?.billing_data?.remarks : billingData?.remarks}
+                onChange={(e) => onBillingDataChange({ remarks: e.target.value })}
+                disabled={hasBillingData}
+              />
 
-            <TextField
-              label="Total Amount"
-              fullWidth
-              disabled
-              value={billingData?.totalAmount?.toFixed(2)}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-              }}
-            />
-          </Stack>
+              {!hasBillingData && (
+                <TextField
+                  label="Total Amount"
+                  fullWidth
+                  disabled
+                  value={billingData?.totalAmount?.toFixed(2)}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                  }}
+                />
+              )}
+            </Stack>
+
+            {hasBillingData && <BillingDetailsTable billingData={billingData} />}
+            {!hasBillingData && (
+              <Typography sx={{ mt: 2, color: 'text.secondary' }}>
+                Note: Please add all users and assign them plans before generating the bill.
+              </Typography>
+            )}
+          </>
         )}
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'space-between' }}>
@@ -131,34 +145,24 @@ export function BillingDialog({
           <Button onClick={onClose} disabled={isGenerating}>
             Cancel
           </Button>
-          {/* <Button
-            onClick={handleDownload}
-            variant="contained"
-            disabled={isGenerating || !!gstError}
-            startIcon={
-              isGenerating ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <Iconify icon="solar:download-bold" />
-              )
-            }
-          >
-            {isGenerating ? 'Generating...' : 'Download Bill'}
-          </Button> */}
-          <Button
-            onClick={handleDownload}
-            variant="contained"
-            disabled={isGenerating || !!gstError}
-            startIcon={
-              isGenerating ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <Iconify icon="eva:save-fill" />
-              )
-            }
-          >
-            {isGenerating ? 'Applying...' : 'Save and Generate Bill'}
-          </Button>
+          {!hasBillingData ? (
+            <Button
+              onClick={handleDownload}
+              variant="contained"
+              disabled={isGenerating || !!gstError}
+              startIcon={
+                isGenerating ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <Iconify icon="eva:save-fill" />
+                )
+              }
+            >
+              {isGenerating ? 'Applying...' : 'Save and Generate Bill'}
+            </Button>
+          ) : (
+           <></>
+          )}
         </Stack>
       </DialogActions>
     </Dialog>

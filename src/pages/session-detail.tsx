@@ -73,11 +73,6 @@ export default function SessionDetailPage() {
       if (sessionData.groups) {
         setGroups(sessionData.groups);
       }
-
-      await Promise.all([
-        refreshCarts(),
-        refreshGroupUsers()
-      ]);
       
     } catch (error) {
       console.error('Error fetching session details:', error);

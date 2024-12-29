@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, Box, Stack, Typography, Button, Skeleton } from '@mui/material';
 import { Group } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
@@ -29,8 +29,8 @@ interface BillingData {
 }
 
 export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: GroupCardProps) {
-  const { getGroupUsers, activeGroupUsers, availableCarts, loading: gucDataLoading } = useGUCData();
-  const groupUsers = getGroupUsers(group.id);
+  const { getGroupUsers, activeGroupUsers, availableCarts, loading: gucDataLoading, refreshGroupUsers } = useGUCData();
+  const [localGroupUsers, setLocalGroupUsers] = useState<any[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [openBilling, setOpenBilling] = useState(false);
   const [billingData, setBillingData] = useState<BillingData>({
@@ -41,6 +41,21 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
   const [billGenError, setBillGenError] = useState<string | null>(null);
   const [loadingBilling, setLoadingBilling] = useState(false);
   const [hasBillingData, setHasBillingData] = useState(false);
+
+  useEffect(() => {
+    const users = getGroupUsers(group.id);
+    setLocalGroupUsers(users);
+  }, [group.id, getGroupUsers]);
+
+  useEffect(() => {
+    const handleGroupUpdate = async () => {
+      await refreshGroupUsers();
+      const updatedUsers = getGroupUsers(group.id);
+      setLocalGroupUsers(updatedUsers);
+    };
+
+    handleGroupUpdate();
+  }, [group.id, refreshGroupUsers, getGroupUsers]);
 
   const getBillingData = async () => {
     try {
@@ -65,7 +80,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
     if (activeUser) {
       return activeUser?.time_in_minutes || activeUser?.allowed_duration || 0;
     }
-    const groupUser = groupUsers.find((gu) => gu.user_id === userId);
+    const groupUser = localGroupUsers.find((gu) => gu.user_id === userId);
     return groupUser?.time_in_minutes || groupUser?.allowed_duration || 0;
   };
 
@@ -73,15 +88,15 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
     await onAssignCart(group.id, userId, cartId, groupUserId);
   };
 
-  const mainUsers = groupUsers.length > 3 ? groupUsers.slice(0, 2) : groupUsers;
-  const remainingUsers = groupUsers.length > 3 ? groupUsers.slice(2) : [];
+  const mainUsers = localGroupUsers.length > 3 ? localGroupUsers.slice(0, 2) : localGroupUsers;
+  const remainingUsers = localGroupUsers.length > 3 ? localGroupUsers.slice(2) : [];
 
   const getActiveUserData = (userId: string) =>
     activeGroupUsers.find((gu) => gu.user_id === userId && gu.group_id === group.id);
 
   const handleGenerateBill = async () => {
     try {
-      const totalAmount = groupUsers.reduce((sum, user) => {
+      const totalAmount = localGroupUsers.reduce((sum, user) => {
         const duration = getUserDuration(user.user_id);
         return sum + 70000 * (duration / 60);
       }, 0);
@@ -106,7 +121,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
       setIsGeneratingBill(true);
       setBillGenError(null);
 
-      const usersWithDurations = groupUsers.map((user) => ({
+      const usersWithDurations = localGroupUsers.map((user) => ({
         user_id: user.user_id,
         time_in_minutes: getUserDuration(user.user_id),
       }));
@@ -201,7 +216,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
                   fontWeight: 'bold',
                 }}
               >
-                {gucDataLoading ? <Skeleton variant="text" width="40px" height={24} /> : `${groupUsers.length} Racer${groupUsers.length > 1 ? 's' : ''}`}
+                {gucDataLoading ? <Skeleton variant="text" width="40px" height={24} /> : `${localGroupUsers.length} Racer${localGroupUsers.length > 1 ? 's' : ''}`}
               </Typography>
             </Stack>
 
@@ -241,7 +256,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
               color="secondary"
               startIcon={<Iconify icon="solar:bill-list-bold" />}
               onClick={handleGenerateBill}
-              disabled={groupUsers.length === 0}
+              disabled={localGroupUsers.length === 0}
               // disabled
             >
               Generate Bill

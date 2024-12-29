@@ -1,6 +1,7 @@
-import { Stack, Box, Avatar, Typography } from '@mui/material';
+import { Stack, Box, Avatar, Typography, Tooltip } from '@mui/material';
 import { CartControls } from './cart-controls';
 import { RemainingUsers } from './remaining-users';
+import { UserInfo } from './user-info';
 
 interface GroupUserListProps {
   mainUsers: any[];
@@ -74,44 +75,39 @@ export function GroupUserList({
               {user.user.name[0]}
             </Avatar>
             <Typography
-                  variant="caption"
-                  sx={{
-                    position: 'absolute',
-                    bottom: -8,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: 0.75,
-                    bgcolor: 'success.lighter',
-                    color: 'success.dark',
-                    fontSize: '0.65rem',
-                    fontWeight: 'bold',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  { user?.time_in_minutes ? `${user.time_in_minutes}m` : `${getUserDuration(user.id)}m`}
-                </Typography>
-          </Box>
-
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" noWrap>
-              {user.user.name}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
-              {user.user.email}
+              variant="caption"
+              sx={{
+                position: 'absolute',
+                bottom: -8,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                px: 1,
+                py: 0.25,
+                borderRadius: 0.75,
+                bgcolor: 'success.lighter',
+                color: 'success.dark',
+                fontSize: '0.65rem',
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {user?.time_in_minutes ? `${user.time_in_minutes}m` : `${getUserDuration(user.user_id)}m`}
             </Typography>
           </Box>
 
-          <CartControls
-            userId={user?.user?.id}
-            groupId={group.id}
-            groupUserId={user.id}
-            cartAssignments={group.cartAssignments}
-            availableCarts={availableCarts}
-            onAssignCart={onAssignCart}
-            activeUser={getActiveUserData(user?.user?.id)}
-          />
+          <UserInfo name={user.user.name} email={user.user.email} />
+
+          <Box sx={{ flexShrink: 0 }}>
+            <CartControls
+              userId={user.user_id}
+              groupId={group.id}
+              groupUserId={user.id}
+              cartAssignments={group.cartAssignments}
+              availableCarts={availableCarts}
+              onAssignCart={onAssignCart}
+              activeUser={getActiveUserData(user.user_id)}
+            />
+          </Box>
         </Stack>
       ))}
 
@@ -123,6 +119,7 @@ export function GroupUserList({
         isExpanded={isExpanded}
         availableCarts={availableCarts}
         onExpand={onExpand}
+        getActiveUserData={getActiveUserData}
       />
     </Box>
   );

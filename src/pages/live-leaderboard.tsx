@@ -6,6 +6,8 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
 import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
 import { LiveLeaderboardEntry } from 'src/types/leaderboard';
+import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
+import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
 
 const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
   <Box sx={{ mb: 4, textAlign: 'center', position: 'relative' }}>
@@ -157,6 +159,8 @@ const LiveLeaderboard: React.FC = () => {
           },
         }}
       >
+        <LeaderboardHeader />
+
         <Typography
           variant="h2"
           align="center"
@@ -178,6 +182,8 @@ const LiveLeaderboard: React.FC = () => {
         <SessionInfo name={sessionName} id={sessionId} />
 
         <LeaderboardTable sessionStatus={sessionStatus} entries={leaderboard} />
+
+        <LeaderboardFooter />
       </Paper>
     </Box>
   );

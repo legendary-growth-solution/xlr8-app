@@ -4,6 +4,7 @@ import { Iconify } from 'src/components/iconify';
 import { GroupUserMappingWithUser } from 'src/types/session';
 import { Cart } from 'src/types/cart';
 import { CartControls } from './cart-controls';
+import { UserInfo } from './user-info';
 
 interface RemainingUsersProps {
   users: GroupUserMappingWithUser[];
@@ -13,6 +14,7 @@ interface RemainingUsersProps {
   isExpanded: boolean;
   onExpand: (expanded: boolean) => void;
   availableCarts?: Cart[];
+  getActiveUserData: (userId: string) => any;
 }
 
 export function RemainingUsers({ 
@@ -23,6 +25,7 @@ export function RemainingUsers({
   isExpanded,
   onExpand,
   availableCarts,
+  getActiveUserData,
 }: RemainingUsersProps) {
   if (users.length === 0) return null;
 
@@ -127,26 +130,20 @@ export function RemainingUsers({
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  { user?.time_in_minutes ? `${user.time_in_minutes}m` : `${getUserDuration(user.id)}m`}
+                  {user?.time_in_minutes ? `${user.time_in_minutes}m` : `${getUserDuration(user.user_id)}m`}
                 </Typography>
               </Box>
 
-              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Typography variant="subtitle2" noWrap>
-                  {user.user.name}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
-                  {user.user.email}
-                </Typography>
-              </Box>
+              <UserInfo name={user.user.name} email={user.user.email} />
 
               <CartControls 
-                userId={user?.user?.id}
+                userId={user.user_id}
                 groupId={groupId}
                 groupUserId={user.id}
                 cartAssignments={cartAssignments}
                 onAssignCart={onAssignCart}
                 availableCarts={availableCarts}
+                activeUser={getActiveUserData(user.user_id)}
               />
             </Stack>
           ))}

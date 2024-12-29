@@ -73,7 +73,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const refreshGroupUsers = useCallback(async () => {
     try {
       const response = await groupApi.getActiveUsers();
-      setActiveGroupUsers(response.users);
+      setActiveGroupUsers(response.users as any);
     } catch (error) {
       console.error('Error refreshing group users:', error);
     }
@@ -96,7 +96,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeData = async () => {
       setLoading(true);
-      await Promise.all([fetchUsers(), fetchCarts(), fetchActiveGroupUsers()]);
+      try {
+        const [usersResponse, cartsResponse, activeUsersResponse] = await Promise.all([
+          userApi.list({}),
+          cartApi.list({}),
+          groupApi.getActiveUsers()
+        ]);
+        
+        setUsers(usersResponse.users);
+        setCarts(cartsResponse.carts);
+        setActiveGroupUsers(activeUsersResponse.users);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+      }
       setLoading(false);
     };
 

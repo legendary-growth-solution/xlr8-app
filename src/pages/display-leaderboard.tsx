@@ -7,23 +7,25 @@ import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
 import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
 import { LiveLeaderboardEntry } from 'src/types/leaderboard';
 import { sessionApi } from 'src/services/api/session.api';
+import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
+import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
 
 const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
   <Box sx={{ mb: 4, textAlign: 'center', position: 'relative' }}>
-    <Typography 
-      variant="h4" 
-      sx={{ 
+    <Typography
+      variant="h4"
+      sx={{
         fontWeight: 'bold',
         color: 'text.primary',
-        mb: { xs: 1, sm: 0 }
+        mb: { xs: 1, sm: 0 },
       }}
     >
       {name || 'Unnamed Session'}
     </Typography>
     {id && (
-      <Typography 
-        variant="caption" 
-        sx={{ 
+      <Typography
+        variant="caption"
+        sx={{
           color: 'text.secondary',
           bgcolor: 'background.paper',
           px: 1,
@@ -33,7 +35,7 @@ const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) =
           borderColor: 'divider',
           position: { xs: 'relative' },
           display: 'inline-block',
-          top: { sm:'8px', xs: 'auto' },
+          top: { sm: '8px', xs: 'auto' },
         }}
       >
         #{id.toUpperCase()}
@@ -83,7 +85,7 @@ const DisplayLeaderboard: React.FC = () => {
 
   useEffect(() => {
     fetchLatestSessionId();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sid]);
 
   const handleZoomChange = (_: Event, newValue: number | number[]) => {
@@ -164,6 +166,8 @@ const DisplayLeaderboard: React.FC = () => {
           },
         }}
       >
+        <LeaderboardHeader />
+
         <Typography
           variant="h2"
           align="center"
@@ -185,6 +189,8 @@ const DisplayLeaderboard: React.FC = () => {
         <SessionInfo name={sessionName} id={sessionId} />
 
         <LeaderboardTable sessionStatus={sessionStatus} entries={leaderboard} />
+
+        <LeaderboardFooter />
       </Paper>
     </Box>
   );
