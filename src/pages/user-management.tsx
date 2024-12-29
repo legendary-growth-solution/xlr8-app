@@ -1,13 +1,13 @@
+import { LoadingButton } from '@mui/lab';
+import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Box, Button, Typography, Card, Stack, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { useState, useEffect } from 'react';
-import { User } from 'src/types/session';
-import DataTable from 'src/components/table/DataTable';
-import { Iconify } from 'src/components/iconify';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
-import { LoadingButton } from '@mui/lab';
+import { Iconify } from 'src/components/iconify';
+import DataTable from 'src/components/table/DataTable';
 import { userApi } from 'src/services/api/user.api';
+import { User } from 'src/types/session';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -41,6 +41,13 @@ export default function UserManagementPage() {
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
       format: (value: string) => value.charAt(0).toUpperCase() + value.slice(1),
+    },
+    { 
+      id: 'sessions', 
+      label: 'Sessions', 
+      minWidth: 170, 
+      noWrap: true,
+      sx: { whiteSpace: 'nowrap' },
     },
     { 
       id: 'email', 
@@ -190,7 +197,7 @@ export default function UserManagementPage() {
             <DataTable
               loading={loading}
               columns={columns}
-              rows={users.map((user, index) => ({
+              rows={users?.map((user, index) => ({
                 ...user,
                 sno: (page - 1) * rowsPerPage + index + 1,
               }))}
