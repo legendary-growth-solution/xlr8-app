@@ -18,6 +18,7 @@ import {
   InputAdornment,
   IconButton,
   MenuItem,
+  Box,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -28,6 +29,8 @@ import { groupApi } from 'src/services/api/group.api';
 import { useGUCData } from 'src/contexts/DataContext';
 import { Plan } from 'src/types/billing';
 import { billingApi } from 'src/services/api/billing.api';
+import { debounce } from 'src/utils/debounce';
+import { UserTableSkeleton } from 'src/components/skeleton';
 
 interface SelectedUser {
   userId: string;
@@ -86,6 +89,8 @@ export function ManageUsersDialog({
     getGroupUsers,
     activeGroupUsers: fullGroupUsers,
     refreshGroupUsers,
+    fetchUsers,
+    totalUsers,
   } = useGUCData();
   const [pendingTimeChanges, setPendingTimeChanges] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,6 +99,11 @@ export function ManageUsersDialog({
   const [planError, setPlanError] = useState<string | null>(null);
   const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({});
   const [deletingUsers, setDeletingUsers] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const pageSize = 10;
+  const [loadedUsers, setLoadedUsers] = useState<User[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const allGroupUsers = getGroupUsers(group?.id || '');
 
@@ -103,11 +113,13 @@ export function ManageUsersDialog({
     try {
       setLoadingUsers(true);
       const response = await groupApi.getUsers(group.id);
-      setGroupUsers(response.users);
+      const users = response && response.users && response.users.length > 0 ? response.users : [];
+
+      setGroupUsers(users);
 
       onSelectAll(false);
 
-      const existingUsers = response.users.map((user) => ({
+      const existingUsers = users.map((user) => ({
         userId: user.user_id,
         timeInMinutes: user.time_in_minutes,
         planId: user.id,
@@ -353,32 +365,6 @@ export function ManageUsersDialog({
     }
   };
 
-  const getFilteredUsers = () => {
-    const query = searchQuery.toLowerCase();
-    const groupUserIds = allGroupUsers.map((gu) => gu.user_id);
-
-    const groupFilteredUsers = allUsers
-      .filter((user) => groupUserIds.includes(user.id))
-      .filter(
-        (user) =>
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          (user.phone && user.phone.includes(query))
-      );
-
-    const otherFilteredUsers = allUsers
-      .filter((user) => !groupUserIds.includes(user.id))
-      .filter(
-        (user) =>
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          (user.phone && user.phone.includes(query))
-      );
-
-    return [...groupFilteredUsers, ...otherFilteredUsers];
-  };
-
-  const filteredUsers = getFilteredUsers();
   const getInvalidTimeUsers = () => [
     ...selectedUsers.filter((user) => {
       const time = pendingTimeChanges[user.userId] || user.timeInMinutes;
@@ -407,7 +393,7 @@ export function ManageUsersDialog({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const filteredUser = getFilteredUsers();
+      const filteredUser = loadedUsers;
       filteredUser.forEach((user) => {
         if (!isUserInActiveRace(user.id)) {
           handleSelectUser(user.id, true);
@@ -419,6 +405,122 @@ export function ManageUsersDialog({
     }
   };
 
+  const debouncedFetchUsers = debounce(async (query: string) => {
+    setLoadingMore(true);
+    try {
+      const response: any = await fetchUsers({
+        page: 1,
+        pageSize,
+        search: query
+      });
+
+      if (response && response.users) {
+        setLoadedUsers(sortUsers(response.users));
+        setHasMore(response.users.length >= pageSize);
+      } else {
+        setLoadedUsers([]);
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setLoadedUsers([]);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, 800);
+
+  useEffect(() => {
+    if (searchQuery.length >= 2 || searchQuery.length === 0) {
+      debouncedFetchUsers(searchQuery);
+    }
+
+    return () => {
+      debouncedFetchUsers.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  const handleSearch = (value: string) => {
+    onSearch(value);
+  };
+
+  const getUserStatusPriority = (user: User, isSelected: boolean, isExistingGroupUser: boolean, isAssigned: boolean, hasRaceStarted: boolean) => {
+    if (hasRaceStarted) return 1;
+    if (isExistingGroupUser) return 2;
+    if (isSelected) return 3;
+    if (isAssigned) return 4;
+    return 5; 
+  };
+
+  const sortUsers = (users: User[]) => [...users].sort((a, b) => {
+      const aSelected = !!selectedUsers.find(su => su.userId === a.id);
+      const bSelected = !!selectedUsers.find(su => su.userId === b.id);
+      
+      const aExisting = allGroupUsers.some(gu => gu.user_id === a.id);
+      const bExisting = allGroupUsers.some(gu => gu.user_id === b.id);
+      
+      const aAssigned = fullGroupUsers.some(g => g.group_id !== group?.id && g.user_id === a.id);
+      const bAssigned = fullGroupUsers.some(g => g.group_id !== group?.id && g.user_id === b.id);
+      
+      const aRaceStarted = group && isUserRaceStarted(a.id);
+      const bRaceStarted = group && isUserRaceStarted(b.id);
+
+      const aPriority = getUserStatusPriority(a, aSelected, aExisting, aAssigned, aRaceStarted);
+      const bPriority = getUserStatusPriority(b, bSelected, bExisting, bAssigned, bRaceStarted);
+
+      return aPriority - bPriority;
+    });
+
+  const handleLoadMore = async () => {
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const prevUsers = [...loadedUsers];
+      
+      const response: any = await fetchUsers({
+        page: nextPage,
+        pageSize,
+        search: searchQuery
+      });
+      
+      const newUsers = response.users.filter(
+        (newUser: any) => !prevUsers.some((existingUser: any) => existingUser.id === newUser.id)
+      );
+      
+      if (newUsers.length < pageSize) {
+        setHasMore(false);
+      }
+      
+      setLoadedUsers(prevU => sortUsers([...prevU, ...newUsers]));
+      setCurrentPage(nextPage);
+    } catch (error) {
+      console.error('Error loading more users:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      if (loadedUsers.length === 0) {
+        setLoadingMore(true);
+        fetchUsers({
+          page: 1,
+          pageSize,
+          search: ''
+        }).then((response: any) => {
+          if (response && response.users) {
+            setLoadedUsers(sortUsers(response.users));
+            setHasMore(response.users.length >= pageSize);
+          }
+          setLoadingMore(false);
+        });
+      }
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   return (
     <Dialog fullWidth maxWidth="md" open={open} onClose={onClose}>
       <DialogTitle>Manage Group Users</DialogTitle>
@@ -428,7 +530,7 @@ export function ManageUsersDialog({
           fullWidth
           placeholder="Search users..."
           value={searchQuery}
-          onChange={(e) => onSearch(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
           InputProps={{
             startAdornment: (
               <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />
@@ -443,9 +545,9 @@ export function ManageUsersDialog({
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedUsers.length === filteredUsers.length}
+                    checked={selectedUsers.length === loadedUsers.length}
                     indeterminate={
-                      selectedUsers.length > 0 && selectedUsers.length < filteredUsers.length
+                      selectedUsers.length > 0 && selectedUsers.length < loadedUsers.length
                     }
                     onChange={(e) => onSelectAll(e.target.checked)}
                   />
@@ -459,186 +561,199 @@ export function ManageUsersDialog({
 
             <TableBody>
               {loadingUsers ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    Loading users...
-                  </TableCell>
-                </TableRow>
+                <UserTableSkeleton rows={5} />
               ) : (
-                filteredUsers.map((user) => {
-                  const selectedUser = allGroupUsers.find((su) => su.user_id === user.id)
-                    ? {
-                        timeInMinutes:
-                          allGroupUsers.find((su) => su.user_id === user.id)?.time_in_minutes || 0,
-                        userId: user.id,
-                      }
-                    : selectedUsers.find((su) => su.userId === user.id);
-                  const isSelected = !!selectedUser;
-                  const isAssigned = fullGroupUsers.some(
-                    (g) => g.group_id !== group?.id && g.user_id === user.id
-                  );
-                  const hasRaceStarted = group && isUserRaceStarted(user.id);
-                  const existingTime = group ? getUserExistingTime(user.id) : 0;
-                  const isExistingGroupUser = allGroupUsers.some((gu) => gu.user_id === user.id);
+                <>
+                  {loadedUsers.map((user) => {
+                    const selectedUser = allGroupUsers.find((su) => su.user_id === user.id)
+                      ? {
+                          timeInMinutes:
+                            allGroupUsers.find((su) => su.user_id === user.id)?.time_in_minutes || 0,
+                          userId: user.id,
+                        }
+                      : selectedUsers.find((su) => su.userId === user.id);
+                    const isSelected = !!selectedUser;
+                    const isAssigned = fullGroupUsers.some(
+                      (g) => g.group_id !== group?.id && g.user_id === user.id
+                    );
+                    const hasRaceStarted = group && isUserRaceStarted(user.id);
+                    const existingTime = group ? getUserExistingTime(user.id) : 0;
+                    const isExistingGroupUser = allGroupUsers.some((gu) => gu.user_id === user.id);
 
-                  return (
-                    <TableRow
-                      key={user.id}
-                      hover
-                      sx={isExistingGroupUser ? { bgcolor: 'action.selected' } : undefined}
-                    >
-                      <TableCell padding="checkbox">
-                        {isExistingGroupUser ? (
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleRemoveMember(user.id)}
-                            disabled={hasRaceStarted || deletingUsers.has(user.id)}
-                            sx={{ marginLeft: 1 }}
-                          >
-                            {deletingUsers.has(user.id) ? (
-                              <LoadingButton
-                                loading
-                                size="small"
-                                sx={{ 
-                                  minWidth: 20, 
-                                  p: 0,
-                                  '& .MuiCircularProgress-root': {
-                                    width: '20px !important',
-                                    height: '20px !important',
-                                    color: 'error.main'
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <Iconify icon="eva:trash-2-outline" />
-                            )}
-                          </IconButton>
-                        ) : (
-                          <Checkbox
-                            checked={isSelected || hasRaceStarted || false}
-                            disabled={isAssigned || hasRaceStarted || false}
-                            onChange={(e) => handleSelectUser(user.id, e.target.checked)}
-                          />
-                        )}
-                      </TableCell>
-
-                      <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ mr: 2 }}>{user.name[0]}</Avatar>
-                        <Typography variant="subtitle2">{user.name}</Typography>
-                      </TableCell>
-
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          {user.email}
-                        </Typography>
-                        {user.phone && (
-                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                            {user.phone}
-                          </Typography>
-                        )}
-                      </TableCell>
-
-                      <TableCell align="center">
-                        {(isSelected || isExistingGroupUser) && (
-                          <Stack direction="row" spacing={1} justifyContent="center">
-                            {loadingPlans ? (
-                              <TextField
-                                disabled
-                                size="small"
-                                value="Loading plans..."
-                                sx={{ width: '50%' }}
-                              />
-                            ) : planError ? (
-                              <TextField
-                                error
-                                disabled
-                                size="small"
-                                value={planError}
-                                sx={{ width: '50%' }}
-                              />
-                            ) : (
-                              <TextField
-                                select
-                                size="small"
-                                value={selectedPlans[user.id] || ''}
-                                onChange={(e) => handlePlanChange(user.id, e.target.value)}
-                                disabled={hasRaceStarted || false}
-                                sx={{ width: '50%', maxWidth: '180px' }}
-                                error={!selectedPlans[user.id] && isSelected}
-                                helperText={
-                                  !selectedPlans[user.id] && isSelected ? 'Plan is required' : ''
-                                }
-                              >
-                                {plans.map((plan) => (
-                                  <MenuItem key={plan.id} value={plan.id}>
-                                    {plan.name} ({plan.defaultTime} mins)
-                                  </MenuItem>
-                                ))}
-                              </TextField>
-                            )}
-                            <TextField
-                              type="number"
+                    return (
+                      <TableRow
+                        key={user.id}
+                        hover
+                        sx={isExistingGroupUser ? { bgcolor: 'action.selected' } : undefined}
+                      >
+                        <TableCell padding="checkbox">
+                          {isExistingGroupUser ? (
+                            <IconButton
                               size="small"
-                              value={
-                                hasRaceStarted
-                                  ? existingTime
-                                  : pendingTimeChanges[user.id] !== undefined
-                                    ? pendingTimeChanges[user.id]
-                                    : isExistingGroupUser
-                                      ? getUserExistingTime(user.id)
-                                      : selectedUser?.timeInMinutes || ''
-                              }
-                              onChange={(e) => handleTimeChange(user.id, Number(e.target.value))}
-                              disabled={hasRaceStarted || false}
-                              sx={{ width: '40%', maxWidth: '120px' }}
-                              InputProps={{
-                                endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                                inputProps: { min: 0 },
-                              }}
-                              error={
-                                !hasRaceStarted &&
-                                (isExistingGroupUser
-                                  ? (pendingTimeChanges[user.id] || getUserExistingTime(user.id)) <
-                                    MIN_TIME_ALLOWED
-                                  : !selectedUser?.timeInMinutes ||
-                                    selectedUser?.timeInMinutes < MIN_TIME_ALLOWED)
-                              }
+                              color="error"
+                              onClick={() => handleRemoveMember(user.id)}
+                              disabled={hasRaceStarted || deletingUsers.has(user.id)}
+                              sx={{ marginLeft: 1 }}
+                            >
+                              {deletingUsers.has(user.id) ? (
+                                <LoadingButton
+                                  loading
+                                  size="small"
+                                  sx={{ 
+                                    minWidth: 20, 
+                                    p: 0,
+                                    '& .MuiCircularProgress-root': {
+                                      width: '20px !important',
+                                      height: '20px !important',
+                                      color: 'error.main'
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <Iconify icon="eva:trash-2-outline" />
+                              )}
+                            </IconButton>
+                          ) : (
+                            <Checkbox
+                              checked={isSelected || hasRaceStarted || false}
+                              disabled={isAssigned || hasRaceStarted || false}
+                              onChange={(e) => handleSelectUser(user.id, e.target.checked)}
                             />
-                          </Stack>
-                        )}
-                      </TableCell>
+                          )}
+                        </TableCell>
 
-                      <TableCell align="center">
-                        <Chip
-                          size="small"
-                          label={
-                            hasRaceStarted
-                              ? 'Race Started'
-                              : isExistingGroupUser
-                                ? 'Group Member'
-                                : isAssigned
-                                  ? 'Assigned'
-                                  : isSelected
-                                    ? 'Selected'
-                                    : 'Available'
-                          }
-                          color={
-                            hasRaceStarted
-                              ? 'error'
-                              : isExistingGroupUser
-                                ? 'success'
-                                : isAssigned
-                                  ? 'warning'
-                                  : isSelected
-                                    ? 'primary'
-                                    : 'default'
-                          }
-                        />
+                        <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar sx={{ mr: 2 }}>{user.name[0]}</Avatar>
+                          <Typography variant="subtitle2">{user.name}</Typography>
+                        </TableCell>
+
+                        <TableCell>
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            {user.email}
+                          </Typography>
+                          {user.phone && (
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                              {user.phone}
+                            </Typography>
+                          )}
+                        </TableCell>
+
+                        <TableCell align="center">
+                          {(isSelected || isExistingGroupUser) && (
+                            <Stack direction="row" spacing={1} justifyContent="center">
+                              {loadingPlans ? (
+                                <TextField
+                                  disabled
+                                  size="small"
+                                  value="Loading plans..."
+                                  sx={{ width: '50%' }}
+                                />
+                              ) : planError ? (
+                                <TextField
+                                  error
+                                  disabled
+                                  size="small"
+                                  value={planError}
+                                  sx={{ width: '50%' }}
+                                />
+                              ) : (
+                                <TextField
+                                  select
+                                  size="small"
+                                  value={selectedPlans[user.id] || ''}
+                                  onChange={(e) => handlePlanChange(user.id, e.target.value)}
+                                  disabled={hasRaceStarted || false}
+                                  sx={{ width: '50%', maxWidth: '180px' }}
+                                  error={!selectedPlans[user.id] && isSelected}
+                                  helperText={
+                                    !selectedPlans[user.id] && isSelected ? 'Plan is required' : ''
+                                  }
+                                >
+                                  {plans.map((plan) => (
+                                    <MenuItem key={plan.id} value={plan.id}>
+                                      {plan.name} ({plan.defaultTime} mins)
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              )}
+                              <TextField
+                                type="number"
+                                size="small"
+                                value={
+                                  hasRaceStarted
+                                    ? existingTime
+                                    : pendingTimeChanges[user.id] !== undefined
+                                      ? pendingTimeChanges[user.id]
+                                      : isExistingGroupUser
+                                        ? getUserExistingTime(user.id)
+                                        : selectedUser?.timeInMinutes || ''
+                                }
+                                onChange={(e) => handleTimeChange(user.id, Number(e.target.value))}
+                                disabled={hasRaceStarted || false}
+                                sx={{ width: '40%', maxWidth: '120px' }}
+                                InputProps={{
+                                  endAdornment: <InputAdornment position="end">min</InputAdornment>,
+                                  inputProps: { min: 0 },
+                                }}
+                                error={
+                                  !hasRaceStarted &&
+                                  (isExistingGroupUser
+                                    ? (pendingTimeChanges[user.id] || getUserExistingTime(user.id)) <
+                                      MIN_TIME_ALLOWED
+                                    : !selectedUser?.timeInMinutes ||
+                                      selectedUser?.timeInMinutes < MIN_TIME_ALLOWED)
+                                }
+                              />
+                            </Stack>
+                          )}
+                        </TableCell>
+
+                        <TableCell align="center">
+                          <Chip
+                            size="small"
+                            label={
+                              hasRaceStarted
+                                ? 'Race Started'
+                                : isExistingGroupUser
+                                  ? 'Group Member'
+                                  : isAssigned
+                                    ? 'Assigned'
+                                    : isSelected
+                                      ? 'Selected'
+                                      : 'Available'
+                            }
+                            color={
+                              hasRaceStarted
+                                ? 'error'
+                                : isExistingGroupUser
+                                  ? 'success'
+                                  : isAssigned
+                                    ? 'warning'
+                                    : isSelected
+                                      ? 'primary'
+                                      : 'default'
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {loadingMore && <UserTableSkeleton rows={3} />}
+                  {hasMore && loadedUsers.length < totalUsers && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center" sx={{ border: 0 }}>
+                        <LoadingButton
+                          loading={loadingMore}
+                          variant="text"
+                          onClick={handleLoadMore}
+                          startIcon={!loadingMore && <Iconify icon="eva:plus-fill" />}
+                        >
+                          {loadingMore ? 'Loading...' : 'Load More'}
+                        </LoadingButton>
                       </TableCell>
                     </TableRow>
-                  );
-                })
+                  )}
+                </>
               )}
             </TableBody>
           </Table>

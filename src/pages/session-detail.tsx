@@ -52,7 +52,7 @@ export default function SessionDetailPage() {
   const manageUsers = useBoolean();
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { users: allUsers, refreshGroupUsers, refreshCarts } = useGUCData();
+  const { users: allUsers, fetchUsers, refreshGroupUsers, refreshCarts } = useGUCData();
   const [initialLoading, setInitialLoading] = useState(true);
   const pathname = usePathname();
   const [sessionLoading, setSessionLoading] = useState(true);

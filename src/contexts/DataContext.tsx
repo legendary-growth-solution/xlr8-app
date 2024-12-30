@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { GroupUserMappingWithUser, User } from 'src/types/session';
 import { Cart } from 'src/types/cart';
-import { userApi } from 'src/services/api/user.api';
+import { userApi, UserResponse } from 'src/services/api/user.api';
 import { cartApi } from 'src/services/api/cart.api';
 import { groupApi } from 'src/services/api/group.api';
 
@@ -10,30 +10,35 @@ interface DataContextType {
   carts: Cart[];
   groupUsers: Record<string, GroupUserMappingWithUser[]>;
   loading: boolean;
-  refreshUsers: () => Promise<void>;
   refreshCarts: () => Promise<void>;
   refreshGroupUsers: () => Promise<void>;
   getGroupUsers: (groupId: string) => GroupUserMappingWithUser[];
   activeGroupUsers: GroupUserMappingWithUser[];
   isUserInActiveRace: (userId: string) => boolean;
   availableCarts: Cart[];
+  fetchUsers: (params: {page?: number, pageSize?: number, search?: string}) => Promise<any>;
+  totalUsers: number;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
   const [carts, setCarts] = useState<Cart[]>([]);
   const [groupUsers, setGroupUsers] = useState<Record<string, GroupUserMappingWithUser[]>>({});
   const [loading, setLoading] = useState(true);
   const [activeGroupUsers, setActiveGroupUsers] = useState<any[]>([]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async ({page = 1, pageSize = 10, search = ''}: {page?: number, pageSize?: number, search?: string}) => {
     try {
-      const response = await userApi.list({});
+      const response = await userApi.list({page, pageSize, search});
       setUsers(response.users);
+      setTotalUsers(response.total);
+      return response;
     } catch (error) {
       console.error('Error fetching users:', error);
+      return null;
     }
   };
 
@@ -46,7 +51,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshUsers = useMemo(() => fetchUsers, []);
+  const refreshUsers = useCallback(async ({page = 1, pageSize = 10, search = ''}: {page?: number, pageSize?: number, search?: string}) => {
+    const response = await fetchUsers({page, pageSize, search});
+    return response;
+  }, []);
   const refreshCarts = useMemo(() => fetchCarts, []);
   const refreshGroupUsers = useCallback(async () => {
     try {
@@ -98,13 +106,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     groupUsers,
     availableCarts,
     loading, 
-    refreshUsers, 
+    fetchUsers: refreshUsers, 
+    totalUsers,
     refreshCarts,
     refreshGroupUsers,
     getGroupUsers,
     activeGroupUsers,
     isUserInActiveRace,
-  }), [users, carts, groupUsers, availableCarts, loading, refreshUsers, refreshCarts, refreshGroupUsers, getGroupUsers, activeGroupUsers, isUserInActiveRace]);
+  }), [users, carts, groupUsers, availableCarts, loading, refreshUsers, refreshCarts, refreshGroupUsers, getGroupUsers, activeGroupUsers, isUserInActiveRace, totalUsers]);
 
   return (
     <DataContext.Provider value={value}>
