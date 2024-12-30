@@ -1,13 +1,13 @@
+import { Box, Button, Stack, Typography } from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Box, Button, Typography, Stack } from '@mui/material';
-import { useState, useEffect, useCallback } from 'react';
-import { Session } from 'src/types/session'
-import { Iconify } from 'src/components/iconify';
 import { useNavigate } from 'react-router-dom';
+import { Iconify } from 'src/components/iconify';
 import { CreateSessionDialog } from 'src/components/session/create-session-dialog';
-import { sessionApi } from 'src/services/api/session.api';
 import SessionCard from 'src/components/session/session-card';
 import SessionCardSkeleton from 'src/components/session/session-card-skeleton';
+import { sessionApi } from 'src/services/api/session.api';
+import { Session } from 'src/types/session';
 
 export default function SessionManagementPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -87,12 +87,12 @@ export default function SessionManagementPage() {
   return (
     <>
       <Helmet>
-        <title>Active Sessions Management</title>
+        <title>Active Session Management</title>
       </Helmet>
 
       <Box sx={{ p: 3 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-          <Typography variant="h4">Active Sessions</Typography>
+          <Typography variant="h4">Active Session</Typography>
 
           <Button
             variant="contained"
@@ -105,6 +105,7 @@ export default function SessionManagementPage() {
 
           <Stack direction="row" spacing={2}>
             {loading && <SessionCardSkeleton />}
+            {!loading && !sessions && <div>No active sessions</div>}
             {!loading && sessions?.map((item: Session, index: number) => (
               <SessionCard
                 key={index}

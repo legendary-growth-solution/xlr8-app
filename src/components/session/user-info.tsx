@@ -1,11 +1,19 @@
-import { Box, Typography, Tooltip } from '@mui/material';
+import { Box, Tooltip, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 interface UserInfoProps {
   name: string;
   email: string;
+  userId: string;
 }
 
-export function UserInfo({ name, email }: UserInfoProps) {
+export function UserInfo({ name, email, userId }: UserInfoProps) {
+  const navigate = useNavigate();
+
+  const handleRedirect = () => {
+    navigate(`${userId}`, {state: { "name": name } });
+  };
+
   return (
     <Box 
       sx={{ 
@@ -14,6 +22,7 @@ export function UserInfo({ name, email }: UserInfoProps) {
         width: '40%',
         mr: 2
       }}
+      onClick={handleRedirect}
     >
       <Typography variant="subtitle2" noWrap>
         {name}

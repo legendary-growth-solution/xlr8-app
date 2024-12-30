@@ -1,21 +1,21 @@
 import { lazy, Suspense } from 'react';
-import { Outlet, Navigate, useRoutes } from 'react-router-dom';
+import { Navigate, Outlet, useRoutes } from 'react-router-dom';
 import { useAuth } from 'src/hooks/use-auth';
 
 import Box from '@mui/material/Box';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 
-import { varAlpha } from 'src/theme/styles';
-import { AuthLayout } from 'src/layouts/auth';
-import { DashboardLayout } from 'src/layouts/dashboard';
+import { DataProvider } from 'src/contexts/DataContext';
 import AuthGuard from 'src/guards/AuthGuard';
 import GuestGuard from 'src/guards/GuestGuard';
-import CartLapLogsPage from 'src/pages/cart-lap-logs';
-import PasswordHashPage from 'src/pages/password-hash';
+import { AuthLayout } from 'src/layouts/auth';
+import { DashboardLayout } from 'src/layouts/dashboard';
 import AuthPage from 'src/pages/auth';
-import { DataProvider } from 'src/contexts/DataContext';
+import CartLapLogsPage from 'src/pages/cart-lap-logs';
 import DiscountManagementPage from 'src/pages/discount-management';
+import PasswordHashPage from 'src/pages/password-hash';
 import RegisterUserPage from 'src/pages/register-user';
+import { varAlpha } from 'src/theme/styles';
 
 // ----------------------------------------------------------------------
 
@@ -28,6 +28,8 @@ export const Page404 = lazy(() => import('src/pages/page-not-found'));
 export const UserManagement = lazy(() => import('src/pages/user-management'));
 export const UserCreate = lazy(() => import('src/pages/user-create'));
 export const SessionManagementPage = lazy(() => import('src/pages/session-management'));
+export const SessionUserLaps = lazy(() => import('src/pages/session-user-laps'));
+export const SessionLaps = lazy(() => import('src/pages/session-laps'));
 export const SessionCreatePage = lazy(() => import('src/pages/session-create'));
 export const SessionHistoryPage = lazy(() => import('src/pages/session-history'));
 export const SessionDetailPage = lazy(() => import('src/pages/session-detail'));
@@ -100,6 +102,8 @@ export function Router() {
         { path: 'users/create', element: <UserCreate /> },
         
         { path: 'sessions', element: <SessionManagementPage /> },
+        { path: 'sessions/:id/:user', element: <SessionUserLaps /> },
+        { path: 'sessions/:id/lap-data', element: <SessionLaps /> },
         { path: 'sessions/create', element: <SessionCreatePage /> },
         { path: 'sessions/history', element: <SessionHistoryPage /> },
         { path: 'sessions/:id', element: <DataProvider><SessionDetailPage /></DataProvider> },

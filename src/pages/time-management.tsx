@@ -1,30 +1,30 @@
-import { useState, useEffect } from 'react';
+import { LoadingButton } from '@mui/lab';
 import {
   Box,
-  Card,
-  Table,
   Button,
+  Card,
   Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
   Switch,
-  TableRow,
+  Table,
   TableBody,
   TableCell,
-  TableHead,
-  TextField,
   TableContainer,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Stack,
+  TableHead,
+  TableRow,
+  TextField,
   Typography,
-  IconButton,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useBoolean } from 'src/hooks/use-boolean';
 import { Iconify } from 'src/components/iconify';
-import { Plan } from 'src/types/billing';
+import { useBoolean } from 'src/hooks/use-boolean';
 import { billingApi } from 'src/services/api/billing.api';
+import { Plan } from 'src/types/billing';
 
 interface PlanFormData {
   name: string;
@@ -174,6 +174,7 @@ export default function TimeManagementPage() {
                   <TableCell align="center">Time (mins)</TableCell>
                   <TableCell align="right">Cost (₹)</TableCell>
                   <TableCell align="center">Visible</TableCell>
+                  <TableCell align="right">Description</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -186,6 +187,7 @@ export default function TimeManagementPage() {
                     <TableCell align="center">
                       <Switch checked={plan.isVisible} disabled />
                     </TableCell>
+                    <TableCell align="right">{plan.description}</TableCell>
                     <TableCell align="right">
                       <IconButton onClick={() => handleEdit(plan)}>
                         <Iconify icon="eva:edit-fill" />
