@@ -15,6 +15,7 @@ interface RemainingUsersProps {
   onExpand: (expanded: boolean) => void;
   availableCarts?: Cart[];
   getActiveUserData: (userId: string) => any;
+  isUpdating?: boolean;
 }
 
 export function RemainingUsers({ 
@@ -26,6 +27,7 @@ export function RemainingUsers({
   onExpand,
   availableCarts,
   getActiveUserData,
+  isUpdating,
 }: RemainingUsersProps) {
   if (users.length === 0) return null;
 
@@ -142,8 +144,10 @@ export function RemainingUsers({
                 groupUserId={user.id}
                 cartAssignments={cartAssignments}
                 onAssignCart={onAssignCart}
-                availableCarts={availableCarts}
+                availableCarts={availableCarts || []}
                 activeUser={getActiveUserData(user.user_id)}
+                isUpdating={isUpdating}
+                isOptimistic={user.id.toString().includes('.')}
               />
             </Stack>
           ))}

@@ -103,7 +103,7 @@ export default function SessionManagementPage() {
           </Button>
         </Stack>
 
-          <Stack spacing={2}>
+          <Stack direction="row" spacing={2}>
             {loading && <SessionCardSkeleton />}
             {!loading && sessions?.map((item: Session, index: number) => (
               <SessionCard

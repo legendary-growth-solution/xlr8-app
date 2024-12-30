@@ -15,7 +15,6 @@ interface DataContextType {
   refreshGroupUsers: () => Promise<void>;
   getGroupUsers: (groupId: string) => GroupUserMappingWithUser[];
   activeGroupUsers: GroupUserMappingWithUser[];
-  refreshActiveGroupUsers: () => Promise<void>;
   isUserInActiveRace: (userId: string) => boolean;
   availableCarts: Cart[];
 }
@@ -47,27 +46,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const fetchGroupUsers = async (groupId: string) => {
-    try {
-      const response = await groupApi.getUsers(groupId);
-      setGroupUsers((prev :any) => ({
-        ...prev,
-        [groupId]: response.users
-      }));
-    } catch (error) {
-      console.error('Error fetching group users:', error);
-    }
-  };
-
-  const fetchActiveGroupUsers = async () => {
-    try {
-      const response = await groupApi.getActiveUsers();
-      setActiveGroupUsers(response.users as any);
-    } catch (error) {
-      console.error('Error fetching active group users:', error);
-    }
-  };
-
   const refreshUsers = useMemo(() => fetchUsers, []);
   const refreshCarts = useMemo(() => fetchCarts, []);
   const refreshGroupUsers = useCallback(async () => {
@@ -78,7 +56,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('Error refreshing group users:', error);
     }
   }, []);
-  const refreshActiveGroupUsers = useMemo(() => fetchActiveGroupUsers, []);
 
   const getGroupUsers = useMemo(() => (groupId: string): GroupUserMappingWithUser[] => activeGroupUsers.filter(gu => gu.group_id === groupId), [activeGroupUsers]);
 
@@ -126,9 +103,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     refreshGroupUsers,
     getGroupUsers,
     activeGroupUsers,
-    refreshActiveGroupUsers,
     isUserInActiveRace,
-  }), [users, carts, groupUsers, availableCarts, loading, refreshUsers, refreshCarts, refreshGroupUsers, getGroupUsers, activeGroupUsers, refreshActiveGroupUsers, isUserInActiveRace]);
+  }), [users, carts, groupUsers, availableCarts, loading, refreshUsers, refreshCarts, refreshGroupUsers, getGroupUsers, activeGroupUsers, isUserInActiveRace]);
 
   return (
     <DataContext.Provider value={value}>

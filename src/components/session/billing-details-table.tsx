@@ -28,7 +28,6 @@ interface BillingDetailsTableProps {
 }
 
 export function BillingDetailsTable({ billingData }: BillingDetailsTableProps) {
-  // Safely access billing data with optional chaining and default values
   const billing = billingData?.billing_data || {
     total_amount: 0,
     total_discount: 0,
@@ -73,7 +72,6 @@ export function BillingDetailsTable({ billingData }: BillingDetailsTableProps) {
     { label: 'Total Amount', value: billing.grand_total },
   ];
 
-  // If no billing data is available, show empty state
   if (!billingData?.billing_data) {
     return (
       <Box sx={{ mt: 3 }}>

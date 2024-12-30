@@ -12,6 +12,8 @@ import { Iconify } from 'src/components/iconify';
 
 import { AuthProvider } from 'src/hooks/use-auth';
 
+import Toast from 'src/components/toast';
+
 
 // ----------------------------------------------------------------------
 
@@ -23,6 +25,7 @@ export default function App() {
         <ThemeProvider>
           <Router />
         </ThemeProvider>
+        <Toast />
     </AuthProvider>
   );
 }

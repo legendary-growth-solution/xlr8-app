@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Box, Stack, Typography, Button, Skeleton } from '@mui/material';
 import { Group } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
@@ -10,7 +10,7 @@ import { GroupUserListSkeleton } from '../skeleton/GroupUserListSkeleton';
 
 interface GroupCardProps {
   group: Group;
-  onManageUsers: (group: Group) => void;
+  onManageUsers: (group: Group & { onUpdate?: (users: any[], isLoading?: boolean) => void }) => void;
   isActive: boolean;
   onAssignCart: (
     groupId: string,
@@ -41,6 +41,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
   const [billGenError, setBillGenError] = useState<string | null>(null);
   const [loadingBilling, setLoadingBilling] = useState(false);
   const [hasBillingData, setHasBillingData] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     const users = getGroupUsers(group.id);
@@ -55,7 +56,8 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
     };
 
     handleGroupUpdate();
-  }, [group.id, refreshGroupUsers, getGroupUsers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getBillingData = async () => {
     try {
@@ -159,6 +161,18 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
     }
   };
 
+  const handleUserUpdate = useCallback((updatedUsers: any[], isLoading = true) => {
+    setLocalGroupUsers(updatedUsers);
+    setIsUpdating(isLoading);
+  }, []);
+
+  const handleManageUsers = useCallback((grp: Group) => {
+    onManageUsers({
+      ...grp,
+      onUpdate: handleUserUpdate,
+    });
+  }, [onManageUsers, handleUserUpdate]);
+
   return (
     <Box sx={{ position: 'relative', height: '100%' }}>
       {isExpanded && (
@@ -232,6 +246,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
                 getActiveUserData={getActiveUserData}
                 isExpanded={isExpanded}
                 onExpand={setIsExpanded}
+                isUpdating={isUpdating}
               />
             )}
           </Stack>
@@ -245,8 +260,8 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
               variant="contained"
               color="primary"
               startIcon={<Iconify icon="solar:users-group-rounded-bold" />}
-              onClick={() => onManageUsers(group)}
-              disabled={!isActive || gucDataLoading}
+              onClick={() => handleManageUsers(group)}
+              disabled={!isActive || gucDataLoading || isUpdating}
             >
               Manage Group Users
             </Button>

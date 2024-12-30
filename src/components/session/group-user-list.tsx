@@ -12,6 +12,7 @@ interface GroupUserListProps {
   getActiveUserData: (userId: string) => any;
   isExpanded: boolean;
   onExpand: (expanded: boolean) => void;
+  isUpdating?: boolean;
 }
 
 export function GroupUserList({
@@ -23,6 +24,7 @@ export function GroupUserList({
   getActiveUserData,
   isExpanded,
   onExpand,
+  isUpdating = false,
 }: GroupUserListProps) {
   const getUserDuration = (userId: string) => {
     const mapping = mainUsers.find(gu => gu.user_id === userId);
@@ -106,6 +108,8 @@ export function GroupUserList({
               availableCarts={availableCarts}
               onAssignCart={onAssignCart}
               activeUser={getActiveUserData(user.user_id)}
+              isOptimistic={user.id.toString().includes('.')}
+              isUpdating={isUpdating}
             />
           </Box>
         </Stack>
@@ -120,6 +124,7 @@ export function GroupUserList({
         availableCarts={availableCarts}
         onExpand={onExpand}
         getActiveUserData={getActiveUserData}
+        isUpdating={isUpdating}
       />
     </Box>
   );

@@ -37,7 +37,7 @@ interface SelectedUser {
 interface ManageUsersDialogProps {
   open: boolean;
   loading: boolean;
-  group: Group | null;
+  group: any;
   allUsers: User[];
   selectedUsers: SelectedUser[];
   searchQuery: string;
@@ -51,7 +51,7 @@ interface ManageUsersDialogProps {
 }
 
 const MIN_TIME = 5;
-const MIN_TIME_ALLOWED = 5;
+const MIN_TIME_ALLOWED = 1;
 const DEFAULT_TIME = 10;
 
 interface GroupUserMapping {
@@ -93,6 +93,7 @@ export function ManageUsersDialog({
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [planError, setPlanError] = useState<string | null>(null);
   const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({});
+  const [deletingUsers, setDeletingUsers] = useState<Set<string>>(new Set());
 
   const allGroupUsers = getGroupUsers(group?.id || '');
 
@@ -116,13 +117,12 @@ export function ManageUsersDialog({
         onSelectUser(user.userId, true);
       });
 
-      await refreshGroupUsers();
     } catch (error) {
       console.error('Error fetching group users:', error);
     } finally {
       setLoadingUsers(false);
     }
-  }, [group, onSelectAll, onSelectUser, refreshGroupUsers]);
+  }, [group, onSelectAll, onSelectUser]);
 
   useEffect(() => {
     if (open && group) {
@@ -215,14 +215,45 @@ export function ManageUsersDialog({
       );
 
       if (confirmed) {
-        await groupApi.deleteMember(group.id, userId);
-        await refreshGroupUsers();
-        await fetchGroupUsers();
-        onClose();
+        setDeletingUsers(prev => new Set(prev).add(userId));
+        
+        const updatedUsers = groupUsers.filter(user => user.user_id !== userId).map(user => ({
+          ...user,
+          user: allUsers.find(u => u.id === user.user_id) || {
+            id: user.user_id,
+            name: 'Unknown',
+            email: '',
+          }
+        }));
+        
+        group.onUpdate?.(updatedUsers, true);
+        setGroupUsers(updatedUsers);
+
+        try {
+          await groupApi.deleteMember(group.id, userId);
+          await refreshGroupUsers();
+          group.onUpdate?.(updatedUsers, false);
+        } catch (error) {
+          console.error('Error removing group member:', error);
+          const revertedUsers = [...groupUsers];
+          group.onUpdate?.(revertedUsers, false);
+          setGroupUsers(revertedUsers);
+        } finally {
+          setDeletingUsers(prev => {
+            const next = new Set(prev);
+            next.delete(userId);
+            return next;
+          });
+        }
       }
     } catch (error) {
       console.error('Error removing group member:', error);
       setErrors(['Failed to remove group member']);
+      setDeletingUsers(prev => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
     }
   };
 
@@ -262,8 +293,6 @@ export function ManageUsersDialog({
     }
 
     try {
-      setIsSubmitting(true);
-
       const userUpdatesMap = new Map();
 
       selectedUsers.forEach((user) => {
@@ -279,17 +308,48 @@ export function ManageUsersDialog({
 
       const usersToUpdate = Array.from(userUpdatesMap.values());
 
-      onSave(usersToUpdate);
+      const optimisticUsers = usersToUpdate.map(user => {
+        const fullUser = allUsers.find(u => u.id === user.userId) || {
+          id: user.userId,
+          name: 'Unknown',
+          email: '',
+        };
+        
+        return {
+          id: Math.random().toString(),
+          user_id: user.userId,
+          group_id: group.id,
+          time_in_minutes: user.timeInMinutes,
+          status: 'active',
+          race_status: 'pending',
+          user: {
+            id: fullUser.id,
+            name: fullUser.name,
+            email: fullUser.email,
+            phone: (fullUser as User).phone || '',
+          },
+        };
+      });
 
-      setPendingTimeChanges({});
-      await refreshGroupUsers();
-      await fetchGroupUsers();
+      group.onUpdate?.(optimisticUsers, true);
       onClose();
+
+      try {
+        setIsSubmitting(true);
+        await onSave(usersToUpdate);
+        await refreshGroupUsers();
+        group.onUpdate?.(optimisticUsers, false);
+      } catch (error) {
+        console.error('Error saving changes:', error);
+        group.onUpdate?.(groupUsers, false);
+        setErrors(['Failed to save changes']);
+      } finally {
+        setIsSubmitting(false);
+      }
+
     } catch (error) {
       console.error('Error saving changes:', error);
       setErrors(['Failed to save changes']);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -433,10 +493,26 @@ export function ManageUsersDialog({
                             size="small"
                             color="error"
                             onClick={() => handleRemoveMember(user.id)}
-                            disabled={hasRaceStarted || false}
+                            disabled={hasRaceStarted || deletingUsers.has(user.id)}
                             sx={{ marginLeft: 1 }}
                           >
-                            <Iconify icon="eva:trash-2-outline" />
+                            {deletingUsers.has(user.id) ? (
+                              <LoadingButton
+                                loading
+                                size="small"
+                                sx={{ 
+                                  minWidth: 20, 
+                                  p: 0,
+                                  '& .MuiCircularProgress-root': {
+                                    width: '20px !important',
+                                    height: '20px !important',
+                                    color: 'error.main'
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <Iconify icon="eva:trash-2-outline" />
+                            )}
                           </IconButton>
                         ) : (
                           <Checkbox

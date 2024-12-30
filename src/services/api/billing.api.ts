@@ -24,6 +24,9 @@ export const billingApi = {
   getBillingData: (groupId: string) => 
     apiClient.get<{ data: any }>(API_ENDPOINTS.billing.getBillingData(groupId)),
 
+  getAllInvoices: () => 
+    apiClient.get<{ data: any }>(API_ENDPOINTS.billing.allInvoices),
+
   generateBill: (groupId: string, billingDetails: BillingDetails) => 
     apiClient.post<{ url: string }>(API_ENDPOINTS.billing.generateBill(groupId), billingDetails),
 

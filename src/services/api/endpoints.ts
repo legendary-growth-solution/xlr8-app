@@ -71,5 +71,6 @@ export const API_ENDPOINTS = {
     validateDiscountCode: '/api/billing/discount-codes/validate',
     generateBill: (groupId: string) => `/api/billing/groups/${groupId}/generate`,
     getBillingData: (groupId: string) => `/api/billing/groups/${groupId}/data`,
+    allInvoices: createEndpoint('/api/billing/all-invoices'),
   },
 } as const;

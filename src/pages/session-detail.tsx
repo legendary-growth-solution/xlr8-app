@@ -22,10 +22,10 @@ import { sessionApi } from 'src/services/api/session.api';
 import { groupApi } from 'src/services/api/group.api';
 import { userApi } from 'src/services/api/user.api';
 import { useGUCData } from 'src/contexts/DataContext';
-import LoadingScreen from 'src/components/loading-screen/LoadingScreen';
 import { cartApi } from 'src/services/api/cart.api';
 import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
 import { usePathname } from 'src/routes/hooks';
+import Toast, { showToast } from 'src/components/toast';
 import LiveLeaderboard from './live-leaderboard';
 
 interface SelectedUser {
@@ -83,66 +83,73 @@ export default function SessionDetailPage() {
     }
   };
 
-  const getAvailableUsers = () => {
-    const assignedUserIds = groups.flatMap(group => group.users.map(user => user.id));
-    return allUsers.filter((user :any) => !assignedUserIds.includes(user.id));
-  };
+  // const getAvailableUsers = () => {
+  //   const assignedUserIds = groups.flatMap(group => group.users.map(user => user.id));
+  //   return allUsers.filter((user :any) => !assignedUserIds.includes(user.id));
+  // };
 
   const handleEndSession = async () => {
     try {
       setLoading(true);
+      try {
+        await sessionApi.update(session!.id, { 
+          status: 'completed',
+          end_time: new Date().toISOString()
+        });
+        navigate('/sessions');
+      } catch (error) {
+        console.error('Error ending session:', error);
+        showToast.error('Failed to end session.', {
+          description: error?.response?.data?.error
+        });
+      }
       
-      await sessionApi.update(session!.id, { 
-        status: 'completed',
-        end_time: new Date().toISOString()
-      });
-      
-      navigate('/sessions');
     } catch (error) {
       console.error('Error ending session:', error);
+      showToast.error('Failed to end session. Please try again.');
     } finally {
       setLoading(false);
       setOpenEndSession(false);
     }
   };
 
-  const handleOpenUserDialog = (groupId: string) => {
-    setSelectedGroupId(groupId);
-    setSelectedUsers([]);
-    setOpenUserDialog(true);
-  };
+  // const handleOpenUserDialog = (groupId: string) => {
+  //   setSelectedGroupId(groupId);
+  //   setSelectedUsers([]);
+  //   setOpenUserDialog(true);
+  // };
 
-  const handleAddUsers = async () => {
-    if (!selectedGroupId) return;
+  // const handleAddUsers = async () => {
+  //   if (!selectedGroupId) return;
     
-    try {
-      setLoading(true);
-      const selectedGroupFinal = groups.find(g => g.id === selectedGroupId);
+  //   try {
+  //     setLoading(true);
+  //     const selectedGroupFinal = groups.find(g => g.id === selectedGroupId);
       
-      if (selectedGroupFinal) {
-        const newUsers = selectedUsers.map(su => ({
-          ...allUsers.find((u :any) => u.id === su.userId)!,
-          timeInMinutes: su.timeInMinutes,
-        }));
+  //     if (selectedGroupFinal) {
+  //       const newUsers = selectedUsers.map(su => ({
+  //         ...allUsers.find((u :any) => u.id === su.userId)!,
+  //         timeInMinutes: su.timeInMinutes,
+  //       }));
         
-        await groupApi.addUsers(selectedGroupId, {
-          users: selectedUsers.map(user => ({
-            userId: user.userId,
-            timeInMinutes: user.timeInMinutes
-          }))
-        });
+  //       await groupApi.addUsers(selectedGroupId, {
+  //         users: selectedUsers.map(user => ({
+  //           userId: user.userId,
+  //           timeInMinutes: user.timeInMinutes
+  //         }))
+  //       });
 
-        await fetchSessionDetails();
-      }
+  //       await fetchSessionDetails();
+  //     }
       
-      setOpenUserDialog(false);
-      setSelectedUsers([]);
-    } catch (error) {
-      console.error('Error adding users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     setOpenUserDialog(false);
+  //     setSelectedUsers([]);
+  //   } catch (error) {
+  //     console.error('Error adding users:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleCreateGroup = async () => {
     if (!session) return;
@@ -164,27 +171,27 @@ export default function SessionDetailPage() {
     }
   };
 
-  const handleStartRace = async (groupId: string, userId: string, groupUserId: string, cartId: string) => {
-    if (!session) return;
+  // const handleStartRace = async (groupId: string, userId: string, groupUserId: string, cartId: string) => {
+  //   if (!session) return;
     
-    try {
-      await userApi.startRace(userId, groupId);
-      await fetchSessionDetails();
-    } catch (error) {
-      console.error('Error starting race:', error);
-    }
-  };
+  //   try {
+  //     await userApi.startRace(userId, groupId);
+  //     await fetchSessionDetails();
+  //   } catch (error) {
+  //     console.error('Error starting race:', error);
+  //   }
+  // };
 
-  const handleStopRace = async (groupId: string) => {
-    if (!session) return;
+  // const handleStopRace = async (groupId: string) => {
+  //   if (!session) return;
     
-    try {
-      await sessionApi.stopRace(session.id);
-      await fetchSessionDetails();
-    } catch (error) {
-      console.error('Error stopping race:', error);
-    }
-  };
+  //   try {
+  //     await sessionApi.stopRace(session.id);
+  //     await fetchSessionDetails();
+  //   } catch (error) {
+  //     console.error('Error stopping race:', error);
+  //   }
+  // };
 
   const handleOpenManageUsers = (group: Group) => {
     setSelectedGroup(group);
@@ -457,6 +464,8 @@ export default function SessionDetailPage() {
         onClose={() => setOpenEndSession(false)}
         onConfirm={handleEndSession}
       />
+
+      <Toast />
     </>
   );
 } 

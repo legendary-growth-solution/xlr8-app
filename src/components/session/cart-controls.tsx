@@ -22,18 +22,26 @@ import { userApi } from 'src/services/api/user.api';
 interface CartControlsProps {
   userId: string;
   groupId: string;
-  cartAssignments: CartAssignment[];
+  cartAssignments: any[];
   groupUserId: string;
   onAssignCart: (userId: string, cartId: string, groupUserId: string) => Promise<void>;
-  availableCarts?: Cart[];
-  activeUser?: {
-    race_status: 'not_started' | 'in_progress' | 'completed';
-    race_start_time?: string;
-    expected_end_time?: string;
-  };
+  availableCarts: any[];
+  activeUser: any;
+  isOptimistic?: boolean;
+  isUpdating?: boolean;
 }
 
-export function CartControls({ userId, groupId, groupUserId, cartAssignments, onAssignCart, availableCarts, activeUser }: CartControlsProps) {
+export function CartControls({ 
+  userId, 
+  groupId, 
+  groupUserId,
+  cartAssignments, 
+  availableCarts, 
+  onAssignCart,
+  activeUser,
+  isOptimistic = false,
+  isUpdating = false,
+}: CartControlsProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isRaceStarted, setIsRaceStarted] = useState(activeUser?.race_status === 'in_progress');
@@ -211,26 +219,30 @@ export function CartControls({ userId, groupId, groupUserId, cartAssignments, on
   return (
     <>
       <Stack direction="row" spacing={1} alignItems="center">
-        {currentCart ? (
+        {currentCart && (
           <Box 
-            onClick={isAssigning || isRaceActive ? undefined : handleOpenCartMenu}
+            onClick={isAssigning || isOptimistic || isUpdating ? undefined : handleOpenCartMenu}
             sx={{ 
-              opacity: isAssigning || isRaceActive ? 0.5 : 1,
-              pointerEvents: isAssigning || isRaceActive ? 'none' : 'auto',
+              opacity: isAssigning || isOptimistic || isUpdating ? 0.5 : raceStatus === 'completed' ? 0.7 : 1,
+              pointerEvents: isAssigning || isOptimistic || isUpdating ? 'none' : 'auto',
               display: 'flex', 
               alignItems: 'center',
-              bgcolor: isAssigning ? 'action.disabledBackground' : 'success.lighter',
+              bgcolor: isAssigning ? 'action.disabledBackground' : 
+                      raceStatus === 'completed' ? 'grey.200' : 'success.lighter',
               borderRadius: '8px',
               height: '32px',
               minWidth: 'fit-content !important',
               padding: '0 8px',
               width: '52px',
               border: '1px solid',
-              borderColor: isAssigning ? 'action.disabled' : 'success.light',
+              borderColor: isAssigning ? 'action.disabled' : 
+                         raceStatus === 'completed' ? 'grey.300' : 'success.light',
               position: 'relative',
               transition: 'all 0.2s',
+              cursor: raceStatus === 'completed' ? 'default' : 'pointer',
               '&:hover': {
-                borderColor: isAssigning ? 'action.disabled' : 'success.main',
+                borderColor: isAssigning ? 'action.disabled' : 
+                           raceStatus === 'completed' ? 'grey.300' : 'success.main',
               }
             }}
           >
@@ -310,11 +322,13 @@ export function CartControls({ userId, groupId, groupUserId, cartAssignments, on
               )}
             </Box>
           </Box>
-        ) : (
+        )}
+
+        {!currentCart && (
           <IconButton
             size="small"
             onClick={handleOpenCartMenu}
-            disabled={isAssigning || isRaceActive}
+            disabled={isAssigning || isRaceActive || isOptimistic || isUpdating}
             sx={{ 
               color: 'primary.main',
               '&:hover': { bgcolor: 'primary.lighter' }
@@ -325,38 +339,31 @@ export function CartControls({ userId, groupId, groupUserId, cartAssignments, on
         )}
 
         <Box sx={{ position: 'relative' }}>
-          {!isRaceStarted ? (
+          {!isRaceStarted && raceStatus !== 'completed' ? (
             <IconButton
               size="small"
               onClick={handleStartRace}
-              disabled={!currentCart || isAssigning || raceStatus === 'completed'}
+              disabled={!currentCart || isAssigning}
               sx={{ 
-                color: raceStatus === 'completed' ? 'error.main' : 'success.main',
-                '&:hover': { 
-                  bgcolor: raceStatus === 'completed' 
-                    ? 'error.lighter'
-                    : 'success.lighter' 
-                }
+                color: 'success.main',
+                '&:hover': { bgcolor: 'success.lighter' }
               }}
             >
-              <Iconify 
-                icon={raceStatus === 'completed' ? "mdi:flag-checkered" : "mdi:play"} 
-                width={20} 
-              />
+              <Iconify icon="mdi:play" width={20} />
             </IconButton>
           ) : (
             <Typography
               sx={{
-                bgcolor: timeLeft === 0 ? 'error.lighter' : 'warning.lighter',
+                bgcolor: timeLeft === 0 || raceStatus === 'completed' ? 'error.lighter' : 'warning.lighter',
                 borderRadius: 1,
                 px: 1,
                 minWidth: 55,
-                color: timeLeft === 0 ? 'error.dark' : 'warning.dark',
+                color: timeLeft === 0 || raceStatus === 'completed' ? 'error.dark' : 'warning.dark',
                 textAlign: 'center',
                 fontSize: '0.9rem'
               }}
             >
-              {timeLeft === 0 ? 'END' : formatTime(timeLeft || 0)}
+              {timeLeft === 0 || raceStatus === 'completed' ? 'END' : formatTime(timeLeft || 0)}
             </Typography>
           )}
         </Box>
@@ -364,7 +371,7 @@ export function CartControls({ userId, groupId, groupUserId, cartAssignments, on
 
       <Menu
         anchorEl={anchorEl}
-        open={Boolean(anchorEl) && !isAssigning && !isRaceActive}
+        open={Boolean(anchorEl) && !isAssigning && !isRaceActive && !isOptimistic && !isUpdating}
         onClose={handleCloseCartMenu}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
