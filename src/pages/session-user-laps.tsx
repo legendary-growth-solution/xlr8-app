@@ -32,7 +32,7 @@ const App: React.FC = () => {
             <Button
               variant="outlined"
               startIcon={<Iconify icon="eva:arrow-back-fill" />}
-              onClick={() => navigate('/sessions')}
+              onClick={() => navigate(-1)}
             >
               Back
             </Button>

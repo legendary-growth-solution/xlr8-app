@@ -1,10 +1,10 @@
+import { Card } from '@mui/material';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Box, Card, keyframes } from '@mui/material';
+import { LogoClear } from 'src/components/register/LogoClear';
+import { PageContainer } from '../components/register/PageContainer';
 import { RegistrationForm } from '../components/register/RegistrationForm';
 import { SuccessMessage } from '../components/register/SuccessMessage';
-import { PageContainer } from '../components/register/PageContainer';
-import { Logo } from '../components/register/Logo';
 
 export default function RegisterUserPage() {
   const [isSuccess, setIsSuccess] = useState(false);
@@ -15,7 +15,7 @@ export default function RegisterUserPage() {
         <title>Register User</title>
       </Helmet>
 
-      <Logo />
+      <LogoClear />
 
       <Card 
         sx={{ 

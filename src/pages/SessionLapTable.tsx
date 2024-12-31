@@ -58,7 +58,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                 <TableCell>Lap Number</TableCell>
                 <TableCell>Lap Time (seconds)</TableCell>
                 <TableCell>User ID</TableCell>
-                <TableCell>Timestamp</TableCell>
+                {/* <TableCell>Timestamp</TableCell> */}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -67,7 +67,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                   <TableCell>{lap.lap_number}</TableCell>
                   <TableCell>{lap.lap_time}</TableCell>
                   <TableCell>{lap.user_id}</TableCell>
-                  <TableCell>{new Date(lap.timestamp).toLocaleString()}</TableCell>
+                  {/* <TableCell>{new Date(lap.timestamp).toLocaleString()}</TableCell> */}
                 </TableRow>
               ))}
             </TableBody>
