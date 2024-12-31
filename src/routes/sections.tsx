@@ -102,7 +102,7 @@ export function Router() {
         { path: 'users/create', element: <UserCreate /> },
         
         { path: 'sessions', element: <SessionManagementPage /> },
-        { path: 'sessions/:id/:user', element: <SessionUserLaps /> },
+        { path: 'sessions/:id/:user/:groupId', element: <SessionUserLaps /> },
         { path: 'sessions/:id/lap-data', element: <SessionLaps /> },
         { path: 'sessions/create', element: <SessionCreatePage /> },
         { path: 'sessions/history', element: <SessionHistoryPage /> },

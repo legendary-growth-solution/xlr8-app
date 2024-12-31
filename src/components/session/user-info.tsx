@@ -5,13 +5,14 @@ interface UserInfoProps {
   name: string;
   email: string;
   userId: string;
+  groupId: string;
 }
 
-export function UserInfo({ name, email, userId }: UserInfoProps) {
+export function UserInfo({ name, email, userId, groupId }: UserInfoProps) {
   const navigate = useNavigate();
 
   const handleRedirect = () => {
-    navigate(`${userId}`, {state: { "name": name } });
+    navigate(`${userId}/${groupId}`, {state: { "name": name } });
   };
 
   return (

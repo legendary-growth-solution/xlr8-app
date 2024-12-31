@@ -30,9 +30,10 @@ interface Lap {
 interface EditableTableProps {
   sessionId: string;
   userId: string;
+  groupId: string;
 }
 
-const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId }) => {
+const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId, groupId }) => {
   const [lapData, setLapData] = useState<Lap[]>([]);
   const [editRowId, setEditRowId] = useState<string | null>(null);
   const [editedRow, setEditedRow] = useState<Partial<Lap>>({});
@@ -49,9 +50,9 @@ const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId }) => {
   // update_lap
   useEffect(() => {
     // Fetch lap data from the API
-    if(sessionId && userId){
+    if(groupId && userId){
     axios
-      .get<Lap[]>(`http://127.0.0.1:5000/api/sessions/${sessionId}/${userId}`)
+      .get<Lap[]>(`http://127.0.0.1:5000/api/sessions/${groupId}/${userId}`)
       .then((response : any) => {
         setLapData(response.data.laps);
         setLoading(false);
@@ -61,7 +62,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId }) => {
         setLoading(false);
       });
     }
-  }, [sessionId, userId]);
+  }, [groupId, userId]);
 
   const handleEdit = (id: string, row: Lap) => {
     setEditRowId(id);
@@ -97,7 +98,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId }) => {
   const handleAdd = async () => {
     const newLapData = {
       ...newLap,
-      group_id: sessionId,
+      group_id: groupId,
       user_id: userId,
     };
 

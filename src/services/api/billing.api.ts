@@ -18,8 +18,12 @@ export const billingApi = {
   deleteDiscountCode: (codeId: string) => 
     apiClient.delete(`${API_ENDPOINTS.billing.discountCodes}/${codeId}`),
 
-  validateDiscountCode: (code: string) => 
-    apiClient.post<{ valid: boolean; discount?: DiscountCode }>(API_ENDPOINTS.billing.validateDiscountCode, { code }),
+  validateDiscountCode: (groupId: string, code: string) => 
+    apiClient.post<{ 
+      valid: boolean;
+      discount_amount?: number;
+      message?: string;
+    }>(API_ENDPOINTS.billing.validateDiscountCode(groupId), { code }),
 
   getBillingData: (groupId: string) => 
     apiClient.get<{ data: any }>(API_ENDPOINTS.billing.getBillingData(groupId)),

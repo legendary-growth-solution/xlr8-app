@@ -8,4 +8,5 @@ export type LiveLeaderboardEntry = {
   timeInMinutes: number;
   raceStatus: string;
   endTime: string | null;
+  bestLap: number | null;
 }; 

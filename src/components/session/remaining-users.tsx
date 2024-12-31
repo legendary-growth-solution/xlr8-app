@@ -135,7 +135,7 @@ export function RemainingUsers({
                 </Typography>
               </Box>
 
-              <UserInfo name={user.user.name} email={user.user.email} userId={user.user.id} />
+              <UserInfo groupId={groupId} name={user.user.name} email={user.user.email} userId={user.user.id} />
 
               <CartControls 
                 userId={user.user_id}

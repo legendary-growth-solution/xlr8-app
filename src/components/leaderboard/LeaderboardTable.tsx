@@ -71,7 +71,7 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
       <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
         <thead>
           <tr>
-            {['Rank', 'Name', sessionStatus === 'active' ? 'Cart' : null, 'Group', 'Laps', 'Best Lap Time'].filter(Boolean).map(
+            {['Rank', 'Name', sessionStatus === 'active' ? 'Cart' : null, 'Group', 'Laps', 'Best Lap', 'Best Lap Time'].filter(Boolean).map(
               (header) => (
                 <th
                   key={header}
@@ -115,6 +115,9 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
               <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
                 {entry.totalLaps}
               </td>
+              <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
+                {entry.bestLap}
+              </td>
               <td
                 style={{
                   padding: '20px',
@@ -125,7 +128,7 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.bestLapTime ? fTime(entry.bestLapTime) : '-'}
+                {entry.bestLapTime ? (entry.bestLapTime) : '-'}
               </td>
               {/* <td
                 style={{

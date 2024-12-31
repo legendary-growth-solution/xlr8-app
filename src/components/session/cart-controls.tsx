@@ -8,7 +8,8 @@ import {
   Box,
   Typography ,
   Alert,
-  Snackbar
+  Snackbar,
+  Skeleton
 } from '@mui/material';
 import { useState, useEffect, useCallback } from 'react';
 import { Iconify } from 'src/components/iconify';
@@ -219,30 +220,37 @@ export function CartControls({
   return (
     <>
       <Stack direction="row" spacing={1} alignItems="center">
-        {currentCart && (
-          <Box 
-            onClick={isAssigning || isOptimistic || isUpdating ? undefined : handleOpenCartMenu}
+        {(isAssigning || isUpdating) ? (
+          <Skeleton 
+            variant="rectangular" 
+            width={52} 
+            height={32} 
             sx={{ 
-              opacity: isAssigning || isOptimistic || isUpdating ? 0.5 : raceStatus === 'completed' ? 0.7 : 1,
-              pointerEvents: isAssigning || isOptimistic || isUpdating ? 'none' : 'auto',
+              borderRadius: '8px',
+              bgcolor: 'background.neutral' 
+            }} 
+          />
+        ) : currentCart ? (
+          <Box 
+            onClick={isOptimistic ? undefined : handleOpenCartMenu}
+            sx={{ 
+              opacity: isOptimistic ? 0.5 : raceStatus === 'completed' ? 0.7 : 1,
+              pointerEvents: isOptimistic ? 'none' : 'auto',
               display: 'flex', 
               alignItems: 'center',
-              bgcolor: isAssigning ? 'action.disabledBackground' : 
-                      raceStatus === 'completed' ? 'grey.200' : 'success.lighter',
+              bgcolor: raceStatus === 'completed' ? 'grey.200' : 'success.lighter',
               borderRadius: '8px',
               height: '32px',
               minWidth: 'fit-content !important',
               padding: '0 8px',
               width: '52px',
               border: '1px solid',
-              borderColor: isAssigning ? 'action.disabled' : 
-                         raceStatus === 'completed' ? 'grey.300' : 'success.light',
+              borderColor: raceStatus === 'completed' ? 'grey.300' : 'success.light',
               position: 'relative',
               transition: 'all 0.2s',
               cursor: raceStatus === 'completed' ? 'default' : 'pointer',
               '&:hover': {
-                borderColor: isAssigning ? 'action.disabled' : 
-                           raceStatus === 'completed' ? 'grey.300' : 'success.main',
+                borderColor: raceStatus === 'completed' ? 'grey.300' : 'success.main',
               }
             }}
           >
@@ -322,13 +330,11 @@ export function CartControls({
               )}
             </Box>
           </Box>
-        )}
-
-        {!currentCart && (
+        ) : (
           <IconButton
             size="small"
             onClick={handleOpenCartMenu}
-            disabled={isAssigning || isRaceActive || isOptimistic || isUpdating}
+            disabled={isRaceActive || isOptimistic}
             sx={{ 
               color: 'primary.main',
               '&:hover': { bgcolor: 'primary.lighter' }
@@ -339,11 +345,21 @@ export function CartControls({
         )}
 
         <Box sx={{ position: 'relative' }}>
-          {!isRaceStarted && raceStatus !== 'completed' ? (
+          {(isAssigning || isUpdating) ? (
+            <Skeleton 
+              variant="rectangular" 
+              width={55} 
+              height={32} 
+              sx={{ 
+                borderRadius: 1,
+                bgcolor: 'background.neutral' 
+              }} 
+            />
+          ) : !isRaceStarted && raceStatus !== 'completed' ? (
             <IconButton
               size="small"
               onClick={handleStartRace}
-              disabled={!currentCart || isAssigning}
+              disabled={!currentCart}
               sx={{ 
                 color: 'success.main',
                 '&:hover': { bgcolor: 'success.lighter' }

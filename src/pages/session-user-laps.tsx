@@ -12,7 +12,7 @@ interface RouteParams {
 }
 
 const App: React.FC = () => {
-  const { id, user } = useParams<any>();
+  const { id, user, groupId } = useParams<any>();
   const location = useLocation();
   const { name } = location.state || {};
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ const App: React.FC = () => {
             </Button>
           </Stack>
         </Stack>
-        <EditableTable sessionId={id || ''} userId={user || ''} />
+        <EditableTable sessionId={id || ''} userId={user || ''} groupId={groupId || ''} />
       </Box>
     </div>
   );

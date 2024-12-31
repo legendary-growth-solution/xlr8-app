@@ -97,7 +97,7 @@ export function GroupUserList({
             </Typography>
           </Box>
 
-          <UserInfo name={user.user.name} email={user.user.email} userId={user.user.id}/>
+          <UserInfo groupId={group.id} name={user.user.name} email={user.user.email} userId={user.user.id}/>
 
           <Box sx={{ flexShrink: 0 }}>
             <CartControls

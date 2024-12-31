@@ -26,6 +26,7 @@ interface BillingData {
   discountCode?: string;
   discountAmount: number;
   totalAmount: number;
+  subtotal?: number;
 }
 
 export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: GroupCardProps) {
@@ -98,14 +99,15 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
 
   const handleGenerateBill = async () => {
     try {
-      const totalAmount = localGroupUsers.reduce((sum, user) => {
-        const duration = getUserDuration(user.user_id);
-        return sum + 70000 * (duration / 60);
-      }, 0);
+      // const totalAmount = localGroupUsers.reduce((sum, user) => {
+      //   const duration = getUserDuration(user.user_id);
+      //   return sum + 70000 * (duration / 60);
+      // }, 0);
 
       setBillingData((prev) => ({
         ...prev,
-        totalAmount,
+        totalAmount : 0,
+        totalUsers: localGroupUsers.length,
       }));
       setOpenBilling(true);
     } catch (error) {
@@ -284,6 +286,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
         open={openBilling}
         onClose={() => setOpenBilling(false)}
         groupName={group.name}
+        groupId={group.id}
         billingData={billingData}
         onBillingDataChange={(data) => setBillingData((prev) => ({ ...prev, ...data }))}
         onDownload={handleDownloadBill}
@@ -292,6 +295,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
         loading={loadingBilling}
         hasBillingData={hasBillingData}
         fetchBillingData={getBillingData}
+        localGroupUsers={localGroupUsers}
       />
     </Box>
   );
