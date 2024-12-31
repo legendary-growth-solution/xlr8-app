@@ -21,7 +21,7 @@ export default function UserManagementPage() {
   const [editData, setEditData] = useState<Partial<User>>({});
   const [openEdit, setOpenEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   
   const navigate = useNavigate();
 
@@ -97,7 +97,7 @@ export default function UserManagementPage() {
       });
       
       setUsers(response.users);
-      setTotalPages(response.total);
+      setTotalPages(Math.ceil(response.total / rowsPerPage));
     } catch (error) {
       console.error('Error fetching users:', error);
       setUsers([]);
@@ -203,8 +203,12 @@ export default function UserManagementPage() {
               }))}
               page={page}
               rowsPerPage={rowsPerPage}
-              onPageChange={setPage}
-              onRowsPerPageChange={setRowsPerPage}
+              totalPages={totalPages}
+              onPageChange={(newPage) => setPage(newPage)}
+              onRowsPerPageChange={(newRowsPerPage) => {
+                setRowsPerPage(newRowsPerPage);
+                setPage(1);
+              }}
               actions={(row) => (
                 <Stack direction="row" spacing={1}>
                   <Button 

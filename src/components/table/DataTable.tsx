@@ -17,6 +17,7 @@ interface DataTableProps {
   loading?: boolean;
   page?: number;
   rowsPerPage?: number;
+  totalPages?: number;
   onPageChange?: (page: number) => void;
   onRowsPerPageChange?: (pageSize: number) => void;
   actions?: (row: any) => JSX.Element;
@@ -33,6 +34,7 @@ export default function DataTable({
   loading = false,
   page = 0,
   rowsPerPage = 10,
+  totalPages = 0,
   onPageChange,
   onRowsPerPageChange,
   actions,
@@ -166,10 +168,10 @@ export default function DataTable({
         <TablePagination
           rowsPerPageOptions={[10, 25, 100]}
           component="div"
-          count={rows.length}
+          count={totalPages * rowsPerPage}
           rowsPerPage={rowsPerPage}
-          page={adjustedPage}
-          onPageChange={handleChangePage}
+          page={page - 1}
+          onPageChange={(_, newPage) => onPageChange?.(newPage + 1)}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       )}
