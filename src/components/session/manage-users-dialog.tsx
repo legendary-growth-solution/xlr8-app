@@ -406,6 +406,9 @@ export function ManageUsersDialog({
   };
 
   const debouncedFetchUsers = debounce(async (query: string) => {
+    if (!query) {
+      return;
+    }
     setLoadingMore(true);
     try {
       const response: any = await fetchUsers({
@@ -424,6 +427,7 @@ export function ManageUsersDialog({
     } catch (error) {
       console.error('Error fetching users:', error);
       setLoadedUsers([]);
+      setLoadingMore(false);
     } finally {
       setLoadingMore(false);
     }

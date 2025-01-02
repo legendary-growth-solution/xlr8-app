@@ -10,8 +10,11 @@ import {
   CircularProgress,
   FormHelperText,
   Typography,
+  IconButton,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { billingApi } from 'src/services/api/billing.api';
+import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { Iconify } from 'src/components/iconify';
 import { showToast } from 'src/components/toast';
 import { useEffect, useState, useCallback } from 'react';
@@ -66,6 +69,8 @@ export function BillingDialog({
   const [step, setStep] = useState<'coupon' | 'details'>('coupon');
   const [validatingCode, setValidatingCode] = useState(false);
   const [codeError, setCodeError] = useState<string>('');
+  const [deleting, setDeleting] = useState(false);
+  const [openConfirm, setOpenConfirm] = useState(false);
 
   const handleGstChange = (value: string) => {
     if (value && !GST_REGEX.test(value)) {
@@ -108,7 +113,8 @@ export function BillingDialog({
       showToast.success(response.data.message || 'Discount code applied successfully');
       onBillingDataChange({ 
         discountAmount: response.data.discount_amount || 0,
-        discountCode: billingData.discountCode?.toUpperCase()
+        discountCode: billingData.discountCode?.toUpperCase(),
+        gstNumber: ''
       });
       setStep('details');
     } catch (error) {
@@ -290,64 +296,104 @@ export function BillingDialog({
     </Stack>
   );
 
+  const handleDeleteClick = () => {
+    setOpenConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleting(true);
+    try {
+      await billingApi.deleteBill(groupId);
+      showToast.success('Bill deleted successfully');
+      onClose();
+    } catch (error) {
+      showToast.error('Error deleting bill');
+    } finally {
+      setDeleting(false);
+      setOpenConfirm(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        {hasBillingData ? 'Generated' : 'Generate'} Bill for {groupName}
-      </DialogTitle>
-      <DialogContent>
-        {loading ? (
-          <CircularProgress />
-        ) : hasBillingData ? (
-          renderExistingBillingData()
-        ) : step === 'coupon' ? (
-          renderCouponStep()
-        ) : (
-          renderDetailsStep()
-        )}
-      </DialogContent>
-      <DialogActions sx={{ justifyContent: 'space-between' }}>
-        <FormHelperText sx={{ ml: 2, color: 'red' }}>{billGenError}</FormHelperText>
-        <Stack direction="row" spacing={2}>
-          {!hasBillingData && step === 'details' && (
-            <Button onClick={() => setStep('coupon')}>Back</Button>
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {hasBillingData ? 'Generated' : 'Generate'} Bill for {groupName}
+          {hasBillingData && (
+            <IconButton
+              onClick={handleDeleteClick}
+              disabled={deleting}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <DeleteIcon />
+            </IconButton>
           )}
-          <Button onClick={onClose} disabled={isGenerating || validatingCode}>
-            Cancel
-          </Button>
-          {!hasBillingData && (
-            <>
-              {step === 'coupon' && (
-                <Button onClick={handleSkipCoupon} disabled={validatingCode}>
-                  Skip
+        </DialogTitle>
+        <DialogContent>
+          {loading ? (
+            <CircularProgress />
+          ) : hasBillingData ? (
+            renderExistingBillingData()
+          ) : step === 'coupon' ? (
+            renderCouponStep()
+          ) : (
+            renderDetailsStep()
+          )}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'space-between' }}>
+          <FormHelperText sx={{ ml: 2, color: 'red' }}>{billGenError}</FormHelperText>
+          <Stack direction="row" spacing={2}>
+            {!hasBillingData && step === 'details' && (
+              <Button onClick={() => setStep('coupon')}>Back</Button>
+            )}
+            <Button onClick={onClose} disabled={isGenerating || validatingCode || deleting}>
+              Cancel
+            </Button>
+            {!hasBillingData && (
+              <>
+                {step === 'coupon' && (
+                  <Button onClick={handleSkipCoupon} disabled={validatingCode}>
+                    Skip
+                  </Button>
+                )}
+                <Button
+                  onClick={step === 'coupon' ? handleValidateCode : handleDownload}
+                  variant="contained"
+                  disabled={isGenerating || validatingCode || (step === 'details' && !!gstError)}
+                  startIcon={
+                    isGenerating || validatingCode ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <Iconify
+                        icon={step === 'coupon' ? 'eva:checkmark-circle-2-fill' : 'eva:save-fill'}
+                      />
+                    )
+                  }
+                >
+                  {isGenerating
+                    ? 'Applying...'
+                    : validatingCode
+                      ? 'Validating...'
+                      : step === 'coupon'
+                        ? 'Validate Code'
+                        : 'Save and Generate Bill'}
                 </Button>
-              )}
-              <Button
-                onClick={step === 'coupon' ? handleValidateCode : handleDownload}
-                variant="contained"
-                disabled={isGenerating || validatingCode || (step === 'details' && !!gstError)}
-                startIcon={
-                  isGenerating || validatingCode ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <Iconify
-                      icon={step === 'coupon' ? 'eva:checkmark-circle-2-fill' : 'eva:save-fill'}
-                    />
-                  )
-                }
-              >
-                {isGenerating
-                  ? 'Applying...'
-                  : validatingCode
-                    ? 'Validating...'
-                    : step === 'coupon'
-                      ? 'Validate Code'
-                      : 'Save and Generate Bill'}
-              </Button>
-            </>
-          )}
-        </Stack>
-      </DialogActions>
-    </Dialog>
+              </>
+            )}
+          </Stack>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        open={openConfirm}
+        title="Delete Bill"
+        content="Are you sure you want to delete the generated bill?"
+        confirmText="Delete"
+        confirmColor="error"
+        loading={deleting}
+        onClose={() => setOpenConfirm(false)}
+        onConfirm={handleDeleteConfirm}
+      />
+    </>
   );
 }

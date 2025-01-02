@@ -54,4 +54,7 @@ export const billingApi = {
         }
       }
     ),
+
+  deleteBill: (groupId: string) => 
+    apiClient.delete(API_ENDPOINTS.billing.deleteBill(groupId)),
 }; 

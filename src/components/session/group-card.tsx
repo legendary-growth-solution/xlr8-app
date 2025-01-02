@@ -4,13 +4,20 @@ import { Group } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
 import { billingApi } from 'src/services/api/billing.api';
 import { useGUCData } from 'src/contexts/DataContext';
+import { alpha } from '@mui/material/styles';
+import { sessionApi } from 'src/services/api/session.api';
 import { BillingDialog } from './billing-dialog';
 import { GroupUserList } from './group-user-list';
 import { GroupUserListSkeleton } from '../skeleton/GroupUserListSkeleton';
+import { showToast } from '../toast';
+import { ConfirmDialog } from '../dialog/confirm-dialog';
+import { DeleteButton } from '../delete-button';
 
 interface GroupCardProps {
   group: Group;
-  onManageUsers: (group: Group & { onUpdate?: (users: any[], isLoading?: boolean) => void }) => void;
+  onManageUsers: (
+    group: Group & { onUpdate?: (users: any[], isLoading?: boolean) => void }
+  ) => void;
   isActive: boolean;
   onAssignCart: (
     groupId: string,
@@ -18,6 +25,9 @@ interface GroupCardProps {
     cartId: string,
     groupUserId: string
   ) => Promise<void>;
+  onGroupDeleted: (groupId: string, success: boolean) => void;
+  sessionId: string;
+  onGroupDeleteSuccess: () => void;
 }
 
 interface BillingData {
@@ -29,8 +39,22 @@ interface BillingData {
   subtotal?: number;
 }
 
-export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: GroupCardProps) {
-  const { getGroupUsers, activeGroupUsers, availableCarts, loading: gucDataLoading, refreshGroupUsers } = useGUCData();
+export function GroupCard({
+  group,
+  onManageUsers,
+  isActive,
+  onAssignCart,
+  onGroupDeleted,
+  sessionId,
+  onGroupDeleteSuccess,
+}: GroupCardProps) {
+  const {
+    getGroupUsers,
+    activeGroupUsers,
+    availableCarts,
+    loading: gucDataLoading,
+    refreshGroupUsers,
+  } = useGUCData();
   const [localGroupUsers, setLocalGroupUsers] = useState<any[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [openBilling, setOpenBilling] = useState(false);
@@ -43,22 +67,24 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
   const [loadingBilling, setLoadingBilling] = useState(false);
   const [hasBillingData, setHasBillingData] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const users = getGroupUsers(group.id);
     setLocalGroupUsers(users);
   }, [group.id, getGroupUsers]);
 
-  useEffect(() => {
-    const handleGroupUpdate = async () => {
-      await refreshGroupUsers();
-      const updatedUsers = getGroupUsers(group.id);
-      setLocalGroupUsers(updatedUsers);
-    };
+  // useEffect(() => {
+  //   const handleGroupUpdate = async () => {
+  //     await refreshGroupUsers();
+  //     const updatedUsers = getGroupUsers(group.id);
+  //     setLocalGroupUsers(updatedUsers);
+  //   };
 
-    handleGroupUpdate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  //   handleGroupUpdate();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   const getBillingData = async () => {
     try {
@@ -106,7 +132,7 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
 
       setBillingData((prev) => ({
         ...prev,
-        totalAmount : 0,
+        totalAmount: 0,
         totalUsers: localGroupUsers.length,
       }));
       setOpenBilling(true);
@@ -139,7 +165,9 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
         users: usersWithDurations,
       });
       if (response.data) {
-        console.log(response.data)
+        setBillGenError(null);
+        showToast.success('Bill generated successfully');
+        setOpenBilling(false);
       }
 
       // const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -168,12 +196,33 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
     setIsUpdating(isLoading);
   }, []);
 
-  const handleManageUsers = useCallback((grp: Group) => {
-    onManageUsers({
-      ...grp,
-      onUpdate: handleUserUpdate,
-    });
-  }, [onManageUsers, handleUserUpdate]);
+  const handleManageUsers = useCallback(
+    (grp: Group) => {
+      onManageUsers({
+        ...grp,
+        onUpdate: handleUserUpdate,
+      });
+    },
+    [onManageUsers, handleUserUpdate]
+  );
+
+  const handleDeleteGroup = async () => {
+    try {
+      setIsDeleting(true);
+      onGroupDeleteSuccess();
+      setShowDeleteDialog(false);
+
+      await sessionApi.deleteGroup(sessionId, group.id);
+      showToast.success('Group deleted successfully');
+      onGroupDeleted(group.id, true);
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      showToast.error('Failed to delete group');
+      onGroupDeleted(group.id, false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <Box sx={{ position: 'relative', height: '100%' }}>
@@ -195,7 +244,11 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
       <Card
         sx={{
           height: '380px',
-          transition: 'none',
+          transition: 'all 0.2s ease-in-out',
+          position: 'relative',
+          '&:hover .delete-icon': {
+            opacity: 1,
+          },
           ...(isExpanded && {
             position: 'absolute',
             zIndex: 999,
@@ -209,6 +262,12 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
           }),
         }}
       >
+        <DeleteButton
+          className="delete-icon"
+          onDelete={() => setShowDeleteDialog(true)}
+          disabled={!isActive || gucDataLoading || isUpdating || isDeleting}
+        />
+
         <Box
           sx={{
             p: 3,
@@ -232,7 +291,11 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
                   fontWeight: 'bold',
                 }}
               >
-                {gucDataLoading ? <Skeleton variant="text" width="40px" height={24} /> : `${localGroupUsers.length} Racer${localGroupUsers.length > 1 ? 's' : ''}`}
+                {gucDataLoading ? (
+                  <Skeleton variant="text" width="40px" height={24} />
+                ) : (
+                  `${localGroupUsers.length} Racer${localGroupUsers.length > 1 ? 's' : ''}`
+                )}
               </Typography>
             </Stack>
 
@@ -276,11 +339,22 @@ export function GroupCard({ group, onManageUsers, isActive, onAssignCart }: Grou
               disabled={localGroupUsers.length === 0}
               // disabled
             >
-              Generate Bill
+              {(group as any)?.isBillGenerated ? 'View' : 'Generate'} Bill
             </Button>
           </Stack>
         </Box>
       </Card>
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        title="Delete Group"
+        content={`Are you sure you want to delete ${group.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmColor="error"
+        loading={isDeleting}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteGroup}
+      />
 
       <BillingDialog
         open={openBilling}

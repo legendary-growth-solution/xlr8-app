@@ -9,4 +9,6 @@ export type LiveLeaderboardEntry = {
   raceStatus: string;
   endTime: string | null;
   bestLap: number | null;
-}; 
+  groupId?: string;
+  userId?: string;
+};

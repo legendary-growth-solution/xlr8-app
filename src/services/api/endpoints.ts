@@ -72,5 +72,6 @@ export const API_ENDPOINTS = {
     generateBill: (groupId: string) => `/api/billing/groups/${groupId}/generate`,
     getBillingData: (groupId: string) => `/api/billing/groups/${groupId}/data`,
     allInvoices: createEndpoint('/api/billing/all-invoices'),
+    deleteBill: (groupId: string) => `/api/billing/groups/${groupId}/delete-bill`,
   },
 } as const;

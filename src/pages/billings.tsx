@@ -81,7 +81,7 @@ export default function BillingsPage() {
                 <TableRow>
                   <TableCell>Invoice Number</TableCell>
                   <TableCell>Date</TableCell>
-                  <TableCell>Status</TableCell>
+                  {/* <TableCell>Status</TableCell> */}
                   <TableCell>Total Amount</TableCell>
                   <TableCell>Discount</TableCell>
                   <TableCell>Tax</TableCell>
@@ -99,10 +99,8 @@ export default function BillingsPage() {
                       sx={{ cursor: 'pointer' }}
                     >
                       <TableCell>{billing.invoice_number}</TableCell>
-                      <TableCell>
-                        {new Date(billing.created_at).toLocaleString()}
-                      </TableCell>
-                      <TableCell sx={{ textTransform: 'capitalize' }}>{billing.status}</TableCell>
+                      <TableCell>{new Date(billing.created_at).toLocaleString()}</TableCell>
+                      {/* <TableCell sx={{ textTransform: 'capitalize' }}>{billing.status}</TableCell> */}
                       <TableCell>₹{billing.billing_data.total_amount}</TableCell>
                       <TableCell>₹{billing.billing_data.total_discount}</TableCell>
                       <TableCell>₹{billing.billing_data.total_tax}</TableCell>

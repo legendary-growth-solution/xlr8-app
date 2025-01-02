@@ -1,12 +1,4 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Card,
-  Grid,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Badge, Box, Button, Card, Grid, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -19,11 +11,9 @@ import { GroupSkeleton } from 'src/components/skeleton/GroupSkeleton';
 import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
 import { useGUCData } from 'src/contexts/DataContext';
 import { useBoolean } from 'src/hooks/use-boolean';
-import { usePathname } from 'src/routes/hooks';
 import { cartApi } from 'src/services/api/cart.api';
 import { groupApi } from 'src/services/api/group.api';
 import { sessionApi } from 'src/services/api/session.api';
-import { userApi } from 'src/services/api/user.api';
 import { Group, Session } from 'src/types/session';
 import Toast, { showToast } from 'src/components/toast';
 import LiveLeaderboard from './live-leaderboard';
@@ -52,14 +42,23 @@ export default function SessionDetailPage() {
   const manageUsers = useBoolean();
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { users: allUsers, fetchUsers, refreshGroupUsers, refreshCarts } = useGUCData();
-  const [initialLoading, setInitialLoading] = useState(true);
-  const pathname = usePathname();
+  const {
+    users: allUsers,
+    fetchUsers,
+    refreshGroupUsers,
+    refreshCarts,
+    initGUC,
+  } = useGUCData(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [groupDataLoad, setGroupDataLoad] = useState(true);
+  const [deletedGroups, setDeletedGroups] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchSessionDetails();
+    const init = async () => {
+      await fetchSessionDetails();
+      await initGUC();
+    };
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -69,17 +68,16 @@ export default function SessionDetailPage() {
       setSession(sessionData);
       setSessionLoading(false);
       setGroupDataLoad(false);
-      
+
       if (sessionData.groups) {
         setGroups(sessionData.groups);
       }
-      
     } catch (error) {
       console.error('Error fetching session details:', error);
       setSession(null);
       setGroups([]);
     } finally {
-      setInitialLoading(false);
+      setGroupDataLoad(false);
     }
   };
 
@@ -92,18 +90,17 @@ export default function SessionDetailPage() {
     try {
       setLoading(true);
       try {
-        await sessionApi.update(session!.id, { 
+        await sessionApi.update(session!.id, {
           status: 'completed',
-          end_time: new Date().toISOString()
+          end_time: new Date().toISOString(),
         });
         navigate('/sessions');
       } catch (error) {
         console.error('Error ending session:', error);
         showToast.error('Failed to end session.', {
-          description: error?.response?.data?.error
+          description: error?.response?.data?.error,
         });
       }
-      
     } catch (error) {
       console.error('Error ending session:', error);
       showToast.error('Failed to end session. Please try again.');
@@ -121,17 +118,17 @@ export default function SessionDetailPage() {
 
   // const handleAddUsers = async () => {
   //   if (!selectedGroupId) return;
-    
+
   //   try {
   //     setLoading(true);
   //     const selectedGroupFinal = groups.find(g => g.id === selectedGroupId);
-      
+
   //     if (selectedGroupFinal) {
   //       const newUsers = selectedUsers.map(su => ({
   //         ...allUsers.find((u :any) => u.id === su.userId)!,
   //         timeInMinutes: su.timeInMinutes,
   //       }));
-        
+
   //       await groupApi.addUsers(selectedGroupId, {
   //         users: selectedUsers.map(user => ({
   //           userId: user.userId,
@@ -141,7 +138,7 @@ export default function SessionDetailPage() {
 
   //       await fetchSessionDetails();
   //     }
-      
+
   //     setOpenUserDialog(false);
   //     setSelectedUsers([]);
   //   } catch (error) {
@@ -156,12 +153,12 @@ export default function SessionDetailPage() {
 
     try {
       setLoading(true);
-      
+
       const response = await sessionApi.createGroup(session.id, {
-        name: newGroupData.name
+        name: newGroupData.name,
       });
-      
-      setGroups(prevGroups => [...prevGroups, response]);
+
+      setGroups((prevGroups) => [...prevGroups, response]);
       setOpenNewGroup(false);
       setNewGroupData({ name: '', timeInMinutes: 15 });
     } catch (error) {
@@ -173,7 +170,7 @@ export default function SessionDetailPage() {
 
   // const handleStartRace = async (groupId: string, userId: string, groupUserId: string, cartId: string) => {
   //   if (!session) return;
-    
+
   //   try {
   //     await userApi.startRace(userId, groupId);
   //     await fetchSessionDetails();
@@ -184,7 +181,7 @@ export default function SessionDetailPage() {
 
   // const handleStopRace = async (groupId: string) => {
   //   if (!session) return;
-    
+
   //   try {
   //     await sessionApi.stopRace(session.id);
   //     await fetchSessionDetails();
@@ -195,7 +192,7 @@ export default function SessionDetailPage() {
 
   const handleOpenManageUsers = (group: Group) => {
     setSelectedGroup(group);
-    const initialSelectedUsers = group.users.map((u : any) => ({
+    const initialSelectedUsers = group.users.map((u: any) => ({
       userId: u.id,
       timeInMinutes: u.time_in_minutes || u.timeInMinutes || 0,
     }));
@@ -204,20 +201,16 @@ export default function SessionDetailPage() {
   };
 
   const handleTimeChange = (userId: string, minutes: number) => {
-    setSelectedUsers(prev => 
-      prev.map(user => 
-        user.userId === userId 
-          ? { ...user, timeInMinutes: minutes }
-          : user
-      )
+    setSelectedUsers((prev) =>
+      prev.map((user) => (user.userId === userId ? { ...user, timeInMinutes: minutes } : user))
     );
   };
 
   const handleSelectUser = (userId: string, checked: boolean) => {
     if (checked) {
-      setSelectedUsers(prev => [...prev, { userId, timeInMinutes: 0 }]);
+      setSelectedUsers((prev) => [...prev, { userId, timeInMinutes: 0 }]);
     } else {
-      setSelectedUsers(prev => prev.filter(u => u.userId !== userId));
+      setSelectedUsers((prev) => prev.filter((u) => u.userId !== userId));
     }
   };
 
@@ -237,16 +230,16 @@ export default function SessionDetailPage() {
 
   const handleManageUsers = async (usersToUpdate: SelectedUser[]) => {
     if (!selectedGroup) return;
-    
+
     try {
       setLoading(true);
-      
+
       const response = await groupApi.addUsers(selectedGroup.id, {
-        users: usersToUpdate.map(su => ({
+        users: usersToUpdate.map((su) => ({
           userId: su.userId,
           timeInMinutes: su.timeInMinutes,
-          planId: su.planId
-        }))
+          planId: su.planId,
+        })),
       });
 
       if (response.errors?.length > 0) {
@@ -266,30 +259,45 @@ export default function SessionDetailPage() {
 
   const getFilteredUsers = () => {
     const query = searchQuery.toLowerCase();
-    return allUsers.filter((user : any) => 
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      (user.phone && user.phone.includes(query))
+    return allUsers.filter(
+      (user: any) =>
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        (user.phone && user.phone.includes(query))
     );
   };
 
   const handleNewGroupChange = (field: string, value: string | number) => {
-    setNewGroupData(prev => ({ ...prev, [field]: value }));
+    setNewGroupData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAssignCart = async (groupId: string, userId: string, cartId: string, groupUserId: string): Promise<void> => {
+  const handleAssignCart = async (
+    groupId: string,
+    userId: string,
+    cartId: string,
+    groupUserId: string
+  ): Promise<void> => {
     try {
       await cartApi.assign(cartId, {
         userId,
         groupUserMappingId: groupUserId,
       });
-      
+
       await refreshCarts();
       await fetchSessionDetails();
       await refreshGroupUsers();
     } catch (error) {
       console.error('Error assigning cart:', error);
       throw error;
+    }
+  };
+
+  const handleGroupDeleted = (groupId: string, success: boolean) => {
+    if (success) {
+      setDeletedGroups((prev) => [...prev]);
+    } else {
+      setDeletedGroups((prev) => prev.filter((ida) => ida !== groupId));
+      fetchSessionDetails();
     }
   };
 
@@ -303,10 +311,20 @@ export default function SessionDetailPage() {
       </Helmet>
 
       <Box sx={{ p: 3 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" spacing={2} mb={5}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems="center"
+          justifyContent="space-between"
+          spacing={2}
+          mb={5}
+        >
           <Stack direction="column" spacing={2}>
-            <Typography variant="h4">{session.session_name ? session.session_name.toUpperCase() : session.id.toUpperCase()}</Typography>
-            <Typography variant='subtitle2' color="text.secondary" marginTop="-2px !important">SID #{session.id.toUpperCase()}</Typography>
+            <Typography variant="h4">
+              {session.session_name ? session.session_name.toUpperCase() : session.id.toUpperCase()}
+            </Typography>
+            <Typography variant="subtitle2" color="text.secondary" marginTop="-2px !important">
+              SID #{session.id.toUpperCase()}
+            </Typography>
           </Stack>
           <Stack direction="row" spacing={2}>
             <Button
@@ -324,20 +342,16 @@ export default function SessionDetailPage() {
             >
               View Leaderboard
             </Button>} */}
-              <Button
-                variant="contained"
-                // color="error"
-                onClick={() => navigate('lap-data')}
-              >
-                Lap Data
-              </Button>
+            <Button
+              variant="contained"
+              // color="error"
+              onClick={() => navigate('lap-data')}
+            >
+              Lap Data
+            </Button>
 
             {session.status === 'active' && (
-              <Button
-                variant="contained"
-                color="error"
-                onClick={() => setOpenEndSession(true)}
-              >
+              <Button variant="contained" color="error" onClick={() => setOpenEndSession(true)}>
                 End Session
               </Button>
             )}
@@ -351,7 +365,15 @@ export default function SessionDetailPage() {
                 <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
                   Status
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative', mt: "18px !important", ml: "24px !important" }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    position: 'relative',
+                    mt: '18px !important',
+                    ml: '24px !important',
+                  }}
+                >
                   <Badge
                     badgeContent={session.status.toUpperCase()}
                     color={session.status === 'active' ? 'success' : 'warning'}
@@ -385,56 +407,61 @@ export default function SessionDetailPage() {
           </Grid>
         </Card>
 
-       {session.status === 'active' && <>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-          <Typography variant="h6">Groups</Typography>
-          {session.status === 'active' && (
-            <Button
-              variant="contained"
-              startIcon={<Iconify icon="eva:plus-fill" />}
-              onClick={() => setOpenNewGroup(true)}
-              disabled={session.current_participants === session.max_participants}
-            >
-              New Group
-            </Button>
-          )}
-        </Stack>
-
-        {groupDataLoad ? (
-          <GroupSkeleton />
-        ) : (
-          groups.length === 0 ? (
-            <Card sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="subtitle1" sx={{ color: 'text.secondary', mb: 2 }}>
-                No groups created yet
-              </Typography>
+        {session.status === 'active' && (
+          <>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
+              <Typography variant="h6">Groups</Typography>
               {session.status === 'active' && (
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   startIcon={<Iconify icon="eva:plus-fill" />}
                   onClick={() => setOpenNewGroup(true)}
+                  disabled={session.current_participants === session.max_participants}
                 >
-                  Create First Group
+                  New Group
                 </Button>
               )}
-            </Card>
-          ) : (
-            <Grid container spacing={3}>
-              {groups.map((group) => (
-                <Grid key={group.id} item xs={12} md={6} lg={4}>
-                  <GroupCard
-                    group={group}
-                    onManageUsers={handleOpenManageUsers}
-                    isActive={session.status === 'active'}
-                    onAssignCart={handleAssignCart}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          )
+            </Stack>
+
+            {groupDataLoad ? (
+              <GroupSkeleton />
+            ) : groups.length === 0 ? (
+              <Card sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="subtitle1" sx={{ color: 'text.secondary', mb: 2 }}>
+                  No groups created yet
+                </Typography>
+                {session.status === 'active' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<Iconify icon="eva:plus-fill" />}
+                    onClick={() => setOpenNewGroup(true)}
+                  >
+                    Create First Group
+                  </Button>
+                )}
+              </Card>
+            ) : (
+              <Grid container spacing={3}>
+                {groups
+                  .filter((group) => !deletedGroups.includes(group.id))
+                  .map((group) => (
+                    <Grid key={group.id} item xs={12} md={6} lg={4}>
+                      <GroupCard
+                        group={group}
+                        onManageUsers={handleOpenManageUsers}
+                        isActive={session.status === 'active'}
+                        onAssignCart={handleAssignCart}
+                        onGroupDeleted={handleGroupDeleted}
+                        sessionId={session.id}
+                        onGroupDeleteSuccess={() => setDeletedGroups((prev) => [...prev, group.id])}
+                      />
+                    </Grid>
+                  ))}
+              </Grid>
+            )}
+          </>
         )}
-      </>}
-      {session.status !== 'active' && <LiveLeaderboard />}
+        {session.status !== 'active' && <LiveLeaderboard />}
       </Box>
 
       <CreateGroupDialog
@@ -476,4 +503,4 @@ export default function SessionDetailPage() {
       <Toast />
     </>
   );
-} 
+}

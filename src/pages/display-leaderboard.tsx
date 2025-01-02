@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { groupApi } from 'src/services/api/group.api';
 import { Alert, Box, Paper, Typography, CircularProgress, Button } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -9,6 +9,7 @@ import { LiveLeaderboardEntry } from 'src/types/leaderboard';
 import { sessionApi } from 'src/services/api/session.api';
 import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
 import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
+import { REFRESH_LEADERBOARD_INTERVAL } from 'src/utils/constants';
 
 const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
   <Box sx={{ mb: 4, textAlign: 'center', position: 'relative' }}>
@@ -57,6 +58,7 @@ const DisplayLeaderboard: React.FC = () => {
   const leaderboardRef = useRef<HTMLDivElement>(null);
   const [sessionName, setSessionName] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchLatestSessionId = async () => {
     const data = await sessionApi.getLatestSsnId();
@@ -83,8 +85,18 @@ const DisplayLeaderboard: React.FC = () => {
     }
   };
 
+  const handleUserClick = (userId: string, groupId: string) => {
+    navigate(`/sessions/${sessionId}/${userId}/${groupId}`);
+  };
+
   useEffect(() => {
     fetchLatestSessionId();
+    const interval = setInterval(() => {
+      if (sessionId) {
+        fetchLeaderboard(sessionId);
+      }
+    }, REFRESH_LEADERBOARD_INTERVAL);
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sid]);
 
@@ -188,7 +200,11 @@ const DisplayLeaderboard: React.FC = () => {
 
         <SessionInfo name={sessionName} id={sessionId} />
 
-        <LeaderboardTable sessionStatus={sessionStatus} entries={leaderboard} />
+        <LeaderboardTable
+          sessionStatus={sessionStatus}
+          entries={leaderboard}
+          onUserClick={handleUserClick}
+        />
 
         <LeaderboardFooter />
       </Paper>

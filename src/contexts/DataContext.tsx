@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from 'react';
 import { GroupUserMappingWithUser, User } from 'src/types/session';
 import { Cart } from 'src/types/cart';
 import { userApi, UserResponse } from 'src/services/api/user.api';
@@ -16,23 +24,39 @@ interface DataContextType {
   activeGroupUsers: GroupUserMappingWithUser[];
   isUserInActiveRace: (userId: string) => boolean;
   availableCarts: Cart[];
-  fetchUsers: (params: {page?: number, pageSize?: number, search?: string}) => Promise<any>;
+  fetchUsers: (params: { page?: number; pageSize?: number; search?: string }) => Promise<any>;
   totalUsers: number;
+  initGUC: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
 
-export function DataProvider({ children }: { children: ReactNode }) {
+export function DataProvider({
+  children,
+  defaultInit = false,
+}: {
+  children: ReactNode;
+  defaultInit?: boolean;
+}) {
   const [users, setUsers] = useState<User[]>([]);
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const [carts, setCarts] = useState<Cart[]>([]);
   const [groupUsers, setGroupUsers] = useState<Record<string, GroupUserMappingWithUser[]>>({});
   const [loading, setLoading] = useState(true);
   const [activeGroupUsers, setActiveGroupUsers] = useState<any[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
-  const fetchUsers = async ({page = 1, pageSize = 10, search = ''}: {page?: number, pageSize?: number, search?: string}) => {
+  const fetchUsers = async ({
+    page = 1,
+    pageSize = 10,
+    search = '',
+  }: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+  }) => {
     try {
-      const response = await userApi.list({page, pageSize, search});
+      const response = await userApi.list({ page, pageSize, search });
       setUsers(response.users);
       setTotalUsers(response.total);
       return response;
@@ -51,10 +75,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshUsers = useCallback(async ({page = 1, pageSize = 10, search = ''}: {page?: number, pageSize?: number, search?: string}) => {
-    const response = await fetchUsers({page, pageSize, search});
-    return response;
-  }, []);
+  const refreshUsers = useCallback(
+    async ({
+      page = 1,
+      pageSize = 10,
+      search = '',
+    }: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+    }) => {
+      const response = await fetchUsers({ page, pageSize, search });
+      return response;
+    },
+    []
+  );
   const refreshCarts = useMemo(() => fetchCarts, []);
   const refreshGroupUsers = useCallback(async () => {
     try {
@@ -65,61 +100,101 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const getGroupUsers = useMemo(() => (groupId: string): GroupUserMappingWithUser[] => activeGroupUsers.filter(gu => gu.group_id === groupId), [activeGroupUsers]);
-
-  const isUserInActiveRace = useMemo(
-    () => (userId: string): boolean => 
-      activeGroupUsers.some(gu => 
-        gu.user_id === userId && 
-        gu.race_status === 'in_progress'
-      ),
+  const getGroupUsers = useMemo(
+    () =>
+      (groupId: string): GroupUserMappingWithUser[] =>
+        activeGroupUsers.filter((gu) => gu.group_id === groupId),
     [activeGroupUsers]
   );
 
-  const availableCarts = useMemo(() => carts.filter(cart => cart.status === 'available'), [carts]);
+  const isUserInActiveRace = useMemo(
+    () =>
+      (userId: string): boolean =>
+        activeGroupUsers.some((gu) => gu.user_id === userId && gu.race_status === 'in_progress'),
+    [activeGroupUsers]
+  );
+
+  const availableCarts = useMemo(
+    () => carts.filter((cart) => cart.status === 'available'),
+    [carts]
+  );
+
+  const initGUC = async () => {
+    if (initialized) return;
+
+    setLoading(true);
+    try {
+      const [usersResponse, cartsResponse, activeUsersResponse] = await Promise.all([
+        userApi.list({}),
+        cartApi.list({}),
+        groupApi.getActiveUsers(),
+      ]);
+
+      setUsers(usersResponse.users);
+      setCarts(cartsResponse.carts);
+      setActiveGroupUsers(activeUsersResponse.users);
+      setInitialized(true);
+    } catch (error) {
+      console.error('Error initializing data:', error);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const initializeData = async () => {
-      setLoading(true);
-      try {
-        const [usersResponse, cartsResponse, activeUsersResponse] = await Promise.all([
-          userApi.list({}),
-          cartApi.list({}),
-          groupApi.getActiveUsers()
-        ]);
-        
-        setUsers(usersResponse.users);
-        setCarts(cartsResponse.carts);
-        setActiveGroupUsers(activeUsersResponse.users);
-      } catch (error) {
-        console.error('Error initializing data:', error);
-      }
-      setLoading(false);
-    };
+    if (defaultInit) {
+      initGUC();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultInit]);
 
-    initializeData();
-  }, []);
-
-  const value = useMemo(() => ({
-    users, 
-    carts, 
-    groupUsers,
-    availableCarts,
-    loading, 
-    fetchUsers: refreshUsers, 
-    totalUsers,
-    refreshCarts,
-    refreshGroupUsers,
-    getGroupUsers,
-    activeGroupUsers,
-    isUserInActiveRace,
-  }), [users, carts, groupUsers, availableCarts, loading, refreshUsers, refreshCarts, refreshGroupUsers, getGroupUsers, activeGroupUsers, isUserInActiveRace, totalUsers]);
-
-  return (
-    <DataContext.Provider value={value}>
-      {children}
-    </DataContext.Provider>
+  const value = useMemo(
+    () => ({
+      users,
+      carts,
+      groupUsers,
+      availableCarts,
+      loading,
+      fetchUsers: refreshUsers,
+      totalUsers,
+      refreshCarts,
+      refreshGroupUsers,
+      getGroupUsers,
+      activeGroupUsers,
+      isUserInActiveRace,
+      initGUC,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      users,
+      carts,
+      groupUsers,
+      availableCarts,
+      loading,
+      refreshUsers,
+      refreshCarts,
+      refreshGroupUsers,
+      getGroupUsers,
+      activeGroupUsers,
+      isUserInActiveRace,
+      totalUsers,
+    ]
   );
+
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
-export const useGUCData = (): ReturnType<typeof useContext<DataContextType>> => useContext(DataContext) as DataContextType;
+export const useGUCData = (defaultInit = false): DataContextType => {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error('useGUCData must be used within a DataProvider');
+  }
+
+  useEffect(() => {
+    if (defaultInit) {
+      context.initGUC();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultInit]);
+
+  return context;
+};

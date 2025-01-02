@@ -5,7 +5,6 @@ import { Session } from 'src/types/session';
 import DataTable from 'src/components/table/DataTable';
 import { Iconify } from 'src/components/iconify';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_SESSIONS } from 'src/services/mock/mock-data';
 import ExportMenu from 'src/components/export/ExportMenu';
 import { sessionApi } from 'src/services/api/session.api';
 
@@ -17,7 +16,7 @@ export default function SessionHistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   const navigate = useNavigate();
 
   const handleExportClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -35,34 +34,35 @@ export default function SessionHistoryPage() {
     return Math.floor(diff / 1000 / 60);
   };
 
-  const transformSessionData = (sessionsArg: Session[]) => sessionsArg.map(session => ({
-    'Session ID': session.id,
-    'Name': session.session_name,
-    'Start Time': new Date(session.start_time).toLocaleString(),
-    'End Time': session.end_time ? new Date(session.end_time).toLocaleString() : '-',
-    'Duration (mins)': calculateDuration(session),
-    'Participants': `${session.current_participants}/${session.max_participants}`,
-  }));
+  const transformSessionData = (sessionsArg: Session[]) =>
+    sessionsArg.map((session) => ({
+      'Session ID': session.id,
+      Name: session.session_name,
+      'Start Time': new Date(session.start_time).toLocaleString(),
+      'End Time': session.end_time ? new Date(session.end_time).toLocaleString() : '-',
+      'Duration (mins)': calculateDuration(session),
+      Participants: `${session.current_participants}/${session.max_participants}`,
+    }));
 
   const columns = [
-    { 
-      id: 'id', 
-      label: 'Session ID', 
+    {
+      id: 'id',
+      label: 'Session ID',
       minWidth: 130,
       format: (value: string) => value?.toUpperCase(),
     },
     { id: 'session_name', label: 'Session Name', minWidth: 170 },
-    { 
-      id: 'start_time', 
+    {
+      id: 'start_time',
       label: 'Start Time',
       minWidth: 160,
       format: (value: string) => new Date(value).toLocaleString(),
     },
-    { 
-      id: 'end_time', 
+    {
+      id: 'end_time',
       label: 'End Time',
       minWidth: 160,
-      format: (value: string) => value ? new Date(value).toLocaleString() : '-',
+      format: (value: string) => (value ? new Date(value).toLocaleString() : '-'),
     },
     {
       id: 'duration',
@@ -90,27 +90,20 @@ export default function SessionHistoryPage() {
   }, [page, rowsPerPage, searchQuery]);
 
   const fetchSessionHistory = async () => {
-    const filteredMSessions = MOCK_SESSIONS.filter(session => 
-      session.status === 'completed' &&
-      (session.session_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       session.id.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-
     try {
       setLoading(true);
-      
+
       try {
         const response = await sessionApi.history({
           page,
           pageSize: rowsPerPage,
           search: searchQuery,
         });
-        
+
         setSessions(response.sessions);
         setTotalPages(response.total);
       } catch (apiError) {
         console.error('API Error:', apiError);
-        setSessions(filteredMSessions);
       }
     } catch (error) {
       console.error('Error fetching session history:', error);
@@ -128,7 +121,7 @@ export default function SessionHistoryPage() {
       <Box sx={{ p: 3 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4">Session History</Typography>
-          
+
           <Button
             variant="outlined"
             startIcon={<Iconify icon="eva:download-fill" />}
@@ -153,7 +146,9 @@ export default function SessionHistoryPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{
-                startAdornment: <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />,
+                startAdornment: (
+                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />
+                ),
               }}
             />
 
@@ -166,8 +161,8 @@ export default function SessionHistoryPage() {
               onPageChange={setPage}
               onRowsPerPageChange={setRowsPerPage}
               actions={(row) => (
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   size="small"
                   onClick={() => navigate(`/sessions/${row.id}`)}
                 >
@@ -180,4 +175,4 @@ export default function SessionHistoryPage() {
       </Box>
     </>
   );
-} 
+}

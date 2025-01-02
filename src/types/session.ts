@@ -1,4 +1,4 @@
-import { GroupUserMapping } from "./mappings";
+import { GroupUserMapping } from './mappings';
 
 export interface User {
   id: string;
@@ -28,6 +28,7 @@ export interface Group {
   cartAssignments: CartAssignment[];
   startTime?: Date;
   endTime?: Date;
+  isBillGenerated: any;
 }
 
 export interface GroupUserMappingWithUser extends GroupUserMapping {

@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/click-events-have-key-events */
+/* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 import { useState, useEffect } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -5,12 +7,13 @@ import { fTime } from 'src/utils/format-time';
 import { LiveLeaderboardEntry } from 'src/types/leaderboard';
 import { RankCircle } from './RankCircle';
 
-const differenceInSeconds = (endTime: Date, startTime: Date) => 
+const differenceInSeconds = (endTime: Date, startTime: Date) =>
   Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 
 type LeaderboardTableProps = {
   entries: LiveLeaderboardEntry[];
   sessionStatus: string | null;
+  onUserClick?: (userId: string, groupId: string) => void;
 };
 
 const getRankColor = (rank: number, theme: any, primary: boolean = false) => {
@@ -26,7 +29,11 @@ const getRankColor = (rank: number, theme: any, primary: boolean = false) => {
   }
 };
 
-export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTableProps) => {
+export const LeaderboardTable = ({
+  entries,
+  sessionStatus,
+  onUserClick,
+}: LeaderboardTableProps) => {
   const theme = useTheme();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -48,7 +55,7 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
     }
 
     const timeRemainInS = differenceInSeconds(new Date(entry.endTime), currentTime);
-    const secondsToMMSS = (seconds: number) => {    
+    const secondsToMMSS = (seconds: number) => {
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
       return `${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
@@ -71,8 +78,17 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
       <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
         <thead>
           <tr>
-            {['Rank', 'Name', sessionStatus === 'active' ? 'Cart' : null, 'Group', 'Laps', 'Best Lap', 'Best Lap Time'].filter(Boolean).map(
-              (header) => (
+            {[
+              'Rank',
+              'Name',
+              sessionStatus === 'active' ? 'Cart' : null,
+              'Group',
+              'Laps',
+              'Best Lap',
+              'Best Lap Time',
+            ]
+              .filter(Boolean)
+              .map((header) => (
                 <th
                   key={header}
                   style={{
@@ -85,8 +101,7 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
                 >
                   {header}
                 </th>
-              )
-            )}
+              ))}
           </tr>
         </thead>
         <tbody>
@@ -94,14 +109,20 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
             <tr
               key={entry.rank}
               style={{
-                backgroundColor:
-                  getRankColor(entry.rank, theme)
+                backgroundColor: getRankColor(entry.rank, theme),
               }}
             >
               <td style={{ padding: '20px', textAlign: 'center' }}>
                 <RankCircle rank={entry.rank} />
               </td>
-              <td style={{ padding: '20px', fontSize: '1.5rem', fontWeight: entry.rank <= 3 ? 'bold' : 'normal' }}>
+              <td
+                style={{
+                  padding: '20px',
+                  fontSize: '1.5rem',
+                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                }}
+                onClick={() => onUserClick?.(entry.userId || '', entry.groupId || '')}
+              >
                 {entry.name}
               </td>
               {sessionStatus === 'active' && (
@@ -128,7 +149,7 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.bestLapTime ? (entry.bestLapTime) : '-'}
+                {entry.bestLapTime ? entry.bestLapTime : '-'}
               </td>
               {/* <td
                 style={{
@@ -161,4 +182,4 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
       </table>
     </Box>
   );
-}; 
+};
