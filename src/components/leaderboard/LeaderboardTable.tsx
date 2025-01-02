@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, Chip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { fTime } from 'src/utils/format-time';
+import { useEffect, useState } from 'react';
 import { LiveLeaderboardEntry } from 'src/types/leaderboard';
 import { RankCircle } from './RankCircle';
 
@@ -128,7 +127,7 @@ export const LeaderboardTable = ({ entries, sessionStatus }: LeaderboardTablePro
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.bestLapTime ? (entry.bestLapTime) : '-'}
+                {entry.bestLapTime ? (`${entry.bestLapTime}s`) : '-'}
               </td>
               {/* <td
                 style={{
