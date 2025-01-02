@@ -1,9 +1,8 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
-import { useState, useEffect } from 'react';
-import { Box, Typography, Chip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { fTime } from 'src/utils/format-time';
+import { useEffect, useState } from 'react';
 import { LiveLeaderboardEntry } from 'src/types/leaderboard';
 import { RankCircle } from './RankCircle';
 
@@ -149,7 +148,7 @@ export const LeaderboardTable = ({
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.bestLapTime ? entry.bestLapTime : '-'}
+                {entry.bestLapTime ? (`${entry.bestLapTime}s`) : '-'}
               </td>
               {/* <td
                 style={{
