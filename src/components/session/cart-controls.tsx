@@ -19,6 +19,7 @@ import { sessionApi } from 'src/services/api/session.api';
 import { useGUCData } from 'src/contexts/DataContext';
 import { LoadingButton } from '@mui/lab';
 import { userApi } from 'src/services/api/user.api';
+import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 
 interface CartControlsProps {
   userId: string;
@@ -57,6 +58,8 @@ export function CartControls({
   const [isAssigning, setIsAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [raceEndTime, setRaceEndTime] = useState<string | null>(activeUser?.expected_end_time || null);
+  const [confirmStop, setConfirmStop] = useState(false);
+  const [isStoppingRace, setIsStoppingRace] = useState(false);
 
   const getUserCart = (ucId: string): any => 
     cartAssignments.find(ca => ca.current_user === ucId);
@@ -223,6 +226,29 @@ export function CartControls({
 
   const isRaceActive = raceStatus === 'in_progress' || raceStatus === 'completed';
 
+  const handleStopRace = async () => {
+    try {
+      setIsStoppingRace(true);
+      await userApi.stopRace(userId, groupId);
+      setTimeLeft(0);
+      setRaceStatus('completed');
+      setIsRaceStarted(false);
+    } catch (e) {
+      console.error('Error stopping race:', e);
+    } finally {
+      setIsStoppingRace(false);
+      setConfirmStop(false);
+    }
+  };
+
+  const handleOpenStopConfirm = () => {
+    setConfirmStop(true);
+  };
+
+  const handleCloseStopConfirm = () => {
+    setConfirmStop(false);
+  };
+
   return (
     <>
       <Stack direction="row" spacing={1} alignItems="center">
@@ -374,19 +400,55 @@ export function CartControls({
               <Iconify icon="mdi:play" width={20} />
             </IconButton>
           ) : (
-            <Typography
+            <Box
               sx={{
-                bgcolor: timeLeft === 0 || raceStatus === 'completed' ? 'error.lighter' : 'warning.lighter',
-                borderRadius: 1,
-                px: 1,
-                minWidth: 55,
-                color: timeLeft === 0 || raceStatus === 'completed' ? 'error.dark' : 'warning.dark',
-                textAlign: 'center',
-                fontSize: '0.9rem'
+                position: 'relative',
+                '&:hover .stop-button': {
+                  opacity: 1,
+                  pointerEvents: 'auto',
+                },
               }}
             >
-              {timeLeft === 0 || raceStatus === 'completed' ? 'END' : formatTime(timeLeft || 0)}
-            </Typography>
+              <Typography
+                sx={{
+                  bgcolor: timeLeft === 0 || raceStatus === 'completed' ? 'error.lighter' : 'warning.lighter',
+                  borderRadius: 1,
+                  px: 1,
+                  minWidth: 55,
+                  color: timeLeft === 0 || raceStatus === 'completed' ? 'error.dark' : 'warning.dark',
+                  textAlign: 'center',
+                  fontSize: '0.9rem'
+                }}
+              >
+                {timeLeft === 0 || raceStatus === 'completed' ? 'END' : formatTime(timeLeft || 0)}
+              </Typography>
+
+              {raceStatus === 'in_progress' && (
+                <IconButton
+                  className="stop-button"
+                  size="small"
+                  onClick={handleOpenStopConfirm}
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    pointerEvents: 'none',
+                    bgcolor: 'error.main',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: 'error.dark',
+                    },
+                    width: 24,
+                    height: 24,
+                  }}
+                >
+                  <Iconify icon="mdi:stop" width={16} />
+                </IconButton>
+              )}
+            </Box>
           )}
         </Box>
       </Stack>
@@ -444,6 +506,17 @@ export function CartControls({
           {error}
         </Alert>
       </Snackbar>
+
+      <ConfirmDialog
+        open={confirmStop}
+        title="Stop Race"
+        content="Are you sure you want to stop this race? This action cannot be undone."
+        confirmText="Stop Race"
+        confirmColor="error"
+        loading={isStoppingRace}
+        onClose={handleCloseStopConfirm}
+        onConfirm={handleStopRace}
+      />
     </>
   );
 } 

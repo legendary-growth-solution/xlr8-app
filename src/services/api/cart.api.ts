@@ -3,6 +3,21 @@ import { API_ENDPOINTS } from './endpoints';
 import { CartResponse, CartQueryParams, AssignCartData, RefuelData } from './api.types';
 import { apiClient } from './api-client';
 
+export interface AssignmentHistory {
+  group_user_mapping_id: string;
+  timestamp: string;
+  user_id: string;
+  user_name?: string;
+  status: 'assigned' | 'unassigned';
+  session_id: string;
+}
+
+export interface AssignmentHistoryResponse {
+  history: AssignmentHistory[];
+  total: number;
+  has_more: boolean;
+}
+
 export const cartApi = {
   list: async (params: CartQueryParams): Promise<CartResponse> => {
     const searchParams = new URLSearchParams({
@@ -64,4 +79,15 @@ export const cartApi = {
       .then((response) => response.data),
   getCartMaintenanceLogs: (cartId: string) =>
     apiClient.get<MaintenanceLog[]>(`${API_ENDPOINTS.CARTS.MAINTENANCE.GET(cartId)}`).then((response) => response.data),
+
+  getAssignmentHistory: async (
+    cartId: string, 
+    page: number = 1, 
+    pageSize: number = 10
+  ): Promise<AssignmentHistoryResponse> => {
+    const response = await apiClient.get(
+      `${API_ENDPOINTS.CARTS.ASSIGNMENT_HISTORY(cartId)}?page=${page}&pageSize=${pageSize}`
+    );
+    return response.data;
+  },
 }; 

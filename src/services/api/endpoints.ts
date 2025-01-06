@@ -62,6 +62,7 @@ export const API_ENDPOINTS = {
     },
     FUEL_LOGS: (id?: string) => createEndpoint(`/api/carts/fuel-logs${id ? `/${id}` : ''}`),
     LAP_LOGS: (id?: string) => createEndpoint(`/api/carts/lap-logs${id ? `/${id}` : ''}`),
+    ASSIGNMENT_HISTORY: (id: string) => createEndpoint(`/api/carts/${id}/assignment-history`),
   },
   GET_LIVE_LEADERBOARD: (sessionId: string) =>
     createEndpoint(`/api/results/session/${sessionId}/live-leaderboard`),

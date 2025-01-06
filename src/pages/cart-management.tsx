@@ -11,6 +11,8 @@ import PageHeader from 'src/components/common/PageHeader';
 import CartStatsGrid from 'src/components/cart/CartStatsGrid';
 import FuelLevelIndicator from 'src/components/cart/FuelLevelIndicator';
 import MaintenanceDialog from 'src/components/cart/MaintenanceDialog';
+import AssignmentHistoryDialog from 'src/components/cart/AssignmentHistoryDialog';
+import type { AssignmentHistory } from 'src/services/api/cart.api';
 
 export default function CartManagementPage() {
   const [carts, setCarts] = useState<Cart[]>([]);
@@ -20,6 +22,10 @@ export default function CartManagementPage() {
   const [selectedCart, setSelectedCart] = useState<Cart | null>(null);
   const [openNewCartDialog, setOpenNewCartDialog] = useState(false);
   const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
+  const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
+  const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistory[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchCarts = async () => {
     try {
@@ -191,8 +197,31 @@ export default function CartManagementPage() {
     }
   };
 
+  const handleViewHistory = async (cart: Cart) => {
+    try {
+      setSelectedCart(cart);
+      setHistoryLoading(true);
+      setOpenHistoryDialog(true);
+      
+      const response = await cartApi.getAssignmentHistory(cart.rfid_number || '');
+      setAssignmentHistory(response.history);
+      setHasMore(response.has_more);
+    } catch (error) {
+      console.error('Failed to fetch assignment history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const actions = (cart: Cart) => (
     <Stack direction="row" spacing={1} justifyContent="flex-end">
+      <Button
+        size="small"
+        variant="outlined"
+        onClick={() => handleViewHistory(cart)}
+      >
+        View History
+      </Button>
       <Button
         size="small"
         variant="outlined"
@@ -282,6 +311,19 @@ export default function CartManagementPage() {
             data as { status: 'maintenance' | 'refueling'; notes?: string }
           )
         }
+      />
+
+      <AssignmentHistoryDialog
+        open={openHistoryDialog}
+        onClose={() => {
+          setOpenHistoryDialog(false);
+          setSelectedCart(null);
+          setAssignmentHistory([]);
+        }}
+        cart={selectedCart}
+        history={assignmentHistory}
+        hasMore={hasMore}
+        loading={historyLoading}
       />
     </PageContainer>
   );
