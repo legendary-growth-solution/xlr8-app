@@ -62,7 +62,7 @@ export const LeaderboardTable = ({
     return secondsToMMSS(Math.max(0, timeRemainInS)) ?? '00:00';
   };
 
-  if (entries.length === 0) {
+  if (entries?.length === 0) {
     return (
       <Box display="flex" justifyContent="center" p={4}>
         <Typography variant="h5" color="text.secondary">
@@ -104,7 +104,7 @@ export const LeaderboardTable = ({
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) => (
+          {entries?.map((entry) => (
             <tr
               key={entry.rank}
               style={{

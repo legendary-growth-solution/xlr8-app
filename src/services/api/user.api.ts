@@ -44,8 +44,9 @@ export const userApi = {
     await apiClient.delete(API_ENDPOINTS.USERS.DELETE(id));
   },
 
-  startRace: async (userId: string, groupId: string, groupUserId?: string): Promise<void> => {
-    await apiClient.post(API_ENDPOINTS.SESSIONS.GROUPS.START_RACE(groupId, userId, groupUserId));
+  startRace: async (userId: string, groupId: string, groupUserId?: string): Promise<any> => {
+    const response = await apiClient.post(API_ENDPOINTS.SESSIONS.GROUPS.START_RACE(groupId, userId, groupUserId));
+    return response.data;
   },
 
   stopRace: async (userId: string, groupId: string, groupUserId?: string): Promise<void> => {

@@ -45,6 +45,7 @@ export function CartControls({
 }: CartControlsProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [serverExpEndTime, setServerExpEndTime] = useState<number | null>(null);
   const [isRaceStarted, setIsRaceStarted] = useState(activeUser?.race_status === 'in_progress');
   const [raceStatus, setRaceStatus] = useState<'not_started' | 'in_progress' | 'completed'>(
     activeUser?.race_status || 'not_started'
@@ -55,6 +56,7 @@ export function CartControls({
   const { getGroupUsers } = useGUCData();
   const [isAssigning, setIsAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [raceEndTime, setRaceEndTime] = useState<string | null>(activeUser?.expected_end_time || null);
 
   const getUserCart = (ucId: string): any => 
     cartAssignments.find(ca => ca.current_user === ucId);
@@ -73,35 +75,40 @@ export function CartControls({
       setIsRaceStarted(activeUser.race_status === 'in_progress');
       setRaceStatus(activeUser.race_status);
       setStartTime(activeUser.race_start_time || null);
+      setRaceEndTime(activeUser.expected_end_time || null);
+    }
+    return undefined;
+  }, [activeUser]);
 
-      if (activeUser.race_status === 'in_progress' && activeUser.expected_end_time) {
-        const endTime = new Date(activeUser.expected_end_time).getTime();
+  useEffect(() => {
+    if (raceStatus === 'in_progress' && raceEndTime) {
+      const updateTimeLeft = () => {
+        const endTime = new Date(raceEndTime).getTime();
         const now = new Date().getTime();
         const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
         
         setTimeLeft(remaining);
+        
+        if (remaining <= 0) {
+          setTimeLeft(0);
+          setRaceStatus('completed');
+          return false;
+        }
+        return true;
+      };
 
-        const interval = setInterval(() => {
-          const nowTime = new Date().getTime();
-          const remainingTime = Math.max(0, Math.floor((endTime - nowTime) / 1000));
-          
-          if (remainingTime <= 0) {
-            setTimeLeft(0);
-            setRaceStatus('completed');
-            clearInterval(interval);
-          } else {
-            setTimeLeft(remainingTime);
-          }
-        }, 1000);
+      updateTimeLeft();
+      const interval = setInterval(() => {
+        const shouldContinue = updateTimeLeft();
+        if (!shouldContinue) {
+          clearInterval(interval);
+        }
+      }, 1000);
 
-        return () => clearInterval(interval);
-      }
-      if (activeUser.race_status === 'completed') {
-        setTimeLeft(0);
-      }
+      return () => clearInterval(interval);
     }
-    return () => {};
-  }, [activeUser]);
+    return undefined;
+  }, [raceStatus, raceEndTime]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -114,25 +121,24 @@ export function CartControls({
       const userCart = getUserCart(userId);
       if (!userCart) return;
 
-      await userApi.startRace(userId, groupId);
+      const responseData = await userApi.startRace(userId, groupId);
+      const endTime = responseData?.expected_end_time || responseData?.end_time;
+      setServerExpEndTime(endTime);
+      setRaceEndTime(endTime);
 
-      const duration = getUserDuration() * 60;
-      setTimeLeft(duration);
+      if (endTime) {
+        const endTimeMs = new Date(endTime).getTime();
+        const now = new Date().getTime();
+        const remaining = Math.max(0, Math.floor((endTimeMs - now) / 1000));
+        setTimeLeft(remaining);
+      } else {
+        const duration = getUserDuration() * 60;
+        setTimeLeft(duration);
+      }
+
       setIsRaceStarted(true);
       setRaceStatus('in_progress');
       setStartTime(new Date().toISOString());
-
-      const interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime === null || prevTime <= 0) {
-            clearInterval(interval);
-            setRaceStatus('completed');
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-
     } catch (e) {
       console.error('Error starting race:', e);
     }

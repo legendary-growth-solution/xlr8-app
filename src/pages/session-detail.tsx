@@ -94,7 +94,8 @@ export default function SessionDetailPage() {
           status: 'completed',
           end_time: new Date().toISOString(),
         });
-        navigate('/sessions');
+        showToast.success('Session ended successfully');
+        window?.location?.reload();
       } catch (error) {
         console.error('Error ending session:', error);
         showToast.error('Failed to end session.', {
@@ -342,14 +343,15 @@ export default function SessionDetailPage() {
             >
               View Leaderboard
             </Button>} */}
-            <Button
-              variant="contained"
-              // color="error"
-              onClick={() => navigate('lap-data')}
-            >
-              Lap Data
-            </Button>
-
+            {session.status !== 'active' && (
+              <Button
+                variant="contained"
+                // color="error"
+                onClick={() => navigate('lap-data')}
+              >
+                Lap Data
+              </Button>
+            )}
             {session.status === 'active' && (
               <Button variant="contained" color="error" onClick={() => setOpenEndSession(true)}>
                 End Session
@@ -373,11 +375,13 @@ export default function SessionDetailPage() {
                     mt: '18px !important',
                     ml: '24px !important',
                   }}
+                  marginLeft={15}
                 >
                   <Badge
                     badgeContent={session.status.toUpperCase()}
                     color={session.status === 'active' ? 'success' : 'warning'}
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    sx={session.status !== 'active' ? { marginLeft: '15px !important' } : {}}
                   />
                 </Box>
               </Stack>
