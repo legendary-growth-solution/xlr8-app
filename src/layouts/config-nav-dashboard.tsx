@@ -65,6 +65,11 @@ const navConfig = [
     icon: <Iconify icon="mdi:ticket-percent-outline" />,
   },
   {
+    title: 'Time Slots',
+    path: '/timeslots',
+    icon: <Iconify icon="solar:clock-circle-bold" />,
+  },
+  {
     title: 'Billings',
     path: '/billings',
     icon: <Iconify icon="solar:bill-list-bold-duotone" />,
