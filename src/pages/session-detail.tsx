@@ -9,13 +9,13 @@ import { GroupCard } from 'src/components/session/group-card';
 import { ManageUsersDialog } from 'src/components/session/manage-users-dialog';
 import { GroupSkeleton } from 'src/components/skeleton/GroupSkeleton';
 import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
+import Toast, { showToast } from 'src/components/toast';
 import { useGUCData } from 'src/contexts/DataContext';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { cartApi } from 'src/services/api/cart.api';
 import { groupApi } from 'src/services/api/group.api';
 import { sessionApi } from 'src/services/api/session.api';
 import { Group, Session } from 'src/types/session';
-import Toast, { showToast } from 'src/components/toast';
 import LiveLeaderboard from './live-leaderboard';
 
 interface SelectedUser {
@@ -39,6 +39,10 @@ export default function SessionDetailPage() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([]);
   const [openEndSession, setOpenEndSession] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewConfirmation, setReviewConfirmation] = useState(false);
+  
+  
   const manageUsers = useBoolean();
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +113,10 @@ export default function SessionDetailPage() {
       setLoading(false);
       setOpenEndSession(false);
     }
+  };
+
+  const handleReviewLink = () => {
+    showToast.error('Feature under development!');    
   };
 
   // const handleOpenUserDialog = (groupId: string) => {
@@ -352,6 +360,14 @@ export default function SessionDetailPage() {
                 Lap Data
               </Button>
             )}
+            {session.status !== 'active' && (
+              <Button
+                variant="contained"
+                onClick={() => setReviewConfirmation(true)}
+              >
+                Send Review Link
+              </Button>
+            )}
             {session.status === 'active' && (
               <Button variant="contained" color="error" onClick={() => setOpenEndSession(true)}>
                 End Session
@@ -502,6 +518,17 @@ export default function SessionDetailPage() {
         loading={loading}
         onClose={() => setOpenEndSession(false)}
         onConfirm={handleEndSession}
+      />
+
+      <ConfirmDialog
+        open={reviewConfirmation}
+        title="Send Review Link"
+        content="Are you sure you want to send google review link over whatsap to all the users?"
+        confirmText="Send Review Link"
+        confirmColor="success"
+        loading={reviewLoading}
+        onClose={() => setReviewConfirmation(false)}
+        onConfirm={handleReviewLink}
       />
 
       <Toast />
