@@ -1,70 +1,72 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { groupApi } from 'src/services/api/group.api';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Alert, Box, Paper, Typography, CircularProgress, Button } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
 import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
-import { LiveLeaderboardEntry } from 'src/types/leaderboard';
 import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
 import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
+import { api } from 'src/api/api';
+import { Leaderboard } from 'src/types/session';
 
-const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
-  <Box sx={{ mb: 4, textAlign: 'center', position: 'relative' }}>
-    <Typography 
-      variant="h4" 
-      sx={{ 
-        fontWeight: 'bold',
-        color: 'text.primary',
-        mb: { xs: 1, sm: 0 }
-      }}
-    >
-      {name || 'Unnamed Session'}
-    </Typography>
-    {id && (
-      <Typography 
-        variant="caption" 
-        sx={{ 
-          color: 'text.secondary',
-          bgcolor: 'background.paper',
-          px: 1,
-          py: 0.5,
-          borderRadius: 1,
-          border: '1px solid',
-          borderColor: 'divider',
-          position: { xs: 'relative' },
-          display: 'inline-block',
-          top: { sm:'8px', xs: 'auto' },
-        }}
-      >
-        #{id.toUpperCase()}
-      </Typography>
-    )}
-  </Box>
-);
+// const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
+//   <Box sx={{ mb: 4, textAlign: 'center', position: 'relative' }}>
+//     <Typography
+//       variant="h4"
+//       sx={{
+//         fontWeight: 'bold',
+//         color: 'text.primary',
+//         mb: { xs: 1, sm: 0 }
+//       }}
+//     >
+//       {name || 'Unnamed Session'}
+//     </Typography>
+//     {id && (
+//       <Typography
+//         variant="caption"
+//         sx={{
+//           color: 'text.secondary',
+//           bgcolor: 'background.paper',
+//           px: 1,
+//           py: 0.5,
+//           borderRadius: 1,
+//           border: '1px solid',
+//           borderColor: 'divider',
+//           position: { xs: 'relative' },
+//           display: 'inline-block',
+//           top: { sm:'8px', xs: 'auto' },
+//         }}
+//       >
+//         #{id.toUpperCase()}
+//       </Typography>
+//     )}
+//   </Box>
+// );
 
-const LiveLeaderboard: React.FC = () => {
+interface Props {
+  session_id: string;
+}
+
+const LiveLeaderboard = ({session_id}: Props) => {
   const theme = useTheme();
-  const { id } = useParams<{ id: string }>();
-  const sid = id ?? '';
-  const [leaderboard, setLeaderboard] = useState<LiveLeaderboardEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<Leaderboard[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const leaderboardRef = useRef<HTMLDivElement>(null);
-  const [sessionName, setSessionName] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(() => {
     try {
-      setError(null);
-      const data = await groupApi.getLiveLeaderboard(sid);
-      setLeaderboard(data?.data as any);
-      setSessionStatus(data?.sessionStatus);
-      setSessionName(data?.sessionName);
-      setSessionId(data?.sessionId);
+      setLoading(true)
+      api.session.getSessionLeaderboard(session_id)
+      .then((res)=>setLeaderboard(res?.leaderboard?.map((item: Leaderboard, index: number)=>{
+        return {
+          ...item, rank: index+1
+        }
+      })))
+      .catch((err)=>{
+        setError(err?.response?.message);
+      })
     } catch (err) {
       if (err instanceof Error) {
         setError(`Failed to load leaderboard: ${err.message}`);
@@ -74,12 +76,7 @@ const LiveLeaderboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchLeaderboard();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sid]);
+  },[session_id]);
 
   const handleZoomChange = (_: Event, newValue: number | number[]) => {
     setZoom(newValue as number);
@@ -94,6 +91,10 @@ const LiveLeaderboard: React.FC = () => {
       setIsFullscreen(false);
     }
   };
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   if (loading) {
     return (
@@ -176,12 +177,12 @@ const LiveLeaderboard: React.FC = () => {
             },
           }}
         >
-          {sessionStatus === 'active' ? 'Live Leaderboard' : 'Leaderboard'}
+          Leaderboard
         </Typography>
 
-        <SessionInfo name={sessionName} id={sessionId} />
+        {/* <SessionInfo name={sessionName} id={sessionId} /> */}
 
-        <LeaderboardTable sessionStatus={sessionStatus} entries={leaderboard} />
+        <LeaderboardTable entries={leaderboard} />
 
         <LeaderboardFooter />
       </Paper>

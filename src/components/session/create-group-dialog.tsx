@@ -13,31 +13,26 @@ import { useState } from 'react';
 interface CreateGroupDialogProps {
   open: boolean;
   loading: boolean;
-  data: {
-    name: string;
-  };
   onClose: () => void;
-  onChange: (field: string, value: string | number) => void;
-  onSubmit: () => void;
+  onSubmit: (name: string) => void;
 }
 
 export function CreateGroupDialog({
   open,
   loading,
-  data,
   onClose,
-  onChange,
   onSubmit,
 }: CreateGroupDialogProps) {
   const [error, setError] = useState('');
+  const [value, setValue] = useState('');
 
   const handleSubmit = () => {
-    if (!data.name?.trim()) {
+    if (!value?.trim()) {
       setError('Group name is required');
       return;
     }
     setError('');
-    onSubmit();
+    onSubmit(value);
   };
 
   return (
@@ -48,14 +43,11 @@ export function CreateGroupDialog({
           <TextField
             fullWidth
             label="Group Name"
-            value={data.name}
+            value={value}
             required
             error={!!error}
             helperText={error}
-            onChange={(e) => {
-              onChange('name', e.target.value);
-              if (error) setError('');
-            }}
+            onChange={(e)=>setValue(e?.target?.value)}
           />
         </Stack>
       </DialogContent>
@@ -67,4 +59,4 @@ export function CreateGroupDialog({
       </DialogActions>
     </Dialog>
   );
-} 
+}

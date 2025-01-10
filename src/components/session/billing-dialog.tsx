@@ -78,7 +78,7 @@ export function BillingDialog({
     } else {
       setGstError('');
     }
-    onBillingDataChange({ 
+    onBillingDataChange({
       gstNumber: value,
       discountCode: billingData?.discountCode || '',
       discountAmount: billingData?.discountAmount || 0
@@ -111,7 +111,7 @@ export function BillingDialog({
       }
 
       showToast.success(response.data.message || 'Discount code applied successfully');
-      onBillingDataChange({ 
+      onBillingDataChange({
         discountAmount: response.data.discount_amount || 0,
         discountCode: billingData.discountCode?.toUpperCase(),
         gstNumber: ''
@@ -127,8 +127,8 @@ export function BillingDialog({
   };
 
   const handleSkipCoupon = () => {
-    onBillingDataChange({ 
-      discountCode: '', 
+    onBillingDataChange({
+      discountCode: '',
       discountAmount: 0,
       gstNumber: billingData?.gstNumber || ''
     });
@@ -149,12 +149,12 @@ export function BillingDialog({
     }, 0);
 
     const finalAmount = total - (billingData.discountAmount || 0);
-    
+
     onBillingDataChange({
       totalAmount: finalAmount,
       subtotal: total,
     });
-    
+
     return total;
 
     // eslint-disable-next-line react-hooks/exhaustive-deps

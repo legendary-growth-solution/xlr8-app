@@ -2,17 +2,12 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 import { Box, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
-import { LiveLeaderboardEntry } from 'src/types/leaderboard';
+import { Leaderboard } from 'src/types/session';
 import { RankCircle } from './RankCircle';
 
-const differenceInSeconds = (endTime: Date, startTime: Date) =>
-  Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-
 type LeaderboardTableProps = {
-  entries: LiveLeaderboardEntry[];
-  sessionStatus: string | null;
-  onUserClick?: (userId: string, groupId: string) => void;
+  entries: Leaderboard[];
+  // onUserClick?: (userId: string, groupId: string) => void;
 };
 
 const getRankColor = (rank: number, theme: any, primary: boolean = false) => {
@@ -30,37 +25,9 @@ const getRankColor = (rank: number, theme: any, primary: boolean = false) => {
 
 export const LeaderboardTable = ({
   entries,
-  sessionStatus,
-  onUserClick,
+  // onUserClick,
 }: LeaderboardTableProps) => {
   const theme = useTheme();
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const getTimeRemaining = (entry: LiveLeaderboardEntry) => {
-    if (sessionStatus !== 'active') {
-      return '00:00';
-    }
-
-    if (!entry.endTime) {
-      return `${entry.timeInMinutes % 60 < 10 ? '0' : ''}${entry.timeInMinutes % 60}:${Math.floor(entry.timeInMinutes / 60) < 10 ? '0' : ''}${Math.floor(entry.timeInMinutes / 60)}`;
-    }
-
-    const timeRemainInS = differenceInSeconds(new Date(entry.endTime), currentTime);
-    const secondsToMMSS = (seconds: number) => {
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      return `${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-    };
-    return secondsToMMSS(Math.max(0, timeRemainInS)) ?? '00:00';
-  };
 
   if (entries?.length === 0) {
     return (
@@ -80,9 +47,6 @@ export const LeaderboardTable = ({
             {[
               'Rank',
               'Name',
-              sessionStatus === 'active' ? 'Cart' : null,
-              'Group',
-              'Laps',
               'Best Lap',
               'Best Lap Time',
             ]
@@ -120,35 +84,24 @@ export const LeaderboardTable = ({
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
                 }}
-                onClick={() => onUserClick?.(entry.userId || '', entry.groupId || '')}
+                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
-                {entry.name}
-              </td>
-              {sessionStatus === 'active' && (
-                <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
-                  {entry.cartName}
-                </td>
-              )}
-              <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
-                {entry.groupName}
+                {entry.user_name}
               </td>
               <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
-                {entry.totalLaps}
-              </td>
-              <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
-                {entry.bestLap}
+                {entry.best_lap_number}
               </td>
               <td
                 style={{
                   padding: '20px',
                   fontSize: '1.5rem',
                   textAlign: 'center',
-                  color: entry.bestLapTime
+                  color: entry.best_lap_time
                     ? theme.palette.success.main
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.bestLapTime ? (`${entry.bestLapTime}s`) : '-'}
+                {entry.best_lap_time ? (`${entry.best_lap_time}s`) : '-'}
               </td>
               {/* <td
                 style={{

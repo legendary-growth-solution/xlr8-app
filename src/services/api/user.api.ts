@@ -1,4 +1,4 @@
-import { User } from 'src/types/session';
+import { User } from 'src/types/user';
 import { apiClient } from './api-client';
 import { API_ENDPOINTS } from './endpoints';
 
@@ -52,4 +52,4 @@ export const userApi = {
   stopRace: async (userId: string, groupId: string, groupUserId?: string): Promise<void> => {
     await apiClient.post(API_ENDPOINTS.SESSIONS.GROUPS.STOP_RACE(groupId, userId, groupUserId));
   },
-}; 
+};

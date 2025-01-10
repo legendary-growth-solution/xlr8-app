@@ -5,7 +5,6 @@ import { useAuth } from 'src/hooks/use-auth';
 import Box from '@mui/material/Box';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 
-import { DataProvider } from 'src/contexts/DataContext';
 import AuthGuard from 'src/guards/AuthGuard';
 import GuestGuard from 'src/guards/GuestGuard';
 import { AuthLayout } from 'src/layouts/auth';
@@ -27,12 +26,12 @@ export const ProductsPage = lazy(() => import('src/pages/products'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
 export const UserManagement = lazy(() => import('src/pages/user-management'));
 export const UserCreate = lazy(() => import('src/pages/user-create'));
-export const SessionManagementPage = lazy(() => import('src/pages/session-management'));
+// export const SessionManagementPage = lazy(() => import('src/pages/session-management'));
 export const SessionUserLaps = lazy(() => import('src/pages/session-user-laps'));
 export const SessionLaps = lazy(() => import('src/pages/session-laps'));
-export const SessionCreatePage = lazy(() => import('src/pages/session-create'));
 export const SessionHistoryPage = lazy(() => import('src/pages/session-history'));
 export const SessionDetailPage = lazy(() => import('src/pages/session-detail'));
+export const SessionActivePage = lazy(() => import('src/pages/session-active'));
 export const CartManagementPage = lazy(() => import('src/pages/cart-management'));
 // export const CartFuelLogsPage = lazy(() => import('src/pages/cart-fuel-logs'));
 export const CartFuelLogsPage = lazy(() => import('src/pages/fuel-logs'));
@@ -41,7 +40,6 @@ export const TimeManagementPage = lazy(() => import('src/pages/time-management')
 export const LiveLeaderboard = lazy(() => import('src/pages/live-leaderboard'));
 // export const CartMaintenanceLogsPage = lazy(() => import('src/pages/cart-maintenance-logs'));
 export const CartMaintenanceLogsPage = lazy(() => import('src/pages/maintenance-logs'));
-export const DisplayLeaderboard = lazy(() => import('src/pages/display-leaderboard'));
 export const BillingsPage = lazy(() => import('src/pages/billings'));
 // ----------------------------------------------------------------------
 
@@ -100,17 +98,16 @@ export function Router() {
         { path: 'user', element: <UserPage /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'blog', element: <BlogPage /> },
-        
+
         { path: 'users', element: <UserManagement /> },
         { path: 'users/create', element: <UserCreate /> },
-        
-        { path: 'sessions', element: <SessionManagementPage /> },
+
+        { path: 'active-session', element: <SessionActivePage /> },
+        // { path: 'sessions', element: <SessionManagementPage /> },
         { path: 'sessions/:id/:user/:groupId', element: <SessionUserLaps /> },
         { path: 'sessions/:id/lap-data', element: <SessionLaps /> },
-        { path: 'sessions/create', element: <SessionCreatePage /> },
         { path: 'sessions/history', element: <SessionHistoryPage /> },
-        { path: 'sessions/:id', element: <DataProvider><SessionDetailPage /></DataProvider> },
-        { path: 'sessions/:id/live-leaderboard', element: <DataProvider><LiveLeaderboard /></DataProvider> },
+        { path: 'sessions/:id', element: <SessionDetailPage /> },
         { path: 'carts', element: <CartManagementPage /> },
         { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
         { path: 'timeslots', element: <TimeSlots /> },
@@ -120,7 +117,6 @@ export function Router() {
         { path: 'plans', element: <TimeManagementPage /> },
         { path: 'discounts', element: <DiscountManagementPage /> },
         { path: 'billings', element: <BillingsPage /> },
-        { path: 'leaderboard', element: <DisplayLeaderboard /> },
         { path: '/logout', element: <LogoutRoute /> }
       ],
     },

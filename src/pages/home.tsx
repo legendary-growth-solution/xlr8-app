@@ -1,7 +1,10 @@
-import { Box, Card, CardContent, CircularProgress, Grid, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CircularProgress, Grid, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { api } from 'src/api/api';
+import { Iconify } from 'src/components/iconify';
+import { showToast } from 'src/components/toast';
 import { CONFIG } from 'src/config-global';
 import { apiClient } from 'src/services/api/api-client';
 
@@ -87,6 +90,16 @@ export default function Page() {
     },
   ] as const;
 
+  const createNewSession = useCallback(() => {
+    api.session.startSession
+      .then((res) => {
+        showToast.success(res?.message);
+      })
+      .catch((err) => {
+        showToast.error(err?.response?.error)
+      })
+  }, []);
+
   return (
     <>
       <Helmet>
@@ -98,10 +111,19 @@ export default function Page() {
       </Helmet>
 
       <Box sx={{ py: 5, px: 3 }}>
-        <Typography variant="h4" sx={{ mb: 5 }}>
-          Go Kart Racing Dashboard
-        </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+          <Typography variant="h4">
+            Go Kart Racing Dashboard
+          </Typography>
 
+          <Button
+            variant="contained"
+            startIcon={<Iconify icon="eva:plus-fill" />}
+            onClick={()=>createNewSession()}
+          >
+            New Session
+          </Button>
+        </Stack>
         <Grid container spacing={3}>
           {DASHBOARD_CARDS.map((card, index) => (
             <Grid key={index} item xs={12} md={4}>

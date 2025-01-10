@@ -1,36 +1,24 @@
 import { Avatar, Box, Stack, Typography } from '@mui/material';
 import { CartControls } from './cart-controls';
-import { RemainingUsers } from './remaining-users';
-import { UserInfo } from './user-info';
+import { Cart, Group, Plan, User, UserRaceStatus } from 'src/types/session';
 
 interface GroupUserListProps {
-  mainUsers: any[];
-  remainingUsers: any[];
-  group: any;
-  availableCarts: any[];
-  onAssignCart: (userId: string, cartId: string, groupUserId: string) => Promise<void>;
-  getActiveUserData: (userId: string) => any;
-  isExpanded: boolean;
-  onExpand: (expanded: boolean) => void;
-  isUpdating?: boolean;
+  users: User[];
+  group: Group;
+  carts: Cart[];
+  getCarts: VoidFunction;
+  handleAssignCart: (group_id: string, user_id: string, cart_id: string) => void;
+  handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus) => void;
 }
 
 export function GroupUserList({
-  mainUsers,
-  remainingUsers,
+  users,
   group,
-  availableCarts,
-  onAssignCart,
-  getActiveUserData,
-  isExpanded,
-  onExpand,
-  isUpdating = false,
+  carts,
+  handleAssignCart,
+  handleManageUserRace
 }: GroupUserListProps) {
-  const getUserDuration = (userId: string) => {
-    const mapping = mainUsers.find(gu => gu.user_id === userId);
-    return (mapping?.time_in_minutes || mapping?.allowed_duration || 0);
-  };
-  if (mainUsers.length === 0) {
+  if (users.length === 0) {
     return (
       <Box
         sx={{
@@ -52,9 +40,9 @@ export function GroupUserList({
 
   return (
     <Box sx={{ pt: 0.5, mt: '0px !important' }}>
-      {mainUsers.map((user) => (
+      {users.map((user) => (
         <Stack
-          key={user.id}
+          key={user.user_id}
           direction="row"
           alignItems="center"
           spacing={2}
@@ -74,7 +62,7 @@ export function GroupUserList({
                 fontSize: '1rem',
               }}
             >
-              {user.user.name[0]}
+              {user.user_name}
             </Avatar>
             <Typography
               variant="caption"
@@ -93,39 +81,35 @@ export function GroupUserList({
                 whiteSpace: 'nowrap',
               }}
             >
-              {user?.time_in_minutes ? `${user.time_in_minutes}m` : `${getUserDuration(user.user_id)}m`}
+              {user?.time_allotted}m
             </Typography>
           </Box>
 
-          <UserInfo groupId={group.id} name={user.user.name} email={user.user.email} userId={user.user.id}/>
+          <Box
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+              width: '40%',
+              mr: 2
+            }}
+          // onClick={handleRedirect}
+          >
+            <Typography variant="subtitle2" noWrap>
+              {user?.user_name}
+            </Typography>
+          </Box>
 
           <Box sx={{ flexShrink: 0 }}>
             <CartControls
-              userId={user.user_id}
-              groupId={group.id}
-              groupUserId={user.id}
-              cartAssignments={group.cartAssignments}
-              availableCarts={availableCarts}
-              onAssignCart={onAssignCart}
-              activeUser={getActiveUserData(user.user_id)}
-              isOptimistic={user.id.toString().includes('.')}
-              isUpdating={isUpdating}
+              handleManageUserRace={handleManageUserRace}
+              user={user}
+              group_id={group.group_id}
+              carts={carts}
+              handleAssignCart={handleAssignCart}
             />
           </Box>
         </Stack>
       ))}
-
-      <RemainingUsers
-        users={remainingUsers}
-        groupId={group.id}
-        cartAssignments={group.cartAssignments}
-        onAssignCart={onAssignCart}
-        isExpanded={isExpanded}
-        availableCarts={availableCarts}
-        onExpand={onExpand}
-        getActiveUserData={getActiveUserData}
-        isUpdating={isUpdating}
-      />
     </Box>
   );
 }

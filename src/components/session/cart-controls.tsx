@@ -1,9 +1,9 @@
-import { 
-  Stack, 
-  IconButton, 
-  Menu, 
-  MenuItem, 
-  ListItemIcon, 
+import {
+  Stack,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
   ListItemText,
   Box,
   Typography ,
@@ -11,107 +11,70 @@ import {
   Snackbar,
   Skeleton
 } from '@mui/material';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Iconify } from 'src/components/iconify';
-import { Cart } from 'src/types/cart';
-import { CartAssignment } from 'src/types/session';
-import { sessionApi } from 'src/services/api/session.api';
-import { useGUCData } from 'src/contexts/DataContext';
 import { LoadingButton } from '@mui/lab';
-import { userApi } from 'src/services/api/user.api';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
+import { User, UserRaceStatus, Cart } from 'src/types/session';
 
 interface CartControlsProps {
-  userId: string;
-  groupId: string;
-  cartAssignments: any[];
-  groupUserId: string;
-  onAssignCart: (userId: string, cartId: string, groupUserId: string) => Promise<void>;
-  availableCarts: any[];
-  activeUser: any;
-  isOptimistic?: boolean;
-  isUpdating?: boolean;
+  user: User
+  group_id: string;
+  carts: Cart[];
+  handleAssignCart: (group_id: string, user_id: string, cart_id: string) => void;
+  handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus) => void;
 }
 
-export function CartControls({ 
-  userId, 
-  groupId, 
-  groupUserId,
-  cartAssignments, 
-  availableCarts, 
-  onAssignCart,
-  activeUser,
-  isOptimistic = false,
-  isUpdating = false,
+export function CartControls({
+  user,
+  group_id,
+  carts,
+  handleAssignCart,
+  handleManageUserRace,
 }: CartControlsProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [serverExpEndTime, setServerExpEndTime] = useState<number | null>(null);
-  const [isRaceStarted, setIsRaceStarted] = useState(activeUser?.race_status === 'in_progress');
-  const [raceStatus, setRaceStatus] = useState<'not_started' | 'in_progress' | 'completed'>(
-    activeUser?.race_status || 'not_started'
-  );
-  const [startTime, setStartTime] = useState<string | null>(
-    activeUser?.race_start_time || null
-  );
-  const { getGroupUsers } = useGUCData();
-  const [isAssigning, setIsAssigning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number>(user?.total_remaining_seconds || user?.time_allotted * 60);
+  // const [serverExpEndTime, setServerExpEndTime] = useState<number | null>(null);
+  const [isRaceStarted, setIsRaceStarted] = useState<boolean>(user.race_active || !!user?.race_end_time);
   const [error, setError] = useState<string | null>(null);
-  const [raceEndTime, setRaceEndTime] = useState<string | null>(activeUser?.expected_end_time || null);
+  // const [raceEndTime, setRaceEndTime] = useState<string | null>(activeUser?.expected_end_time || null);
   const [confirmStop, setConfirmStop] = useState(false);
   const [isStoppingRace, setIsStoppingRace] = useState(false);
+  const isAssigning = false;
+  const isUpdating = false;
+  const isOptimistic = false;
+  const raceCompleted = useMemo(()=>{
+    return !!user?.race_end_time
+  },[user?.race_end_time]);
+  // useEffect(() => {
+  //   if (raceStatus === 'in_progress' && raceEndTime) {
+  //     const updateTimeLeft = () => {
+  //       const endTime = new Date(raceEndTime).getTime();
+  //       const now = new Date().getTime();
+  //       const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
 
-  const getUserCart = (ucId: string): any => 
-    cartAssignments.find(ca => ca.current_user === ucId);
+  //       setTimeLeft(remaining);
 
-  const [currentCartId, setCurrentCartId] = useState<string | null>(
-    getUserCart(userId)?.cart_id || null
-  );
+  //       if (remaining <= 0) {
+  //         setTimeLeft(0);
+  //         setRaceStatus('completed');
+  //         return false;
+  //       }
+  //       return true;
+  //     };
 
-  const getUserDuration = useCallback(() => {
-    const userGroup = getGroupUsers(groupId).find((gu : any) => gu.user_id === userId);
-    return userGroup?.time_in_minutes || userGroup?.allowed_duration || 0;
-  }, [groupId, userId, getGroupUsers]);
-  
-  useEffect(() => {
-    if (activeUser) {
-      setIsRaceStarted(activeUser.race_status === 'in_progress');
-      setRaceStatus(activeUser.race_status);
-      setStartTime(activeUser.race_start_time || null);
-      setRaceEndTime(activeUser.expected_end_time || null);
-    }
-    return undefined;
-  }, [activeUser]);
+  //     updateTimeLeft();
+  //     const interval = setInterval(() => {
+  //       const shouldContinue = updateTimeLeft();
+  //       if (!shouldContinue) {
+  //         clearInterval(interval);
+  //       }
+  //     }, 1000);
 
-  useEffect(() => {
-    if (raceStatus === 'in_progress' && raceEndTime) {
-      const updateTimeLeft = () => {
-        const endTime = new Date(raceEndTime).getTime();
-        const now = new Date().getTime();
-        const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-        
-        setTimeLeft(remaining);
-        
-        if (remaining <= 0) {
-          setTimeLeft(0);
-          setRaceStatus('completed');
-          return false;
-        }
-        return true;
-      };
-
-      updateTimeLeft();
-      const interval = setInterval(() => {
-        const shouldContinue = updateTimeLeft();
-        if (!shouldContinue) {
-          clearInterval(interval);
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-    return undefined;
-  }, [raceStatus, raceEndTime]);
+  //     return () => clearInterval(interval);
+  //   }
+  //   return undefined;
+  // }, [raceStatus, raceEndTime]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -119,127 +82,112 @@ export function CartControls({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStartRace = async () => {
-    try {
-      const userCart = getUserCart(userId);
-      if (!userCart) return;
+  // const handleStartRace = async () => {
+  //   try {
+  //     const userCart = getUserCart(userId);
+  //     if (!userCart) return;
 
-      const responseData = await userApi.startRace(userId, groupId);
-      const endTime = responseData?.expected_end_time || responseData?.end_time;
-      setServerExpEndTime(endTime);
-      setRaceEndTime(endTime);
+  //     const responseData = await userApi.startRace(userId, groupId);
+  //     const endTime = responseData?.expected_end_time || responseData?.end_time;
+  //     setServerExpEndTime(endTime);
+  //     setRaceEndTime(endTime);
 
-      if (endTime) {
-        const endTimeMs = new Date(endTime).getTime();
-        const now = new Date().getTime();
-        const remaining = Math.max(0, Math.floor((endTimeMs - now) / 1000));
-        setTimeLeft(remaining);
-      } else {
-        const duration = getUserDuration() * 60;
-        setTimeLeft(duration);
-      }
+  //     if (endTime) {
+  //       const endTimeMs = new Date(endTime).getTime();
+  //       const now = new Date().getTime();
+  //       const remaining = Math.max(0, Math.floor((endTimeMs - now) / 1000));
+  //       setTimeLeft(remaining);
+  //     } else {
+  //       const duration = getUserDuration() * 60;
+  //       setTimeLeft(duration);
+  //     }
 
-      setIsRaceStarted(true);
-      setRaceStatus('in_progress');
-      setStartTime(new Date().toISOString());
-    } catch (e) {
-      console.error('Error starting race:', e);
-    }
-  };
+  //     setIsRaceStarted(true);
+  //     setRaceStatus('in_progress');
+  //     setStartTime(new Date().toISOString());
+  //   } catch (e) {
+  //     console.error('Error starting race:', e);
+  //   }
+  // };
 
   const handleOpenCartMenu = (event: React.MouseEvent<HTMLElement>) => {
-    if (isAssigning) return;
+    // if (isAssigning) return;
     setAnchorEl(event.currentTarget);
   };
 
   const handleCloseCartMenu = () => {
-    if (isAssigning) return;
+    // if (isAssigning) return;
     setAnchorEl(null);
   };
 
-  const handleSelectCart = async (cartId: string) => {
-    if (!cartId) {
-      setError('Invalid cart selection');
-      return;
-    }
+  // const handleSelectCart = async (cartId: string) => {
+  //   if (!cartId) {
+  //     setError('Invalid cart selection');
+  //     return;
+  //   }
 
-    setIsAssigning(true);
-    setAnchorEl(null);
+  //   setIsAssigning(true);
+  //   setAnchorEl(null);
 
-    try {
-      await onAssignCart(userId, cartId, groupUserId);
-      setCurrentCartId(cartId);
-    } catch (e) {
-      setError('Failed to assign cart. Please try again.');
-      console.error('Error assigning cart:', e);
-    } finally {
-      setIsAssigning(false);
-    }
-  };
+  //   try {
+  //     await onAssignCart(userId, cartId, groupUserId);
+  //     setCurrentCartId(cartId);
+  //   } catch (e) {
+  //     setError('Failed to assign cart. Please try again.');
+  //     console.error('Error assigning cart:', e);
+  //   } finally {
+  //     setIsAssigning(false);
+  //   }
+  // };
 
   const handleCloseError = () => {
     setError(null);
   };
 
-  const currentCart = getUserCart(userId);
-
-  const getFullCartDetails = () => {
-    if (!currentCart) return null;
-    return availableCarts?.find(cart => cart.rfid_number === currentCart.cart_id) || null;
-  };
-
-  const selectedCartDetails = getFullCartDetails();
+  // const selectedCartDetails = getFullCartDetails();
 
   const renderCartMenuItem = (cart: Cart) => (
-    <MenuItem 
-      key={cart.id}
-      onClick={() => handleSelectCart(cart?.rfid_number ?? '')}
-      disabled={isAssigning || currentCartId === cart.rfid_number}
-      sx={{ 
+    <MenuItem
+      key={cart.cart_id}
+      onClick={() => handleAssignCart(group_id, user?.user_id, cart?.cart_id)}
+      disabled={cart?.active_status}
+      sx={{
         position: 'relative',
-        opacity: currentCartId === cart.rfid_number ? 0.7 : 1,
+        opacity: user?.cart_id === cart.cart_id ? 0.7 : 1,
       }}
     >
       <ListItemIcon>
-        {isAssigning && cart.rfid_number === currentCartId ? (
-          <LoadingButton
-            loading
-            size="small"
-            sx={{ minWidth: 20, p: 0 }}
-          />
-        ) : (
-          <Iconify 
-            icon={currentCartId === cart.rfid_number ? "mdi:check-circle" : "mdi:go-kart"} 
-            width={20} 
-            sx={{ 
-              color: currentCartId === cart.rfid_number ? 'success.main' : 'inherit'
+          <Iconify
+            icon={user?.cart_id === cart.cart_id ? "mdi:check-circle" : "mdi:go-kart"}
+            width={20}
+            sx={{
+              color: user?.cart_id === cart.cart_id ? 'success.main' : 'inherit'
             }}
           />
-        )}
       </ListItemIcon>
-      <ListItemText 
+      <ListItemText
         primary={cart.name}
-        secondary={`Fuel: ${cart?.current_level}%`}
+        // secondary={`Fuel: ${cart?.current_level}%`}
       />
     </MenuItem>
   );
 
-  const isRaceActive = raceStatus === 'in_progress' || raceStatus === 'completed';
+  // const isRaceActive = raceStatus === 'in_progress' || raceStatus === 'completed';
 
-  const handleStopRace = async () => {
-    try {
-      setIsStoppingRace(true);
-      await userApi.stopRace(userId, groupId);
-      setTimeLeft(0);
-      setRaceStatus('completed');
-      setIsRaceStarted(false);
-    } catch (e) {
-      console.error('Error stopping race:', e);
-    } finally {
-      setIsStoppingRace(false);
-      setConfirmStop(false);
-    }
-  };
+  // const handleStopRace = async () => {
+  //   try {
+  //     setIsStoppingRace(true);
+  //     await userApi.stopRace(userId, groupId);
+  //     setTimeLeft(0);
+  //     setRaceStatus('completed');
+  //     setIsRaceStarted(false);
+  //   } catch (e) {
+  //     console.error('Error stopping race:', e);
+  //   } finally {
+  //     setIsStoppingRace(false);
+  //     setConfirmStop(false);
+  //   }
+  // };
 
   const handleOpenStopConfirm = () => {
     setConfirmStop(true);
@@ -249,77 +197,71 @@ export function CartControls({
     setConfirmStop(false);
   };
 
+  useEffect(()=>{
+    if (user?.total_remaining_seconds) setTimeLeft(user?.total_remaining_seconds)
+  },[user?.total_remaining_seconds])
+
   return (
     <>
       <Stack direction="row" spacing={1} alignItems="center">
-        {(isAssigning || isUpdating) ? (
-          <Skeleton 
-            variant="rectangular" 
-            width={52} 
-            height={32} 
-            sx={{ 
-              borderRadius: '8px',
-              bgcolor: 'background.neutral' 
-            }} 
-          />
-        ) : currentCart ? (
-          <Box 
-            onClick={isOptimistic ? undefined : handleOpenCartMenu}
-            sx={{ 
-              opacity: isOptimistic ? 0.5 : raceStatus === 'completed' ? 0.7 : 1,
-              pointerEvents: isOptimistic ? 'none' : 'auto',
-              display: 'flex', 
+        {user?.cart_id ? (
+          <Box
+            onClick={handleOpenCartMenu}
+            sx={{
+              // opacity: isOptimistic ? 0.5 : raceStatus === 'completed' ? 0.7 : 1,
+              pointerEvents: 'auto',
+              display: 'flex',
               alignItems: 'center',
-              bgcolor: raceStatus === 'completed' ? 'grey.200' : 'success.lighter',
+              bgcolor: user?.race_active ? 'grey.200' : 'success.lighter',
               borderRadius: '8px',
               height: '32px',
               minWidth: 'fit-content !important',
               padding: '0 8px',
               width: '52px',
               border: '1px solid',
-              borderColor: raceStatus === 'completed' ? 'grey.300' : 'success.light',
+              borderColor: user?.race_active ? 'grey.300' : 'success.light',
               position: 'relative',
               transition: 'all 0.2s',
-              cursor: raceStatus === 'completed' ? 'default' : 'pointer',
+              cursor: 'pointer',
               '&:hover': {
-                borderColor: raceStatus === 'completed' ? 'grey.300' : 'success.main',
+                borderColor: !user?.race_active ? 'grey.300' : 'success.main',
               }
             }}
           >
-            <Stack 
-              spacing={0} 
-              alignItems="center" 
-              sx={{ 
+            <Stack
+              spacing={0}
+              alignItems="center"
+              sx={{
                 width: '100%',
-                cursor: isAssigning ? 'default' : 'pointer',
+                cursor: 'pointer',
               }}
               onClick={handleOpenCartMenu}
             >
-              <Typography 
+              <Typography
                 variant="caption"
-                sx={{ 
+                sx={{
                   fontWeight: 700,
                   color: isAssigning ? 'text.disabled' : 'success.dark',
                   lineHeight: 1,
                   fontSize: '0.75rem',
                 }}
               >
-                {currentCart?.name}
+                {carts?.find((item: Cart)=>item?.cart_id === user?.cart_id)?.name}
               </Typography>
-              <Typography 
-                variant="caption" 
-                sx={{ 
+              <Typography
+                variant="caption"
+                sx={{
                   color: isAssigning ? 'text.disabled' : 'success.dark',
                   opacity: isAssigning ? 0.7 : 0.9,
                   fontSize: '0.65rem',
                   lineHeight: 1,
                 }}
               >
-                #{currentCart?.rfid_number}
+                #{carts?.find((item: Cart)=>item?.cart_id === user?.cart_id)?.rfid_number}
               </Typography>
             </Stack>
-            <Box 
-              sx={{ 
+            <Box
+              sx={{
                 position: 'absolute',
                 right: -6,
                 top: -6,
@@ -343,8 +285,8 @@ export function CartControls({
                 <LoadingButton
                   loading
                   size="small"
-                  sx={{ 
-                    minWidth: 12, 
+                  sx={{
+                    minWidth: 12,
                     p: 0,
                     '& .MuiCircularProgress-root': {
                       width: '12px !important',
@@ -354,10 +296,10 @@ export function CartControls({
                   }}
                 />
               ) : (
-                <Iconify 
-                  icon="eva:more-vertical-fill" 
-                  width={12} 
-                  sx={{ color: 'success.lighter' }} 
+                <Iconify
+                  icon="eva:more-vertical-fill"
+                  width={12}
+                  sx={{ color: 'success.lighter' }}
                 />
               )}
             </Box>
@@ -366,8 +308,8 @@ export function CartControls({
           <IconButton
             size="small"
             onClick={handleOpenCartMenu}
-            disabled={isRaceActive || isOptimistic}
-            sx={{ 
+            disabled={user?.race_active}
+            sx={{
               color: 'primary.main',
               '&:hover': { bgcolor: 'primary.lighter' }
             }}
@@ -378,21 +320,21 @@ export function CartControls({
 
         <Box sx={{ position: 'relative' }}>
           {(isAssigning || isUpdating) ? (
-            <Skeleton 
-              variant="rectangular" 
-              width={55} 
-              height={32} 
-              sx={{ 
+            <Skeleton
+              variant="rectangular"
+              width={55}
+              height={32}
+              sx={{
                 borderRadius: 1,
-                bgcolor: 'background.neutral' 
-              }} 
+                bgcolor: 'background.neutral'
+              }}
             />
-          ) : !isRaceStarted && raceStatus !== 'completed' ? (
+          ) : !isRaceStarted && user?.race_active  ? (
             <IconButton
               size="small"
-              onClick={handleStartRace}
-              disabled={!currentCart}
-              sx={{ 
+              onClick={()=>handleManageUserRace(group_id, user?.user_id, 'start')}
+              disabled={!user?.cart_id}
+              sx={{
                 color: 'success.main',
                 '&:hover': { bgcolor: 'success.lighter' }
               }}
@@ -411,19 +353,19 @@ export function CartControls({
             >
               <Typography
                 sx={{
-                  bgcolor: timeLeft === 0 || raceStatus === 'completed' ? 'error.lighter' : 'warning.lighter',
+                  bgcolor: timeLeft === 0 || raceCompleted ? 'error.lighter' : 'warning.lighter',
                   borderRadius: 1,
                   px: 1,
                   minWidth: 55,
-                  color: timeLeft === 0 || raceStatus === 'completed' ? 'error.dark' : 'warning.dark',
+                  color: timeLeft === 0 || raceCompleted ? 'error.dark' : 'warning.dark',
                   textAlign: 'center',
                   fontSize: '0.9rem'
                 }}
               >
-                {timeLeft === 0 || raceStatus === 'completed' ? 'END' : formatTime(timeLeft || 0)}
+                {timeLeft === 0 || raceCompleted ? 'END' : formatTime(timeLeft || 0)}
               </Typography>
 
-              {raceStatus === 'in_progress' && (
+              {!raceCompleted && user?.race_active && (
                 <IconButton
                   className="stop-button"
                   size="small"
@@ -455,7 +397,7 @@ export function CartControls({
 
       <Menu
         anchorEl={anchorEl}
-        open={Boolean(anchorEl) && !isAssigning && !isRaceActive && !isOptimistic && !isUpdating}
+        open={Boolean(anchorEl) && !isAssigning && !user.race_active && !isOptimistic && !isUpdating}
         onClose={handleCloseCartMenu}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
@@ -466,39 +408,39 @@ export function CartControls({
           }
         }}
       >
-        {currentCart && (
+        {/* {user?.cart_id && (
           <>
             <MenuItem disabled>
               <ListItemIcon>
-                <Iconify icon={raceStatus === 'in_progress' ? "mdi:timer" : "lets-icons:check-fill"} width={20} />
+                <Iconify icon={user.race_active ? "mdi:timer" : "lets-icons:check-fill"} width={20} />
               </ListItemIcon>
-              <ListItemText 
+              <ListItemText
                 primary={`Currently assigned: ${currentCart?.name}`}
                 secondary={`Fuel: ${currentCart?.current_level}% ${
-                  raceStatus === 'in_progress' ? '(Race in progress)' : 
+                  raceStatus === 'in_progress' ? '(Race in progress)' :
                   raceStatus === 'completed' ? '(Race completed)' : ''
                 }`}
               />
             </MenuItem>
           </>
-        )}
-        
+        )} */}
+
         <MenuItem disabled sx={{ opacity: 1, bgcolor: 'background.neutral' }}>
           <ListItemText primary="Available Carts" />
         </MenuItem>
 
-        {(availableCarts || []).map(renderCartMenuItem)}
-        
-        {availableCarts?.length === 0 && (
+        {(carts?.filter((item: Cart)=>!item?.active_status) || []).map(renderCartMenuItem)}
+
+        {carts?.filter((item: Cart)=>!item?.active_status)?.length === 0 && (
           <MenuItem disabled>
             <ListItemText primary="No carts available" />
           </MenuItem>
         )}
       </Menu>
 
-      <Snackbar 
-        open={!!error} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
         onClose={handleCloseError}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
@@ -515,8 +457,8 @@ export function CartControls({
         confirmColor="error"
         loading={isStoppingRace}
         onClose={handleCloseStopConfirm}
-        onConfirm={handleStopRace}
+        onConfirm={()=>handleManageUserRace(group_id, user?.user_id, 'end')}
       />
     </>
   );
-} 
+}

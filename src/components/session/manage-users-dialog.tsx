@@ -1,805 +1,498 @@
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  ChangeEvent,
+  FormEvent,
+} from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Button,
   TextField,
   Table,
   TableHead,
-  TableBody,
   TableRow,
   TableCell,
+  TableBody,
   Checkbox,
-  Avatar,
-  Typography,
-  Button,
-  Chip,
-  Stack,
-  InputAdornment,
-  IconButton,
+  Select,
   MenuItem,
+  IconButton,
+  Typography,
   Box,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
-import { Scrollbar } from 'src/components/scrollbar';
-import { Iconify } from 'src/components/iconify';
-import { User, Group } from 'src/types/session';
-import { useState, useEffect, useCallback } from 'react';
-import { groupApi } from 'src/services/api/group.api';
-import { useGUCData } from 'src/contexts/DataContext';
-import { Plan } from 'src/types/billing';
-import { billingApi } from 'src/services/api/billing.api';
-import { debounce } from 'src/utils/debounce';
-import { UserTableSkeleton } from 'src/components/skeleton';
-
-interface SelectedUser {
-  userId: string;
-  timeInMinutes: number;
-}
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
+import { Group, NewUser, Plan } from 'src/types/session';
+import { User } from 'src/types/user';
 
 interface ManageUsersDialogProps {
   open: boolean;
-  loading: boolean;
-  group: any;
-  allUsers: User[];
-  selectedUsers: SelectedUser[];
-  searchQuery: string;
-  onClose: () => void;
-  onSearch: (query: string) => void;
-  onSelectUser: (userId: string, checked: boolean) => void;
-  onTimeChange: (userId: string, minutes: number, planId?: string) => void;
-  onSelectAll: (checked: boolean) => void;
-  onSave: (users: any[]) => void;
-  otherGroups: Group[];
+  onClose: VoidFunction;
+  group: Group;
+  handleAddUsers: (group_id: string, data: NewUser[]) => void;
+  handleUpdateUser: (
+    group_id: string,
+    user_id: string,
+    data: NewUser
+  ) => void;
+  handleRemoveUser: (group_id: string, user_id: string) => void;
+  plans: Plan[];
 }
 
-const MIN_TIME = 5;
-const MIN_TIME_ALLOWED = 1;
-const DEFAULT_TIME = 10;
-
-interface GroupUserMapping {
-  id: string;
-  group_id: string;
-  user_id: string;
-  time_in_minutes: number;
-  status: string;
-  race_status: string;
-}
-
-export function ManageUsersDialog({
-  open,
-  loading,
-  group,
-  allUsers,
-  selectedUsers,
-  searchQuery,
-  onClose,
-  onSearch,
-  onSelectUser,
-  onTimeChange,
-  onSelectAll,
-  onSave,
-  otherGroups,
-}: ManageUsersDialogProps) {
-  const [errors, setErrors] = useState<string[]>([]);
-  const [groupUsers, setGroupUsers] = useState<GroupUserMapping[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const {
-    isUserInActiveRace,
-    getGroupUsers,
-    activeGroupUsers: fullGroupUsers,
-    refreshGroupUsers,
-    fetchUsers,
-    totalUsers,
-  } = useGUCData();
-  const [pendingTimeChanges, setPendingTimeChanges] = useState<Record<string, number>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loadingPlans, setLoadingPlans] = useState(false);
-  const [planError, setPlanError] = useState<string | null>(null);
-  const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({});
-  const [deletingUsers, setDeletingUsers] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const pageSize = 10;
-  const [loadedUsers, setLoadedUsers] = useState<User[]>([]);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  const allGroupUsers = getGroupUsers(group?.id || '');
-
-  const fetchGroupUsers = useCallback(async () => {
-    if (!group) return;
-
-    try {
-      setLoadingUsers(true);
-      const response = await groupApi.getUsers(group.id);
-      const users = response && response.users && response.users.length > 0 ? response.users : [];
-
-      setGroupUsers(users);
-
-      onSelectAll(false);
-
-      const existingUsers = users.map((user) => ({
-        userId: user.user_id,
-        timeInMinutes: user.time_in_minutes,
-        planId: user.id,
-      }));
-
-      existingUsers.forEach((user) => {
-        onSelectUser(user.userId, true);
-      });
-
-    } catch (error) {
-      console.error('Error fetching group users:', error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, [group, onSelectAll, onSelectUser]);
+// Utility: simple debounce hook
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
-    if (open && group) {
-      fetchGroupUsers();
-    }
-    if (open && group && allGroupUsers) {
-      const initialTimes: Record<string, number> = {};
-      allGroupUsers.forEach((gu) => {
-        if (gu.time_in_minutes) {
-          initialTimes[gu.user_id] = gu.time_in_minutes;
-        }
-      });
-      setPendingTimeChanges(initialTimes);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, group]);
-
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setLoadingPlans(true);
-        setPlanError(null);
-        const response = (await billingApi.getPlans()) as any;
-        const availablePlans = response?.data?.filter((plan: any) => plan.is_visible);
-        setPlans(
-          availablePlans?.map((plan: any) => ({
-            ...plan,
-            defaultTime: plan.default_time,
-            isVisible: plan.is_visible,
-          }))
-        );
-
-        if (availablePlans.length > 0) {
-          selectedUsers.forEach((user) => {
-            if (!selectedPlans[user.userId]) {
-              handlePlanChange(user.userId, availablePlans[0].id);
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching plans:', error);
-        setPlanError('Failed to load plans');
-      } finally {
-        setLoadingPlans(false);
-      }
-    };
-
-    if (open) {
-      fetchPlans();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const isUserRaceStarted = (userId: string) => {
-    const userMapping = groupUsers.find((gu) => gu.user_id === userId);
-    return userMapping?.race_status === 'in_progress' || userMapping?.race_status === 'completed';
-  };
-
-  const getUserExistingTime = (userId: string) => {
-    const userMapping = allGroupUsers.find((gu) => gu.user_id === userId);
-    return userMapping?.time_in_minutes || 0;
-  };
-
-  const handleSelectUser = (userId: string, checked: boolean) => {
-    if (checked && isUserInActiveRace(userId)) {
-      return;
-    }
-    if (checked) {
-      onSelectUser(userId, checked);
-      if (plans.length > 0) {
-        const defaultPlan = plans[0];
-        handlePlanChange(userId, defaultPlan.id);
-      }
-    } else {
-      onSelectUser(userId, checked);
-      setSelectedPlans((prev) => {
-        const next = { ...prev };
-        delete next[userId];
-        return next;
-      });
-    }
-  };
-
-  const handleRemoveMember = async (userId: string) => {
-    if (!group) return;
-
-    try {
-      const confirmed = window.confirm(
-        'Are you sure you want to remove this member from the group?'
-      );
-
-      if (confirmed) {
-        setDeletingUsers(prev => new Set(prev).add(userId));
-        
-        const updatedUsers = groupUsers.filter(user => user.user_id !== userId).map(user => ({
-          ...user,
-          user: allUsers.find(u => u.id === user.user_id) || {
-            id: user.user_id,
-            name: 'Unknown',
-            email: '',
-          }
-        }));
-        
-        group.onUpdate?.(updatedUsers, true);
-        setGroupUsers(updatedUsers);
-
-        try {
-          await groupApi.deleteMember(group.id, userId);
-          await refreshGroupUsers();
-          group.onUpdate?.(updatedUsers, false);
-        } catch (error) {
-          console.error('Error removing group member:', error);
-          const revertedUsers = [...groupUsers];
-          group.onUpdate?.(revertedUsers, false);
-          setGroupUsers(revertedUsers);
-        } finally {
-          setDeletingUsers(prev => {
-            const next = new Set(prev);
-            next.delete(userId);
-            return next;
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error removing group member:', error);
-      setErrors(['Failed to remove group member']);
-      setDeletingUsers(prev => {
-        const next = new Set(prev);
-        next.delete(userId);
-        return next;
-      });
-    }
-  };
-
-  const handleTimeChange = (userId: string, minutes: number) => {
-    const existingGroupUser = allGroupUsers.find((gu) => gu.user_id === userId);
-    if (existingGroupUser) {
-      setPendingTimeChanges((prev) => ({
-        ...prev,
-        [userId]: minutes,
-      }));
-    } else {
-      onTimeChange(userId, minutes);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!group) return;
-
-    const usersWithoutPlans = selectedUsers.filter((user) => !selectedPlans[user.userId]);
-    if (usersWithoutPlans.length > 0) {
-      setErrors(['Please select a plan for all users']);
-      return;
-    }
-
-    const invalidUsers = selectedUsers.filter((user) => {
-      const existingTime = allGroupUsers.find((gu) => gu.user_id === user.userId)?.time_in_minutes;
-      const pendingTime = pendingTimeChanges[user.userId];
-      const currentTime = pendingTime ?? existingTime ?? user.timeInMinutes;
-      return !currentTime || currentTime < MIN_TIME_ALLOWED;
-    });
-
-    if (invalidUsers.length > 0) {
-      setErrors([
-        `Please set valid time (minimum ${MIN_TIME_ALLOWED} minutes) for all selected users`,
-      ]);
-      return;
-    }
-
-    try {
-      const userUpdatesMap = new Map();
-
-      selectedUsers.forEach((user) => {
-        const existingTime = allGroupUsers.find(
-          (gu) => gu.user_id === user.userId
-        )?.time_in_minutes;
-        userUpdatesMap.set(user.userId, {
-          userId: user.userId,
-          timeInMinutes: pendingTimeChanges[user.userId] ?? existingTime ?? user.timeInMinutes,
-          planId: selectedPlans[user.userId],
-        });
-      });
-
-      const usersToUpdate = Array.from(userUpdatesMap.values());
-
-      const optimisticUsers = usersToUpdate.map(user => {
-        const fullUser = allUsers.find(u => u.id === user.userId) || {
-          id: user.userId,
-          name: 'Unknown',
-          email: '',
-        };
-        
-        return {
-          id: Math.random().toString(),
-          user_id: user.userId,
-          group_id: group.id,
-          time_in_minutes: user.timeInMinutes,
-          status: 'active',
-          race_status: 'pending',
-          user: {
-            id: fullUser.id,
-            name: fullUser.name,
-            email: fullUser.email,
-            phone: (fullUser as User).phone || '',
-          },
-        };
-      });
-
-      group.onUpdate?.(optimisticUsers, true);
-      onClose();
-
-      try {
-        setIsSubmitting(true);
-        await onSave(usersToUpdate);
-        await refreshGroupUsers();
-        group.onUpdate?.(optimisticUsers, false);
-      } catch (error) {
-        console.error('Error saving changes:', error);
-        group.onUpdate?.(groupUsers, false);
-        setErrors(['Failed to save changes']);
-      } finally {
-        setIsSubmitting(false);
-      }
-
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      setErrors(['Failed to save changes']);
-    }
-  };
-
-  const getInvalidTimeUsers = () => [
-    ...selectedUsers.filter((user) => {
-      const time = pendingTimeChanges[user.userId] || user.timeInMinutes;
-      return !time || time < MIN_TIME_ALLOWED;
-    }),
-    ...Object.entries(pendingTimeChanges)
-      .filter(([userId]) => !selectedUsers.find((u) => u.userId === userId))
-      .filter(([_, minutes]) => !minutes || minutes < MIN_TIME_ALLOWED),
-  ];
-
-  const getMissingPlanUsers = () => selectedUsers.filter((user) => !selectedPlans[user.userId]);
-
-  const invalidTimeUsers = getInvalidTimeUsers();
-  const missingPlanUsers = getMissingPlanUsers();
-  const hasErrors = invalidTimeUsers.length > 0 || missingPlanUsers.length > 0;
-
-  const handlePlanChange = (userId: string, planId: string) => {
-    setSelectedPlans((prev) => ({ ...prev, [userId]: planId }));
-    const plan = plans.find((p) => p.id === planId);
-    if (plan) {
-      const minutes = plan.defaultTime;
-      handleTimeChange(userId, minutes);
-      onTimeChange(userId, minutes);
-    }
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const filteredUser = loadedUsers;
-      filteredUser.forEach((user) => {
-        if (!isUserInActiveRace(user.id)) {
-          handleSelectUser(user.id, true);
-        }
-      });
-    } else {
-      onSelectAll(false);
-      setSelectedPlans({});
-    }
-  };
-
-  const debouncedFetchUsers = debounce(async (query: string) => {
-    if (!query) {
-      return;
-    }
-    setLoadingMore(true);
-    try {
-      const response: any = await fetchUsers({
-        page: 1,
-        pageSize,
-        search: query
-      });
-
-      if (response && response.users) {
-        setLoadedUsers(sortUsers(response.users));
-        setHasMore(response.users.length >= pageSize);
-      } else {
-        setLoadedUsers([]);
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setLoadedUsers([]);
-      setLoadingMore(false);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, 800);
-
-  useEffect(() => {
-    if (searchQuery.length >= 2 || searchQuery.length === 0) {
-      debouncedFetchUsers(searchQuery);
-    }
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
     return () => {
-      debouncedFetchUsers.cancel();
+      clearTimeout(handler);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [value, delay]);
 
-  const handleSearch = (value: string) => {
-    onSearch(value);
-  };
+  return debouncedValue;
+}
 
-  const getUserStatusPriority = (user: User, isSelected: boolean, isExistingGroupUser: boolean, isAssigned: boolean, hasRaceStarted: boolean) => {
-    if (hasRaceStarted) return 1;
-    if (isExistingGroupUser) return 2;
-    if (isSelected) return 3;
-    if (isAssigned) return 4;
-    return 5; 
-  };
+/**
+ * Example function to fetch all users.
+ * Replace this with your actual data-fetching logic or pass the user list as a prop if you prefer.
+ */
+async function fetchAllUsers(): Promise<User[]> {
+  // Mocked example data
+  return [
+    {
+      user_id: 'u1',
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      phone: '555-1234',
+    },
+    {
+      user_id: 'u2',
+      name: 'Bob Smith',
+      email: 'bob@example.com',
+      phone: '555-5678',
+    },
+    {
+      user_id: 'u3',
+      name: 'Charlie Brown',
+      email: 'charlie@example.com',
+      phone: '555-9999',
+    },
+    {
+      user_id: 'u4',
+      name: 'Diana Prince',
+      email: 'diana@example.com',
+      phone: '555-1111',
+    },
+    // etc...
+  ];
+}
 
-  const sortUsers = (users: User[]) => [...users].sort((a, b) => {
-      const aSelected = !!selectedUsers.find(su => su.userId === a.id);
-      const bSelected = !!selectedUsers.find(su => su.userId === b.id);
-      
-      const aExisting = allGroupUsers.some(gu => gu.user_id === a.id);
-      const bExisting = allGroupUsers.some(gu => gu.user_id === b.id);
-      
-      const aAssigned = fullGroupUsers.some(g => g.group_id !== group?.id && g.user_id === a.id);
-      const bAssigned = fullGroupUsers.some(g => g.group_id !== group?.id && g.user_id === b.id);
-      
-      const aRaceStarted = group && isUserRaceStarted(a.id);
-      const bRaceStarted = group && isUserRaceStarted(b.id);
+export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
+  open,
+  onClose,
+  group,
+  handleAddUsers,
+  handleUpdateUser,
+  handleRemoveUser,
+  plans,
+}) => {
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-      const aPriority = getUserStatusPriority(a, aSelected, aExisting, aAssigned, aRaceStarted);
-      const bPriority = getUserStatusPriority(b, bSelected, bExisting, bAssigned, bRaceStarted);
+  // For newly selected users
+  // Key: user_id -> { plan_id, user_name, user_id }
+  const [selectedUsers, setSelectedUsers] = useState<Record<string, NewUser>>(
+    {}
+  );
 
-      return aPriority - bPriority;
-    });
+  // For plan changes on existing group members (optional immediate or batch)
+  // We'll store them for immediate or separate update action
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingPlanId, setEditingPlanId] = useState<string>('');
 
-  const handleLoadMore = async () => {
-    try {
-      setLoadingMore(true);
-      const nextPage = currentPage + 1;
-      const prevUsers = [...loadedUsers];
-      
-      const response: any = await fetchUsers({
-        page: nextPage,
-        pageSize,
-        search: searchQuery
-      });
-      
-      const newUsers = response.users.filter(
-        (newUser: any) => !prevUsers.some((existingUser: any) => existingUser.id === newUser.id)
-      );
-      
-      if (newUsers.length < pageSize) {
-        setHasMore(false);
-      }
-      
-      setLoadedUsers(prevU => sortUsers([...prevU, ...newUsers]));
-      setCurrentPage(nextPage);
-    } catch (error) {
-      console.error('Error loading more users:', error);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
+  // For remove confirmation
+  const [confirmRemoveUserId, setConfirmRemoveUserId] = useState<
+    string | null
+  >(null);
 
+  /**
+   * Fetch all users once the dialog opens.
+   */
   useEffect(() => {
     if (open) {
-      if (loadedUsers.length === 0) {
-        setLoadingMore(true);
-        fetchUsers({
-          page: 1,
-          pageSize,
-          search: ''
-        }).then((response: any) => {
-          if (response && response.users) {
-            setLoadedUsers(sortUsers(response.users));
-            setHasMore(response.users.length >= pageSize);
-          }
-          setLoadingMore(false);
-        });
-      }
-      setCurrentPage(1);
+      fetchAllUsers().then((users) => {
+        setAllUsers(users);
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  /**
+   * Reset states when dialog closes
+   */
+  useEffect(() => {
+    if (!open) {
+      setSearchTerm('');
+      setSelectedUsers({});
+      setEditingUserId(null);
+      setConfirmRemoveUserId(null);
+    }
+  }, [open]);
+
+  /**
+   * Handler for search input change
+   */
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  /**
+   * Filter & sort users:
+   * 1. Group users come first
+   * 2. Then the rest
+   * 3. Then filter by searchTerm
+   */
+  const filteredUsers = React.useMemo(() => {
+    const inGroup = new Set(group.users.map((u) => u.user_id));
+
+    // filter by search term ignoring case
+    const lowerSearch = debouncedSearchTerm.toLowerCase();
+    const matchesSearch = (str: string) =>
+      str.toLowerCase().includes(lowerSearch);
+
+    const sortedUsers = [...allUsers].sort((a, b) => {
+      // Sort by whether in group or not
+      const aInGroup = inGroup.has(a.user_id) ? 0 : 1;
+      const bInGroup = inGroup.has(b.user_id) ? 0 : 1;
+      if (aInGroup !== bInGroup) return aInGroup - bInGroup;
+      // Then by name if needed
+      return a.name.localeCompare(b.name);
+    });
+
+    return sortedUsers.filter((user) => (
+        matchesSearch(user.name) ||
+        matchesSearch(user.email) ||
+        matchesSearch(user.phone)
+      )
+    );
+  }, [allUsers, group.users, debouncedSearchTerm]);
+
+  /**
+   * Checks if a user is already in the group
+   */
+  const isUserInGroup = (userId: string): boolean => {
+    return group.users.some((gu) => gu.user_id === userId);
+  };
+
+  /**
+   * Get existing plan_id for a user in the group
+   */
+  const getUserPlanFromGroup = (userId: string): string | undefined => {
+    const gu = group.users.find((u) => u.user_id === userId);
+    return gu?.plan_id || undefined;
+  };
+
+  /**
+   * Handler for plan dropdown changes for newly selected users
+   */
+  const handleSelectPlanForNewUser = (
+    user: User,
+    e: ChangeEvent<{ value: unknown }>
+  ) => {
+    const plan_id = e.target.value as string;
+    setSelectedUsers((prev) => ({
+      ...prev,
+      [user.user_id]: {
+        user_id: user.user_id,
+        user_name: user.name,
+        plan_id,
+      },
+    }));
+  };
+
+  /**
+   * Handler for toggling selection of a user (checkbox).
+   */
+  const handleToggleUserSelection = (user: User) => {
+    setSelectedUsers((prev) => {
+      // If user is already selected, remove them
+      if (prev[user.user_id]) {
+        const { [user.user_id]: _, ...rest } = prev;
+        return rest;
+      }
+      // Otherwise, add with default plan if you want
+      return {
+        ...prev,
+        [user.user_id]: {
+          user_id: user.user_id,
+          user_name: user.name,
+          plan_id: plans.length ? plans[0].plan_id : '',
+        },
+      };
+    });
+  };
+
+  /**
+   * Check if user is selected (for new additions)
+   */
+  const isSelectedForAddition = (userId: string): boolean => {
+    return !!selectedUsers[userId];
+  };
+
+  /**
+   * Handler for Save button (add newly selected users in batch).
+   */
+  const handleSave = () => {
+    const newUsersArray: NewUser[] = Object.values(selectedUsers);
+    if (newUsersArray.length > 0) {
+      handleAddUsers(group.group_id, newUsersArray);
+    }
+    onClose();
+  };
+
+  /**
+   * Handle editing plan for existing user
+   */
+  const handleEditUser = (user_id: string) => {
+    setEditingUserId(user_id);
+    // initialize editingPlanId from existing user’s plan
+    const currentPlan = getUserPlanFromGroup(user_id);
+    if (currentPlan) setEditingPlanId(currentPlan);
+  };
+
+  /**
+   * Confirm the plan update for an existing user
+   */
+  const handleConfirmUpdateUser = () => {
+    if (!editingUserId) return;
+    const data: NewUser = {
+      user_id: editingUserId,
+      user_name: '', // or fill from some source if needed
+      plan_id: editingPlanId,
+    };
+    handleUpdateUser(group.group_id, editingUserId, data);
+    setEditingUserId(null);
+  };
+
+  /**
+   * Handle removing an existing user from the group
+   */
+  const handleConfirmRemoveUser = () => {
+    if (!confirmRemoveUserId) return;
+    handleRemoveUser(group.group_id, confirmRemoveUserId);
+    setConfirmRemoveUserId(null);
+  };
+
   return (
-    <Dialog fullWidth maxWidth="md" open={open} onClose={onClose}>
-      <DialogTitle>Manage Group Users</DialogTitle>
-
-      <DialogContent sx={{ pb: 0, minHeight: 400 }}>
-        <TextField
-          fullWidth
-          placeholder="Search users..."
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />
-            ),
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        Manage Users in "{group.name}"
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
           }}
-          sx={{ mb: 2 }}
-        />
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
 
-        <Scrollbar>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedUsers.length === loadedUsers.length}
-                    indeterminate={
-                      selectedUsers.length > 0 && selectedUsers.length < loadedUsers.length
-                    }
-                    onChange={(e) => onSelectAll(e.target.checked)}
-                  />
-                </TableCell>
-                <TableCell>Racer</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell align="center">Time (mins)</TableCell>
-                <TableCell align="center">Status</TableCell>
-              </TableRow>
-            </TableHead>
+      <DialogContent>
+        {/* Search bar */}
+        <Box display="flex" alignItems="center" mb={2}>
+          <SearchIcon sx={{ mr: 1 }} />
+          <TextField
+            label="Search users..."
+            variant="outlined"
+            fullWidth
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+        </Box>
 
-            <TableBody>
-              {loadingUsers ? (
-                <UserTableSkeleton rows={5} />
-              ) : (
-                <>
-                  {loadedUsers.map((user) => {
-                    const selectedUser = allGroupUsers.find((su) => su.user_id === user.id)
-                      ? {
-                          timeInMinutes:
-                            allGroupUsers.find((su) => su.user_id === user.id)?.time_in_minutes || 0,
-                          userId: user.id,
-                        }
-                      : selectedUsers.find((su) => su.userId === user.id);
-                    const isSelected = !!selectedUser;
-                    const isAssigned = fullGroupUsers.some(
-                      (g) => g.group_id !== group?.id && g.user_id === user.id
-                    );
-                    const hasRaceStarted = group && isUserRaceStarted(user.id);
-                    const existingTime = group ? getUserExistingTime(user.id) : 0;
-                    const isExistingGroupUser = allGroupUsers.some((gu) => gu.user_id === user.id);
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell />
+              <TableCell>User Name</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell>Plan</TableCell>
+              <TableCell align="center">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredUsers.map((user) => {
+              const inGroup = isUserInGroup(user.user_id);
+              const selected = isSelectedForAddition(user.user_id);
 
-                    return (
-                      <TableRow
-                        key={user.id}
-                        hover
-                        sx={isExistingGroupUser ? { bgcolor: 'action.selected' } : undefined}
-                      >
-                        <TableCell padding="checkbox">
-                          {isExistingGroupUser ? (
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleRemoveMember(user.id)}
-                              disabled={hasRaceStarted || deletingUsers.has(user.id)}
-                              sx={{ marginLeft: 1 }}
-                            >
-                              {deletingUsers.has(user.id) ? (
-                                <LoadingButton
-                                  loading
-                                  size="small"
-                                  sx={{ 
-                                    minWidth: 20, 
-                                    p: 0,
-                                    '& .MuiCircularProgress-root': {
-                                      width: '20px !important',
-                                      height: '20px !important',
-                                      color: 'error.main'
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <Iconify icon="eva:trash-2-outline" />
-                              )}
-                            </IconButton>
-                          ) : (
-                            <Checkbox
-                              checked={isSelected || hasRaceStarted || false}
-                              disabled={isAssigned || hasRaceStarted || false}
-                              onChange={(e) => handleSelectUser(user.id, e.target.checked)}
-                            />
-                          )}
-                        </TableCell>
+              return (
+                <TableRow key={user.user_id}>
+                  <TableCell>
+                    {!inGroup && (
+                      <Checkbox
+                        checked={selected}
+                        onChange={() => handleToggleUserSelection(user)}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.phone}</TableCell>
 
-                        <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2 }}>{user.name[0]}</Avatar>
-                          <Typography variant="subtitle2">{user.name}</Typography>
-                        </TableCell>
-
-                        <TableCell>
-                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                            {user.email}
-                          </Typography>
-                          {user.phone && (
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              {user.phone}
-                            </Typography>
-                          )}
-                        </TableCell>
-
-                        <TableCell align="center">
-                          {(isSelected || isExistingGroupUser) && (
-                            <Stack direction="row" spacing={1} justifyContent="center">
-                              {loadingPlans ? (
-                                <TextField
-                                  disabled
-                                  size="small"
-                                  value="Loading plans..."
-                                  sx={{ width: '50%' }}
-                                />
-                              ) : planError ? (
-                                <TextField
-                                  error
-                                  disabled
-                                  size="small"
-                                  value={planError}
-                                  sx={{ width: '50%' }}
-                                />
-                              ) : (
-                                <TextField
-                                  select
-                                  size="small"
-                                  value={selectedPlans[user.id] || ''}
-                                  onChange={(e) => handlePlanChange(user.id, e.target.value)}
-                                  disabled={hasRaceStarted || false}
-                                  sx={{ width: '50%', maxWidth: '180px' }}
-                                  error={!selectedPlans[user.id] && isSelected}
-                                  helperText={
-                                    !selectedPlans[user.id] && isSelected ? 'Plan is required' : ''
-                                  }
-                                >
-                                  {plans.map((plan) => (
-                                    <MenuItem key={plan.id} value={plan.id}>
-                                      {plan.name} ({plan.defaultTime} mins)
-                                    </MenuItem>
-                                  ))}
-                                </TextField>
-                              )}
-                              <TextField
-                                type="number"
-                                size="small"
-                                value={
-                                  hasRaceStarted
-                                    ? existingTime
-                                    : pendingTimeChanges[user.id] !== undefined
-                                      ? pendingTimeChanges[user.id]
-                                      : isExistingGroupUser
-                                        ? getUserExistingTime(user.id)
-                                        : selectedUser?.timeInMinutes || ''
-                                }
-                                onChange={(e) => handleTimeChange(user.id, Number(e.target.value))}
-                                disabled={hasRaceStarted || false}
-                                sx={{ width: '40%', maxWidth: '120px' }}
-                                InputProps={{
-                                  endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                                  inputProps: { min: 0 },
-                                }}
-                                error={
-                                  !hasRaceStarted &&
-                                  (isExistingGroupUser
-                                    ? (pendingTimeChanges[user.id] || getUserExistingTime(user.id)) <
-                                      MIN_TIME_ALLOWED
-                                    : !selectedUser?.timeInMinutes ||
-                                      selectedUser?.timeInMinutes < MIN_TIME_ALLOWED)
-                                }
-                              />
-                            </Stack>
-                          )}
-                        </TableCell>
-
-                        <TableCell align="center">
-                          <Chip
-                            size="small"
-                            label={
-                              hasRaceStarted
-                                ? 'Race Started'
-                                : isExistingGroupUser
-                                  ? 'Group Member'
-                                  : isAssigned
-                                    ? 'Assigned'
-                                    : isSelected
-                                      ? 'Selected'
-                                      : 'Available'
-                            }
-                            color={
-                              hasRaceStarted
-                                ? 'error'
-                                : isExistingGroupUser
-                                  ? 'success'
-                                  : isAssigned
-                                    ? 'warning'
-                                    : isSelected
-                                      ? 'primary'
-                                      : 'default'
-                            }
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {loadingMore && <UserTableSkeleton rows={3} />}
-                  {hasMore && loadedUsers.length < totalUsers && (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center" sx={{ border: 0 }}>
-                        <LoadingButton
-                          loading={loadingMore}
-                          variant="text"
-                          onClick={handleLoadMore}
-                          startIcon={!loadingMore && <Iconify icon="eva:plus-fill" />}
+                  <TableCell>
+                    {/* If user is already in group, show plan dropdown for editing if editingUserId matches */}
+                    {inGroup ? (
+                      editingUserId === user.user_id ? (
+                        <Select
+                          value={editingPlanId}
+                          onChange={(e) =>
+                            setEditingPlanId(e.target.value as string)
+                          }
+                          size="small"
+                          sx={{ minWidth: 120 }}
                         >
-                          {loadingMore ? 'Loading...' : 'Load More'}
-                        </LoadingButton>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </>
-              )}
-            </TableBody>
-          </Table>
-        </Scrollbar>
+                          {plans.map((plan) => (
+                            <MenuItem key={plan.plan_id} value={plan.plan_id}>
+                              {plan.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      ) : (
+                        // Display read-only plan name
+                        <Typography variant="body2">
+                          {
+                            plans.find(
+                              (p) =>
+                                p.plan_id ===
+                                getUserPlanFromGroup(user.user_id)
+                            )?.name
+                          }
+                        </Typography>
+                      )
+                    ) : (
+                      // If user is not in group, plan dropdown for new user
+                      selected && (
+                        <Select
+                          value={selectedUsers[user.user_id]?.plan_id || ''}
+                          onChange={(e: any) => handleSelectPlanForNewUser(user, e)}
+                          size="small"
+                          sx={{ minWidth: 120 }}
+                        >
+                          {plans.map((plan) => (
+                            <MenuItem key={plan.plan_id} value={plan.plan_id}>
+                              {plan.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      )
+                    )}
+                  </TableCell>
+
+                  <TableCell align="center">
+                    {/* If already in group, show edit/remove actions */}
+                    {inGroup && (
+                      <>
+                        {editingUserId === user.user_id ? (
+                          <>
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              size="small"
+                              onClick={handleConfirmUpdateUser}
+                              sx={{ mr: 1 }}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="inherit"
+                              size="small"
+                              onClick={() => setEditingUserId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <IconButton
+                              onClick={() => handleEditUser(user.user_id)}
+                              size="small"
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              onClick={() =>
+                                setConfirmRemoveUserId(user.user_id)
+                              }
+                              color="error"
+                              size="small"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+
+        {/* Confirm Remove Dialog (simple version) */}
+        {confirmRemoveUserId && (
+          <Dialog open onClose={() => setConfirmRemoveUserId(null)}>
+            <DialogTitle>Remove User</DialogTitle>
+            <DialogContent>
+              Are you sure you want to remove this user from the group?
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => setConfirmRemoveUserId(null)}
+                color="inherit"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmRemoveUser}
+                color="error"
+                variant="contained"
+              >
+                Remove
+              </Button>
+            </DialogActions>
+          </Dialog>
+        )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        {errors.length > 0 && (
-          <Stack sx={{ flexGrow: 1 }}>
-            {errors.map((error, index) => (
-              <Typography key={index} variant="caption" color="error">
-                {error}
-              </Typography>
-            ))}
-          </Stack>
-        )}
-        {!loadingUsers && hasErrors && !errors.length && (
-          <Stack sx={{ flexGrow: 1 }}>
-            {invalidTimeUsers.length > 0 && (
-              <Typography variant="caption" color="error">
-                {`Please set valid time (minimum ${MIN_TIME_ALLOWED} minutes) for all users`}
-              </Typography>
-            )}
-            {missingPlanUsers.length > 0 && (
-              <Typography variant="caption" color="error">
-                Please select a plan for all users
-              </Typography>
-            )}
-          </Stack>
-        )}
-        <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <LoadingButton
-          variant="contained"
-          loading={isSubmitting}
+        <Button
           onClick={handleSave}
-          disabled={isSubmitting || hasErrors || !group || loadingUsers}
+          color="primary"
+          variant="contained"
+          disabled={!Object.keys(selectedUsers).length}
         >
-          Save Changes
-        </LoadingButton>
+          Save
+        </Button>
       </DialogActions>
     </Dialog>
   );
-}
+};

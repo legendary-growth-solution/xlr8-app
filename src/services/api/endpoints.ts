@@ -11,7 +11,7 @@ export const API_ENDPOINTS = {
     LIST: createEndpoint('/api/sessions/'),
     HISTORY: createEndpoint('/api/sessions/history'),
     DETAIL: (id: string) => createEndpoint(`/api/sessions/${id}`),
-    CREATE: createEndpoint('/api/sessions/'),
+    CREATE: createEndpoint('/sessions/start'),
     UPDATE: (id: string) => createEndpoint(`/api/sessions/${id}`),
     DELETE: (id: string) => createEndpoint(`/api/sessions/${id}`),
     LATEST: createEndpoint('/api/sessions/latest'),

@@ -3,33 +3,33 @@ import { useNavigate } from 'react-router-dom';
 
 interface UserInfoProps {
   name: string;
-  email: string;
-  userId: string;
-  groupId: string;
+  // email: string;
+  // userId: string;
+  // groupId: string;
 }
 
-export function UserInfo({ name, email, userId, groupId }: UserInfoProps) {
-  const navigate = useNavigate();
+export function UserInfo({ name }: UserInfoProps) {
+  // const navigate = useNavigate();
 
-  const handleRedirect = () => {
-    navigate(`${userId}/${groupId}`, {state: { "name": name } });
-  };
+  // const handleRedirect = () => {
+  //   navigate(`${userId}/${groupId}`, {state: { "name": name } });
+  // };
 
   return (
-    <Box 
-      sx={{ 
+    <Box
+      sx={{
         flexGrow: 1,
         minWidth: 0,
         width: '40%',
         mr: 2
       }}
-      onClick={handleRedirect}
+      // onClick={handleRedirect}
     >
       <Typography variant="subtitle2" noWrap>
         {name}
       </Typography>
-      <Tooltip 
-        title={email} 
+      {/* <Tooltip
+        title={email}
         placement="top"
         PopperProps={{
           modifiers: [
@@ -42,20 +42,20 @@ export function UserInfo({ name, email, userId, groupId }: UserInfoProps) {
           ],
         }}
       >
-        <Typography 
-          variant="caption" 
-          sx={{ 
+        <Typography
+          variant="caption"
+          sx={{
             color: 'text.secondary',
             display: 'block',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             cursor: 'default',
-          }} 
+          }}
           noWrap
         >
           {email}
         </Typography>
-      </Tooltip>
+      </Tooltip> */}
     </Box>
   );
-} 
+}

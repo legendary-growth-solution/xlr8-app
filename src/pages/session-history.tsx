@@ -1,12 +1,13 @@
 import { Helmet } from 'react-helmet-async';
 import { Box, Button, Typography, Card, Stack, TextField } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Session } from 'src/types/session';
 import DataTable from 'src/components/table/DataTable';
 import { Iconify } from 'src/components/iconify';
 import { useNavigate } from 'react-router-dom';
 import ExportMenu from 'src/components/export/ExportMenu';
-import { sessionApi } from 'src/services/api/session.api';
+import { api } from 'src/api/api';
+import { showToast } from 'src/components/toast';
 
 export default function SessionHistoryPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -36,22 +37,21 @@ export default function SessionHistoryPage() {
 
   const transformSessionData = (sessionsArg: Session[]) =>
     sessionsArg.map((session) => ({
-      'Session ID': session.id,
-      Name: session.session_name,
+      'Session ID': session.session_id,
+      Name: session.name,
       'Start Time': new Date(session.start_time).toLocaleString(),
       'End Time': session.end_time ? new Date(session.end_time).toLocaleString() : '-',
       'Duration (mins)': calculateDuration(session),
-      Participants: `${session.current_participants}/${session.max_participants}`,
     }));
 
   const columns = [
     {
-      id: 'id',
+      id: 'session_id',
       label: 'Session ID',
       minWidth: 130,
       format: (value: string) => value?.toUpperCase(),
     },
-    { id: 'session_name', label: 'Session Name', minWidth: 170 },
+    { id: 'name', label: 'Session Name', minWidth: 170 },
     {
       id: 'start_time',
       label: 'Start Time',
@@ -63,54 +63,24 @@ export default function SessionHistoryPage() {
       label: 'End Time',
       minWidth: 160,
       format: (value: string) => (value ? new Date(value).toLocaleString() : '-'),
-    },
-    {
-      id: 'duration',
-      label: 'Duration',
-      minWidth: 120,
-      format: (value: string, row: Session) => {
-        const start = new Date(row.start_time);
-        const end = row.end_time ? new Date(row.end_time) : new Date();
-        const diff = Math.abs(end.getTime() - start.getTime());
-        const minutes = Math.floor(diff / 1000 / 60);
-        return `${minutes} mins`;
-      },
-    },
-    {
-      id: 'current_participants',
-      label: 'Participants',
-      minWidth: 120,
-      format: (value: number, row: Session) => `${value}/${row.max_participants ?? '-'}`,
-    },
+    }
   ];
 
-  useEffect(() => {
-    fetchSessionHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, searchQuery]);
+  const fetchSessionHistory = useCallback(() => {
+    setLoading(true);
+    api.session.getCompletedSessions
+      .then((res) => {
+        setSessions(res.sessions);
+      })
+      .catch((err) => {
+        showToast.error(err?.data?.error)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  },[page, rowsPerPage, searchQuery]);
 
-  const fetchSessionHistory = async () => {
-    try {
-      setLoading(true);
-
-      try {
-        const response = await sessionApi.history({
-          page,
-          pageSize: rowsPerPage,
-          search: searchQuery,
-        });
-
-        setSessions(response.sessions);
-        setTotalPages(response.total);
-      } catch (apiError) {
-        console.error('API Error:', apiError);
-      }
-    } catch (error) {
-      console.error('Error fetching session history:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(()=>{fetchSessionHistory()},[fetchSessionHistory])
 
   return (
     <>
@@ -164,7 +134,7 @@ export default function SessionHistoryPage() {
                 <Button
                   variant="outlined"
                   size="small"
-                  onClick={() => navigate(`/sessions/${row.id}`)}
+                  onClick={() => navigate(`/sessions/${row.session_id}`)}
                 >
                   View Details
                 </Button>

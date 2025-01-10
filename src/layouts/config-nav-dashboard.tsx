@@ -18,7 +18,7 @@ const navConfig = [
     children: [
       {
         title: 'Active Session',
-        path: '/sessions',
+        path: '/active-session',
       },
       {
         title: 'Session History',

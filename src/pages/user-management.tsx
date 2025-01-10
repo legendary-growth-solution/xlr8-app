@@ -7,7 +7,7 @@ import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { Iconify } from 'src/components/iconify';
 import DataTable from 'src/components/table/DataTable';
 import { userApi } from 'src/services/api/user.api';
-import { User } from 'src/types/session';
+import { User } from 'src/types/user';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -22,57 +22,57 @@ export default function UserManagementPage() {
   const [openEdit, setOpenEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
-  
+
   const navigate = useNavigate();
 
   const columns = [
-    // { 
-    //   id: 'sno', 
-    //   label: 'S.No', 
+    // {
+    //   id: 'sno',
+    //   label: 'S.No',
     //   minWidth: 130,
     //   format: (value: number) => value.toString(),
     //   noWrap: true,
     //   sx: { whiteSpace: 'nowrap' },
     // },
-    { 
-      id: 'name', 
-      label: 'Name', 
-      minWidth: 170, 
+    {
+      id: 'name',
+      label: 'Name',
+      minWidth: 170,
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
       format: (value: string) => value.charAt(0).toUpperCase() + value.slice(1),
     },
-    // { 
-    //   id: 'sessions', 
-    //   label: 'Sessions', 
-    //   minWidth: 170, 
+    // {
+    //   id: 'sessions',
+    //   label: 'Sessions',
+    //   minWidth: 170,
     //   noWrap: true,
     //   sx: { whiteSpace: 'nowrap' },
     // },
-    { 
-      id: 'email', 
-      label: 'Email', 
-      minWidth: 200, 
+    {
+      id: 'email',
+      label: 'Email',
+      minWidth: 200,
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
     },
-    { 
-      id: 'phone', 
+    {
+      id: 'phone',
       label: 'Phone',
       minWidth: 130,
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
     },
-    // { 
-    //   id: 'dob', 
+    // {
+    //   id: 'dob',
     //   label: 'Date of Birth',
     //   minWidth: 120,
     //   format: (value: string) => value ? new Date(value).toLocaleDateString() : '-',
     //   noWrap: true,
     //   sx: { whiteSpace: 'nowrap' },
     // },
-    { 
-      id: 'created_at', 
+    {
+      id: 'created_at',
       label: 'Joined',
       minWidth: 160,
       format: (value: string) => new Date(value).toLocaleString(),
@@ -81,22 +81,21 @@ export default function UserManagementPage() {
     },
   ];
 
-
   const fetchUsers = async (resetPage = false) => {
     try {
       setLoading(true);
-  
+
       const currentPage = resetPage ? 1 : page;
       if (resetPage) {
         setPage(1);
       }
-  
+
       const response = await userApi.list({
         page: currentPage,
         pageSize: rowsPerPage,
         search: currentSearch.current,
       });
-      
+
       setUsers(response.users);
       setTotalPages(response?.pagination?.totalPages);
     } catch (error) {
@@ -112,9 +111,9 @@ export default function UserManagementPage() {
 
     try {
       setDeleteLoading(true);
-      
+
       await userApi.delete(selectedUser.user_id);
-      
+
       await fetchUsers();
       setSelectedUser(null);
       setIsDeleting(false);
@@ -130,13 +129,13 @@ export default function UserManagementPage() {
 
     try {
       setEditLoading(true);
-      
+
       const cleanedData = Object.fromEntries(
         Object.entries(editData).filter(([_, v]) => v !== undefined && v !== '')
       );
-      
+
       await userApi.update(selectedUser.user_id, cleanedData);
-      
+
       await fetchUsers();
       setOpenEdit(false);
       setSelectedUser(null);
@@ -171,16 +170,16 @@ export default function UserManagementPage() {
   const handleSearch = (value: string) => {
     currentSearch.current = value;  // Update the ref immediately
     setSearchQuery(value);  // Update state for input field
-    
+
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
-  
+
     searchTimeout.current = setTimeout(() => {
       fetchUsers(true);  // This will now use the current search value
     }, 500);
   };
-  
+
 // Clean up effect
 useEffect(() => {
   fetchUsers();
@@ -209,7 +208,7 @@ useEffect(() => {
       <Box sx={{ p: 3 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4">User Management</Typography>
-          
+
           <Button
             variant="contained"
             startIcon={<Iconify icon="eva:plus-fill" />}
@@ -247,15 +246,15 @@ useEffect(() => {
               }}
               actions={(row) => (
                 <Stack direction="row" spacing={1}>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     size="small"
                     onClick={() => handleOpenEdit(row)}
                   >
                     Edit
                   </Button>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     size="small"
                     color="error"
                     onClick={() => handleOpenDelete(row)}
@@ -324,4 +323,4 @@ useEffect(() => {
       />
     </>
   );
-} 
+}
