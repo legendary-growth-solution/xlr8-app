@@ -1,16 +1,16 @@
-import { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
-  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Select,
+  TextField,
 } from '@mui/material';
+import { useState } from 'react';
 
 interface NewCartDialogProps {
   open: boolean;
@@ -85,18 +85,18 @@ export default function NewCartDialog({ open, onClose, onAdd }: NewCartDialogPro
               onChange={(e) => setVariant(e.target.value)}
             >
               <MenuItem value="">None</MenuItem>
-              <MenuItem value="cadet">Cadet</MenuItem>
-              <MenuItem value="junior">Junior</MenuItem>
-              <MenuItem value="senior">Senior</MenuItem>
+              <MenuItem value="cadet">Cadet (L1)</MenuItem>
+              <MenuItem value="junior">Junior (L2)</MenuItem>
+              <MenuItem value="senior">Senior (L3)</MenuItem>
             </Select>
           </FormControl>
-          <TextField
+          {/* <TextField
             fullWidth
             label="Model"
             value={model}
             onChange={(e) => setModel(e.target.value)}
             sx={{ mb: 2 }}
-          />
+          /> */}
           <TextField
             fullWidth
             label="Fuel Capacity (Liters) [Default: 10L]"

@@ -1,8 +1,11 @@
 export interface Cart {
   id?: string;
+  cart_id?: string;
   name: string;
+  active_status?: boolean;
   status?: 'available' | 'in-use' | 'maintenance' | 'refueling';
   fuelLevel?: number;
+  fuel?: number;
   totalDistance?: number;
   lastMaintenanceDate?: string;
   lastRefuelDate?: string;

@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
 import { Button, Card, Chip, Stack } from '@mui/material';
-import { Cart } from 'src/types/cart';
-import DataTable from 'src/components/table/DataTable';
-import { cartApi } from 'src/services/api/cart.api';
-import RefuelCartDialog from 'src/components/cart/RefuelCartDialog';
+import { useEffect, useState } from 'react';
 import AssignCartDialog from 'src/components/cart/AssignCartDialog';
+import AssignmentHistoryDialog from 'src/components/cart/AssignmentHistoryDialog';
+import CartStatsGrid from 'src/components/cart/CartStatsGrid';
+import MaintenanceDialog from 'src/components/cart/MaintenanceDialog';
 import NewCartDialog from 'src/components/cart/NewCartDialog';
+import RefuelCartDialog from 'src/components/cart/RefuelCartDialog';
 import PageContainer from 'src/components/common/PageContainer';
 import PageHeader from 'src/components/common/PageHeader';
-import CartStatsGrid from 'src/components/cart/CartStatsGrid';
-import FuelLevelIndicator from 'src/components/cart/FuelLevelIndicator';
-import MaintenanceDialog from 'src/components/cart/MaintenanceDialog';
-import AssignmentHistoryDialog from 'src/components/cart/AssignmentHistoryDialog';
+import DataTable from 'src/components/table/DataTable';
 import type { AssignmentHistory } from 'src/services/api/cart.api';
+import { cartApi } from 'src/services/api/cart.api';
+import { Cart } from 'src/types/cart';
 
 export default function CartManagementPage() {
   const [carts, setCarts] = useState<Cart[]>([]);
@@ -66,24 +65,26 @@ export default function CartManagementPage() {
       ),
     },
     {
-      id: 'current_level',
-      label: 'Fuel Level',
+      id: 'fuel_capacity',
+      label: 'Fuel Capacity',
       minWidth: 120,
-      format: (value: number) => <FuelLevelIndicator value={value} />,
+      format: (value: number) => `${value} L`,
+      // format: (value: number) => <FuelLevelIndicator value={value} />,
     },
     {
-      id: 'current_level',
+      id: 'fuel',
       label: 'Remaining Fuel (L)',
       minWidth: 120,
-      format: (value: number, row: Cart) =>
-        `${((value * ((row as any)?.fuel_capacity || 0) / 100).toFixed(1))} L`,
+      format: (value: number) => value? `${value} L` : '-',
+      // format: (value: number, row: Cart) =>
+      //   `${((value * ((row as any)?.fuel_level || 0) / 100).toFixed(1))} L`,
     },
-    {
-      id: 'total_distance',
-      label: 'Total Distance',
-      minWidth: 120,
-      format: (value: number) => `${(value || 0).toFixed(1)} km`,
-    }
+    // {
+    //   id: 'total_distance',
+    //   label: 'Total Distance',
+    //   minWidth: 120,
+    //   format: (value: number) => `${(value || 0).toFixed(1)} km`,
+    // }
   ];
 
   const handleAssignCart = (cart: Cart) => {
@@ -114,7 +115,7 @@ export default function CartManagementPage() {
 
   const handleRefuelSubmit = async (
     cartId: string,
-    data: { amount: number; cost: number; operation: string }
+    data: { quantity: number; cost: number; operation: string }
   ) => {
     try {
       if (!cartId) {
@@ -122,23 +123,21 @@ export default function CartManagementPage() {
         return;
       }
 
-      const refuelData = {
-        ...data,
-        date: new Date().toISOString(),
-      };
+      setLoading(true);
 
-      const rfidNumber = (carts.find((cart) => cart.id === cartId) as any)?.rfid_number;
+      const rfidNumber = (carts.find((cart) => cart.cart_id === cartId) as any)?.rfid_number;
       if (!rfidNumber) {
         console.error('No rfid number found for cart');
         return;
       }
-      await cartApi.refuel(rfidNumber, refuelData);
+      await cartApi.refuel(cartId, data);
       await fetchCarts();
       setSelectedCart(null);
     } catch (error) {
       console.error('Failed to refuel cart:', error);
     } finally {
       setOpenRefuelDialog(false);
+      setLoading(false);
     }
   };
 
@@ -155,7 +154,7 @@ export default function CartManagementPage() {
         name: cartData.name,
         status: 'available',
         rfid_number: cartData.rfidtag,
-        current_level: cartData.fuelLevel || 0,
+        fuel_level: cartData.fuelLevel || 0,
         fuel_capacity: cartData.fuelCapacity || 10,
         variant: cartData.variant,
         model: cartData.model,
@@ -172,28 +171,26 @@ export default function CartManagementPage() {
     data: { status: 'maintenance' | 'refueling'; notes?: string }
   ) => {
     try {
+      setLoading(true);
       if (!cartId) {
         console.error('No cart selected for maintenance');
         return;
       }
 
-      const maintenanceData = {
-        ...data,
-        date: new Date().toISOString(),
-      };
 
-      const rfidNumber = (carts.find((cart) => cart.id === cartId) as any)?.rfid_number;
+      const rfidNumber = (carts.find((cart) => cart.cart_id === cartId) as any)?.rfid_number;
       if (!rfidNumber) {
         console.error('No rfid number found for cart');
         return;
       }
-      await cartApi.updateMaintenance(rfidNumber, maintenanceData);
+      await cartApi.updateMaintenance(cartId, data);
       await fetchCarts();
       setSelectedCart(null);
     } catch (error) {
       console.error('Failed to update maintenance status:', error);
     } finally {
       setOpenMaintenanceDialog(false);
+      setLoading(false);
     }
   };
 
@@ -215,13 +212,13 @@ export default function CartManagementPage() {
 
   const actions = (cart: Cart) => (
     <Stack direction="row" spacing={1} justifyContent="flex-end">
-      <Button
+      {/* <Button
         size="small"
         variant="outlined"
         onClick={() => handleViewHistory(cart)}
       >
         View History
-      </Button>
+      </Button> */}
       <Button
         size="small"
         variant="outlined"
@@ -286,8 +283,8 @@ export default function CartManagementPage() {
           setSelectedCart(null);
         }}
         cart={selectedCart}
-        onRefuel={(data: { amount: number; cost: number; operation: string; notes?: string }) =>
-          selectedCart && handleRefuelSubmit(selectedCart?.id || '', data)
+        onRefuel={(data: { quantity: number; cost: number; operation: string; notes?: string }) =>
+          selectedCart && handleRefuelSubmit(selectedCart?.cart_id || '', data)
         }
       />
 
@@ -307,7 +304,7 @@ export default function CartManagementPage() {
         onSubmit={(data) =>
           selectedCart &&
           handleMaintenanceSubmit(
-            selectedCart?.id || '',
+            selectedCart?.cart_id || '',
             data as { status: 'maintenance' | 'refueling'; notes?: string }
           )
         }

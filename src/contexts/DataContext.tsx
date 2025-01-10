@@ -1,17 +1,17 @@
 import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   ReactNode,
-  useMemo,
   useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
-import { GroupUserMappingWithUser, User } from 'src/types/session';
-import { Cart } from 'src/types/cart';
-import { userApi, UserResponse } from 'src/services/api/user.api';
 import { cartApi } from 'src/services/api/cart.api';
 import { groupApi } from 'src/services/api/group.api';
+import { userApi } from 'src/services/api/user.api';
+import { Cart } from 'src/types/cart';
+import { GroupUserMappingWithUser, User } from 'src/types/session';
 
 interface DataContextType {
   users: User[];
@@ -58,7 +58,7 @@ export function DataProvider({
     try {
       const response = await userApi.list({ page, pageSize, search });
       setUsers(response.users);
-      setTotalUsers(response.total);
+      setTotalUsers(response.pagination.totalItems);
       return response;
     } catch (error) {
       console.error('Error fetching users:', error);

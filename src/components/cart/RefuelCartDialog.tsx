@@ -1,18 +1,18 @@
-import { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Box,
   Button,
-  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Select,
+  TextField,
   Typography,
-  Box,
 } from '@mui/material';
+import { useState } from 'react';
 import { Cart } from 'src/types/cart';
 
 type Operation = 'refuel' | 'set' | 'remove';
@@ -21,7 +21,7 @@ interface RefuelCartDialogProps {
   open: boolean;
   onClose: () => void;
   cart: Cart | null;
-  onRefuel: (data: { amount: number; cost: number; operation: Operation; notes?: string }) => void;
+  onRefuel: (data: { quantity: number; cost: number; operation: Operation; notes?: string }) => void;
 }
 
 export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: RefuelCartDialogProps) {
@@ -31,7 +31,7 @@ export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: Refu
   const [operation, setOperation] = useState<Operation>('refuel');
 
   const fuelCapacity = cart?.fuelCapacity || 10;
-  const currentVolume = ((cart?.current_level || 0) * fuelCapacity) / 100;
+  const currentVolume = ((cart?.fuel || 0) * fuelCapacity) / 100;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +52,7 @@ export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: Refu
     }
 
     onRefuel({
-      amount: numAmount,
+      quantity: numAmount,
       cost: operation === 'refuel' ? Number(cost) : 0,
       operation,
       notes,
@@ -75,7 +75,7 @@ export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: Refu
         <DialogContent>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              Current Fuel Level: {currentVolume.toFixed(1)}L / {fuelCapacity}L ({cart?.current_level}%)
+              Current Fuel Level: {cart?.fuel}L / {fuelCapacity} L
             </Typography>
           </Box>
           

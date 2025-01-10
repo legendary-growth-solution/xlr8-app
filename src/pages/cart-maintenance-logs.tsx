@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
 import { Card } from '@mui/material';
-import { cartApi } from 'src/services/api/cart.api';
-import DataTable from 'src/components/table/DataTable';
+import { useEffect, useState } from 'react';
 import PageContainer from 'src/components/common/PageContainer';
 import PageHeader from 'src/components/common/PageHeader';
+import DataTable from 'src/components/table/DataTable';
+import { cartApi } from 'src/services/api/cart.api';
 import { MaintenanceLog } from 'src/types/cart';
 
 export default function CartMaintenanceLogsPage() {
@@ -13,8 +13,9 @@ export default function CartMaintenanceLogsPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await cartApi.getMaintenanceLogs();
-      setLogs(response);
+      const response = await cartApi.getMaintenanceLogs({});
+      console.log(response);
+      setLogs(response?.records);
     } catch (error) {
       console.error('Failed to fetch maintenance logs', error);
     } finally {
@@ -24,7 +25,7 @@ export default function CartMaintenanceLogsPage() {
 
   const columns = [
     {
-      id: 'cartName',
+      id: 'cart_name',
       label: 'Cart Name',
       minWidth: 120,
     },
@@ -40,10 +41,17 @@ export default function CartMaintenanceLogsPage() {
       minWidth: 200,
     },
     {
-      id: 'date',
-      label: 'Date',
+      id: 'timestamp',
+      label: 'Timestamp',
       minWidth: 160,
-      format: (value: string) => new Date(value).toLocaleString(),
+      format: (value: string) => new Date(value).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
     },
   ];
 

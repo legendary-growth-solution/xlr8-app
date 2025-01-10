@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Switch, Typography } from '@mui/material';
+import { Box, Button, IconButton, Typography } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
 import DataTable, { Column } from 'src/components/table/DataTable';
 import { DiscountCode } from 'src/types/billing';
@@ -24,7 +24,8 @@ export function DiscountTable({
     { 
       id: 'type', 
       label: 'Type',
-      align: 'center' 
+      align: 'center',
+      format: (value, row) => row.type === 'percent' ? 'Percent' : 'Absolute'
     },
     { 
       id: 'value', 
@@ -65,7 +66,7 @@ export function DiscountTable({
       <IconButton onClick={() => onEdit(row)}>
         <Iconify icon="eva:edit-fill" />
       </IconButton>
-      <IconButton onClick={() => onDelete(row.id)} color="error">
+      <IconButton onClick={() => onDelete(row?.discount_id)} color="error">
         <Iconify icon="eva:trash-2-outline" />
       </IconButton>
     </>

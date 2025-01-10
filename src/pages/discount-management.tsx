@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Box, Card, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, Stack, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useBoolean } from 'src/hooks/use-boolean';
 import { Iconify } from 'src/components/iconify';
-import { defaultDiscountData, DiscountCode, DiscountFormData } from 'src/types/billing';
-import { billingApi } from 'src/services/api/billing.api';
-import { DiscountTable } from 'src/sections/discount/discount-table';
+import { useBoolean } from 'src/hooks/use-boolean';
 import { DiscountDialog } from 'src/sections/discount/discount-dialog';
+import { DiscountTable } from 'src/sections/discount/discount-table';
+import { billingApi } from 'src/services/api/billing.api';
+import { defaultDiscountData, DiscountCode, DiscountFormData } from 'src/types/billing';
 
 export default function DiscountManagementPage() {
-  const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
+  const [discounts, setDiscounts] = useState<any>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDiscount, setSelectedDiscount] = useState<DiscountCode | null>(null);
   const [formData, setFormData] = useState<DiscountFormData>(defaultDiscountData);
@@ -20,7 +20,7 @@ export default function DiscountManagementPage() {
     try {
       setError(null);
       const response = await billingApi.getDiscountCodes();
-      setDiscounts(response.data.data);
+      setDiscounts(response?.data?.discounts);
     } catch (err) {
       console.error('Error fetching discount codes:', err);
       setError('Failed to load discount codes');
@@ -63,7 +63,7 @@ export default function DiscountManagementPage() {
       setError(null);
       
       if (selectedDiscount) {
-        await billingApi.updateDiscountCode(selectedDiscount.id, formData);
+        await billingApi.updateDiscountCode(selectedDiscount.discount_id, formData);
       } else {
         await billingApi.createDiscountCode(formData);
       }

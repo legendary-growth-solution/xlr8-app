@@ -1,5 +1,10 @@
 export interface Plan {
   id: string;
+  plan_id: string;
+  amount: number;
+  created_at: string;
+  title: string;
+  timeInMinutes: number;
   name: string;
   defaultTime: number;
   cost: number;
@@ -8,7 +13,7 @@ export interface Plan {
 }
 
 export interface DiscountCode {
-  id: string;
+  discount_id: string;
   code: string;
   description: string;
   type: 'absolute' | 'percent';
@@ -24,6 +29,7 @@ export interface BillingDetails {
 }
 
 export interface DiscountFormData {
+  discount_id?: string;
   code: string;
   description: string;
   type: 'absolute' | 'percent';
@@ -32,6 +38,7 @@ export interface DiscountFormData {
 }
 
 export const defaultDiscountData: DiscountFormData = {
+  discount_id: '',
   code: '',
   description: '',
   type: 'absolute',

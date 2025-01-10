@@ -1,4 +1,4 @@
-import { Plan, DiscountCode, BillingDetails } from 'src/types/billing';
+import { BillingDetails, DiscountCode } from 'src/types/billing';
 import { apiClient } from './api-client';
 import { API_ENDPOINTS } from './endpoints';
 
@@ -7,12 +7,12 @@ export const billingApi = {
     apiClient.get<{ data: any }>(API_ENDPOINTS.billing.plans),
 
   getDiscountCodes: () => 
-    apiClient.get<{ data: DiscountCode[] }>(API_ENDPOINTS.billing.discountCodes),
+    apiClient.get(API_ENDPOINTS.billing.discountCodes),
 
-  createDiscountCode: (data: Omit<DiscountCode, 'id'>) => 
+  createDiscountCode: (data: Omit<DiscountCode, 'discount_id'>) => 
     apiClient.post<{ data: DiscountCode }>(API_ENDPOINTS.billing.discountCodes, data),
 
-  updateDiscountCode: (codeId: string, data: Partial<Omit<DiscountCode, 'id'>>) => 
+  updateDiscountCode: (codeId: string, data: Partial<Omit<DiscountCode, 'discount_id'>>) => 
     apiClient.put<{ data: DiscountCode }>(`${API_ENDPOINTS.billing.discountCodes}/${codeId}`, data),
 
   deleteDiscountCode: (codeId: string) => 

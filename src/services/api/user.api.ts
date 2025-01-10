@@ -1,10 +1,10 @@
 import { User } from 'src/types/session';
-import { API_ENDPOINTS } from './endpoints';
 import { apiClient } from './api-client';
+import { API_ENDPOINTS } from './endpoints';
 
 export interface UserResponse {
   users: User[];
-  total: number;
+  pagination: any;
 }
 
 export interface UserQueryParams {

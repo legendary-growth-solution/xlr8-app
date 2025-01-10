@@ -3,13 +3,13 @@ import {
   Box,
   Button,
   Card,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
   Stack,
-  Switch,
   Table,
   TableBody,
   TableCell,
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography,
+  Typography
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -27,24 +27,20 @@ import { billingApi } from 'src/services/api/billing.api';
 import { Plan } from 'src/types/billing';
 
 interface PlanFormData {
-  name: string;
-  defaultTime: number;
-  cost: number;
-  isVisible: boolean;
-  description: string;
+  title: string;
+  timeInMinutes: number;
+  amount: number;
 }
 
 const defaultPlanData: PlanFormData = {
-  name: '',
-  defaultTime: 15,
-  cost: 0,
-  isVisible: true,
-  description: '',
+  title: '',
+  timeInMinutes: 15,
+  amount: 0,
 };
 
 export default function TimeManagementPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [formData, setFormData] = useState<PlanFormData>(defaultPlanData);
   const dialog = useBoolean();
@@ -59,13 +55,8 @@ export default function TimeManagementPage() {
       setLoading(true);
       setError(null);
       const response : any = await billingApi.getPlans();
-      setPlans(
-        response?.data?.map((plan: any) => ({
-          ...plan,
-          defaultTime: plan.default_time,
-          isVisible: plan.is_visible,
-        }))
-      );
+      console.log(response);
+      setPlans(response?.data?.plans);
     } catch (err) {
       console.error('Error fetching plans:', err);
       setError('Failed to load plans. Please try again.');
@@ -77,11 +68,9 @@ export default function TimeManagementPage() {
   const handleEdit = (plan: Plan) => {
     setSelectedPlan(plan);
     setFormData({
-      name: plan.name,
-      defaultTime: plan.defaultTime,
-      cost: plan.cost,
-      isVisible: plan.isVisible,
-      description: plan.description || '',
+      title: plan.title,
+      timeInMinutes: plan.timeInMinutes,
+      amount: plan.amount,
     });
     dialog.onTrue();
   };
@@ -93,7 +82,7 @@ export default function TimeManagementPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.defaultTime) {
+    if (!formData.title || !formData.timeInMinutes) {
       setError('Name and Time are required fields');
       return;
     }
@@ -103,15 +92,13 @@ export default function TimeManagementPage() {
       setError(null);
       
       const planData = {
-        name: formData.name,
-        defaultTime: formData.defaultTime,
-        cost: formData.cost || 0,
-        isVisible: formData.isVisible,
-        description: formData.description || ''
+        title: formData.title,
+        timeInMinutes: formData.timeInMinutes,
+        amount: formData.amount || 0,
       };
       
       if (selectedPlan) {
-        await billingApi.updatePlan(selectedPlan?.id || '', planData);
+        await billingApi.updatePlan(selectedPlan?.plan_id || '', planData);
       } else {
         await billingApi.createPlan(planData);
       }
@@ -166,33 +153,32 @@ export default function TimeManagementPage() {
         </Stack>
 
         <Card>
-          <TableContainer>
+            
+          {loading &&<Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+          }
+          {!loading && <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Name</TableCell>
+                  <TableCell align="center">Name</TableCell>
                   <TableCell align="center">Time (mins)</TableCell>
-                  <TableCell align="right">Cost (₹)</TableCell>
-                  <TableCell align="center">Visible</TableCell>
-                  <TableCell align="right">Description</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                  <TableCell align="center">Cost (₹)</TableCell>
+                  <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {plans.map((plan) => (
-                  <TableRow key={plan.id}>
-                    <TableCell>{plan.name}</TableCell>
-                    <TableCell align="center">{plan.defaultTime}</TableCell>
-                    <TableCell align="right">₹{plan.cost}</TableCell>
+                {plans?.map((plan) => (
+                  <TableRow key={plan.plan_id}>
+                    <TableCell align="center">{plan.title}</TableCell>
+                    <TableCell align="center">{plan.timeInMinutes}</TableCell>
+                    <TableCell align="center">₹ {plan.amount}</TableCell>
                     <TableCell align="center">
-                      <Switch checked={plan.isVisible} disabled />
-                    </TableCell>
-                    <TableCell align="right">{plan.description}</TableCell>
-                    <TableCell align="right">
                       <IconButton onClick={() => handleEdit(plan)}>
                         <Iconify icon="eva:edit-fill" />
                       </IconButton>
-                      <IconButton onClick={() => handleDelete(plan.id)} color="error">
+                      <IconButton onClick={() => handleDelete(plan.plan_id)} color="error">
                         <Iconify icon="eva:trash-2-outline" />
                       </IconButton>
                     </TableCell>
@@ -200,7 +186,7 @@ export default function TimeManagementPage() {
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer>}
         </Card>
       </Box>
 
@@ -211,38 +197,23 @@ export default function TimeManagementPage() {
             <TextField
               fullWidth
               label="Plan Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
             <TextField
               fullWidth
               type="number"
               label="Time (minutes)"
-              value={formData.defaultTime}
-              onChange={(e) => setFormData({ ...formData, defaultTime: Number(e.target.value) })}
+              value={formData.timeInMinutes}
+              onChange={(e) => setFormData({ ...formData, timeInMinutes: Number(e.target.value) })}
             />
             <TextField
               fullWidth
               type="number"
               label="Cost (₹)"
-              value={formData.cost}
-              onChange={(e) => setFormData({ ...formData, cost: Number(e.target.value) })}
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
             />
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Switch
-                checked={formData.isVisible}
-                onChange={(e) => setFormData({ ...formData, isVisible: e.target.checked })}
-              />
-              <Typography>Visible to users</Typography>
-            </Stack>
           </Stack>
         </DialogContent>
         <DialogActions>

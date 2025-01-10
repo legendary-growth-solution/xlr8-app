@@ -1,8 +1,8 @@
+import { LoadingButton } from '@mui/lab';
+import { Box, Button, Card, Grid, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { Box, Card, Stack, Button, TextField, Typography, Grid } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
 import { userApi } from 'src/services/api/user.api';
 
 export default function UserCreatePage() {
@@ -12,7 +12,7 @@ export default function UserCreatePage() {
     name: '',
     email: '',
     phone: '',
-    dob: '',
+    // dob: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -107,11 +107,12 @@ export default function UserCreatePage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value.slice(0, 10) })}
                   error={!!errors.phone}
+                  required
                   helperText={errors.phone}
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              {/* <Grid item xs={12}>
                 <TextField
                   fullWidth
                   type="date"
@@ -122,7 +123,7 @@ export default function UserCreatePage() {
                     shrink: true,
                   }}
                 />
-              </Grid>
+              </Grid> */}
 
               {errors.submit && (
                 <Grid item xs={12}>

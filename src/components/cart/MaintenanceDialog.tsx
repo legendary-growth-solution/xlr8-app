@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
-  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Select,
+  TextField,
 } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Cart } from 'src/types/cart';
 
 interface MaintenanceDialogProps {
@@ -90,7 +90,7 @@ export default function MaintenanceDialog({ open, onClose, cart, onSubmit }: Mai
               onChange={(e) => setStatus(e.target.value as typeof status)}
             >
               {getStatusOptions().map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem key={option?.value} value={option?.value}>
                   {option.label}
                 </MenuItem>
               ))}

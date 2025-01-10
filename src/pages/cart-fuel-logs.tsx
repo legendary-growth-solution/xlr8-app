@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Card, Stack, Button, TextField, Box } from '@mui/material';
-import { FuelLog } from 'src/types/cart';
-import DataTable from 'src/components/table/DataTable';
-import { cartApi } from 'src/services/api/cart.api';
+import { Box, Button, Card, Stack, TextField } from '@mui/material';
+import { useEffect, useState } from 'react';
 import PageContainer from 'src/components/common/PageContainer';
 import PageHeader from 'src/components/common/PageHeader';
-import { Iconify } from 'src/components/iconify';
 import ExportMenu from 'src/components/export/ExportMenu';
+import { Iconify } from 'src/components/iconify';
+import DataTable from 'src/components/table/DataTable';
+import { cartApi } from 'src/services/api/cart.api';
+import { FuelLog } from 'src/types/cart';
 
 export default function CartFuelLogsPage() {
   const [logs, setLogs] = useState<FuelLog[]>([]);
@@ -17,7 +17,7 @@ export default function CartFuelLogsPage() {
   const fetchFuelLogs = async () => {
     try {
       setLoading(true);
-      const response = await cartApi.getFuelLogs();
+      const response = await cartApi.getFuelLogs({});
       setLogs(response);
     } catch (error) {
       console.error('Failed to fetch fuel logs:', error);

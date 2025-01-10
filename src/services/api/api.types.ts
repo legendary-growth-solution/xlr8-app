@@ -20,7 +20,7 @@ export interface AssignCartData {
 }
 
 export interface RefuelData {
-  amount: number;
+  quantity: number;
   cost: number;
   notes?: string;
 }

@@ -34,11 +34,13 @@ export const SessionCreatePage = lazy(() => import('src/pages/session-create'));
 export const SessionHistoryPage = lazy(() => import('src/pages/session-history'));
 export const SessionDetailPage = lazy(() => import('src/pages/session-detail'));
 export const CartManagementPage = lazy(() => import('src/pages/cart-management'));
-export const CartFuelLogsPage = lazy(() => import('src/pages/cart-fuel-logs'));
+// export const CartFuelLogsPage = lazy(() => import('src/pages/cart-fuel-logs'));
+export const CartFuelLogsPage = lazy(() => import('src/pages/fuel-logs'));
 export const TimeSlots = lazy(() => import('src/pages/timeslots'));
 export const TimeManagementPage = lazy(() => import('src/pages/time-management'));
 export const LiveLeaderboard = lazy(() => import('src/pages/live-leaderboard'));
-export const CartMaintenanceLogsPage = lazy(() => import('src/pages/cart-maintenance-logs'));
+// export const CartMaintenanceLogsPage = lazy(() => import('src/pages/cart-maintenance-logs'));
+export const CartMaintenanceLogsPage = lazy(() => import('src/pages/maintenance-logs'));
 export const DisplayLeaderboard = lazy(() => import('src/pages/display-leaderboard'));
 export const BillingsPage = lazy(() => import('src/pages/billings'));
 // ----------------------------------------------------------------------
