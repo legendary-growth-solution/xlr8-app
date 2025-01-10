@@ -40,11 +40,11 @@ export default function Page() {
     setLoading(true); // Start loader
     try {
       // Fetch rides
-      const ridesRes = await apiClient.get('/api/analytics/rides');
+      const ridesRes = await apiClient.get('/ride-stats');
       setRidesData(ridesRes.data);
 
       // Fetch invoices
-      const invoicesRes = await apiClient.get('/api/analytics/invoices');
+      const invoicesRes = await apiClient.get('/invoice-stats');
       setInvoicesData(invoicesRes.data);
     } catch (error) {
       console.error('Failed to fetch analytics data:', error);

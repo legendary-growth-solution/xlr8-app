@@ -5,7 +5,7 @@ export const createEndpoint = (path: string) => `${BASE_URL}${path}`;
 export const API_ENDPOINTS = {
   GENERATE_HASH: createEndpoint('/api/auth/generate-hash'),
   AUTH: {
-    VALIDATE_CODE: createEndpoint('/api/auth/validate-code'),
+    VALIDATE_CODE: createEndpoint('/validate-code'),
   },
   SESSIONS: {
     LIST: createEndpoint('/api/sessions/'),
@@ -42,7 +42,7 @@ export const API_ENDPOINTS = {
     },
   },
   USERS: {
-    LIST: createEndpoint('/api/users/'),
+    LIST: createEndpoint('/users'),
     DETAIL: (id: string) => createEndpoint(`/api/users/${id}`),
     CREATE: createEndpoint('/api/users/'),
     UPDATE: (id: string) => createEndpoint(`/api/users/${id}`),

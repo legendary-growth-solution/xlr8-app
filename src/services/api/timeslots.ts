@@ -8,25 +8,25 @@ const api = axios.create({
 });
 
 export const getTimeSlots = async (): Promise<TimeSlot[]> => {
-  const response = await api.get('/api/bookings/timeslots');
+  const response = await api.get('/timeslots');
   return response.data.timeslots;
 };
 
 export const getTimeSlotsForDay = async (day: string): Promise<TimeSlot[]> => {
-  const response = await api.get(`/api/bookings/timeslots?day=${day.toLowerCase()}`);
+  const response = await api.get(`/timeslots?day=${day.toLowerCase()}`);
   return response.data.timeslots;
 };
 
 export const createTimeSlot = async (data: Omit<TimeSlot, 'id'>): Promise<TimeSlot> => {
-  const response = await api.post('/api/bookings/timeslots', data);
+  const response = await api.post('/timeslots', data);
   return response.data;
 };
 
 export const updateTimeSlot = async (id: string, data: Partial<TimeSlot>): Promise<TimeSlot> => {
-  const response = await api.put(`/api/bookings/timeslots/${id}`, data);
+  const response = await api.put(`/timeslots/${id}`, data);
   return response.data;
 };
 
 export const deleteTimeSlot = async (id: string): Promise<void> => {
-  await api.delete(`/api/bookings/timeslots/${id}`);
+  await api.delete(`/timeslots/${id}`);
 };
