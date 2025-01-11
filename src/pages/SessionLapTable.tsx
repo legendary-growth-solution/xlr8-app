@@ -28,7 +28,7 @@ interface Lap {
 interface GroupedLap {
   lap_number: number;
   users: {
-    user_name: string;
+    user_id: string;
     lap_time: number;
   }[];
 }
@@ -70,7 +70,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                 };
               }
               acc[lap.lap_number].users.push({
-                user_name: lap.user_name,
+                user_id: lap.user_id,
                 lap_time: lap.lap_time,
               });
               return acc;
@@ -130,7 +130,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                             justifyContent: 'space-between'
                           }}>
                             <Chip
-                              label={user?.user_name}
+                              label={user?.user_id}
                               variant="outlined"
                               sx={{
                                 flex: 1,
