@@ -85,9 +85,9 @@ export default function NewCartDialog({ open, onClose, onAdd }: NewCartDialogPro
               onChange={(e) => setVariant(e.target.value)}
             >
               <MenuItem value="">None</MenuItem>
-              <MenuItem value="cadet">Cadet (L1)</MenuItem>
-              <MenuItem value="junior">Junior (L2)</MenuItem>
-              <MenuItem value="senior">Senior (L3)</MenuItem>
+              <MenuItem value="1">Level 1</MenuItem>
+              <MenuItem value="2">Level 2</MenuItem>
+              <MenuItem value="3">Level 3</MenuItem>
             </Select>
           </FormControl>
           {/* <TextField

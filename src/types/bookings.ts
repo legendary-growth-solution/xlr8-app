@@ -3,5 +3,7 @@ export interface TimeSlot {
   day: string;
   start_time: string;
   end_time: string;
-  max_slots: number;
+  l1_max_slots: number;
+  l2_max_slots: number;
+  l3_max_slots: number;
 }

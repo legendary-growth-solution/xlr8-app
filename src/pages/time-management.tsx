@@ -30,12 +30,14 @@ interface PlanFormData {
   title: string;
   timeInMinutes: number;
   amount: number;
+  level: number;
 }
 
 const defaultPlanData: PlanFormData = {
   title: '',
   timeInMinutes: 15,
   amount: 0,
+  level: 1,
 };
 
 export default function TimeManagementPage() {
@@ -71,6 +73,7 @@ export default function TimeManagementPage() {
       title: plan.title,
       timeInMinutes: plan.timeInMinutes,
       amount: plan.amount,
+      level: plan.level || 1,
     });
     dialog.onTrue();
   };
@@ -95,6 +98,7 @@ export default function TimeManagementPage() {
         title: formData.title,
         timeInMinutes: formData.timeInMinutes,
         amount: formData.amount || 0,
+        level: formData.level || 1,
       };
       
       if (selectedPlan) {
@@ -163,6 +167,7 @@ export default function TimeManagementPage() {
               <TableHead>
                 <TableRow>
                   <TableCell align="center">Name</TableCell>
+                  <TableCell align="center">Level</TableCell>
                   <TableCell align="center">Time (mins)</TableCell>
                   <TableCell align="center">Cost (₹)</TableCell>
                   <TableCell align="center">Actions</TableCell>
@@ -172,6 +177,7 @@ export default function TimeManagementPage() {
                 {plans?.map((plan) => (
                   <TableRow key={plan.plan_id}>
                     <TableCell align="center">{plan.title}</TableCell>
+                    <TableCell align="center">{plan.level}</TableCell>
                     <TableCell align="center">{plan.timeInMinutes}</TableCell>
                     <TableCell align="center">₹ {plan.amount}</TableCell>
                     <TableCell align="center">
@@ -199,6 +205,13 @@ export default function TimeManagementPage() {
               label="Plan Name"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              type="number"
+              label="Level (1/2/3)"
+              value={formData.level}
+              onChange={(e) => setFormData({ ...formData, level: Number(e.target.value) })}
             />
             <TextField
               fullWidth

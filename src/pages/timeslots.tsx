@@ -1,14 +1,14 @@
 import {
-    Alert,
-    Box,
-    Button,
-    Card,
-    CircularProgress,
-    IconButton,
-    Stack,
-    Tab,
-    Tabs,
-    Typography
+  Alert,
+  Box,
+  Button,
+  Card,
+  CircularProgress,
+  IconButton,
+  Stack,
+  Tab,
+  Tabs,
+  Typography
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -132,7 +132,7 @@ export default function TimeSlotsPage() {
                     }}
                   >
                     <Typography>
-                      {slot.start_time} - {slot.end_time} ({slot.max_slots} slots)
+                      {slot.start_time} - {slot.end_time} (L1 : {slot.l1_max_slots}, L2 : {slot.l2_max_slots}, L3 : {slot.l3_max_slots} slots)
                     </Typography>
                     <Stack direction="row" spacing={1}>
                       <IconButton onClick={() => handleEdit(slot)} size="small">

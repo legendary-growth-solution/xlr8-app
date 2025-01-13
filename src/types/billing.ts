@@ -1,6 +1,7 @@
 export interface Plan {
   id: string;
   plan_id: string;
+  level?: number;
   amount: number;
   created_at: string;
   title: string;

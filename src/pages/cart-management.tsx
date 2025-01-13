@@ -45,6 +45,11 @@ export default function CartManagementPage() {
       minWidth: 120,
     },
     {
+      id: 'variant',
+      label: 'Level',
+      minWidth: 120,
+    },
+    {
       id: 'status',
       label: 'Status',
       minWidth: 120,

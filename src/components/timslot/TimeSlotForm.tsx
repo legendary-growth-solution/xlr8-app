@@ -1,13 +1,13 @@
 import {
-    Box,
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Stack,
-    TextField,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  TextField,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { createTimeSlot, updateTimeSlot } from 'src/services/api/timeslots';
@@ -25,7 +25,9 @@ export default function TimeSlotForm({ open, onClose, slot, day }: TimeSlotFormP
   const [formData, setFormData] = useState({
     start_time: '',
     end_time: '',
-    max_slots: '',
+    l1_max_slots: '',
+    l2_max_slots: '',
+    l3_max_slots: '',
   });
 
   useEffect(() => {
@@ -33,13 +35,17 @@ export default function TimeSlotForm({ open, onClose, slot, day }: TimeSlotFormP
       setFormData({
         start_time: slot.start_time,
         end_time: slot.end_time,
-        max_slots: String(slot.max_slots),
+        l1_max_slots: String(slot.l1_max_slots),
+        l2_max_slots: String(slot.l2_max_slots),
+        l3_max_slots: String(slot.l3_max_slots),
       });
     } else {
       setFormData({
         start_time: '',
         end_time: '',
-        max_slots: '',
+        l1_max_slots: '',
+        l2_max_slots: '',
+        l3_max_slots: '',
       });
     }
   }, [slot]);
@@ -51,7 +57,9 @@ export default function TimeSlotForm({ open, onClose, slot, day }: TimeSlotFormP
     const data = {
       ...formData,
       day: day.toLowerCase(),
-      max_slots: Number(formData.max_slots),
+      l1_max_slots: Number(formData.l1_max_slots),
+      l2_max_slots: Number(formData.l2_max_slots),
+      l3_max_slots: Number(formData.l3_max_slots),
     };
 
     try {
@@ -95,10 +103,30 @@ export default function TimeSlotForm({ open, onClose, slot, day }: TimeSlotFormP
               disabled={loading}
             />
             <TextField
-              label="Maximum Slots"
+              label="Maximum Slots for Level 1"
               type="number"
-              value={formData.max_slots}
-              onChange={(e) => setFormData({ ...formData, max_slots: e.target.value })}
+              value={formData.l1_max_slots}
+              onChange={(e) => setFormData({ ...formData, l1_max_slots: e.target.value })}
+              InputProps={{ inputProps: { min: 1 } }}
+              fullWidth
+              required
+              disabled={loading}
+            />
+            <TextField
+              label="Maximum Slots for Level 2"
+              type="number"
+              value={formData.l2_max_slots}
+              onChange={(e) => setFormData({ ...formData, l2_max_slots: e.target.value })}
+              InputProps={{ inputProps: { min: 1 } }}
+              fullWidth
+              required
+              disabled={loading}
+            />
+            <TextField
+              label="Maximum Slots for Level 3"
+              type="number"
+              value={formData.l3_max_slots}
+              onChange={(e) => setFormData({ ...formData, l3_max_slots: e.target.value })}
               InputProps={{ inputProps: { min: 1 } }}
               fullWidth
               required
