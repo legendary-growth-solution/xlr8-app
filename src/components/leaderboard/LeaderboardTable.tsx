@@ -148,8 +148,15 @@ export const LeaderboardTable = ({
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.bestLapTime ? (`${entry.bestLapTime}s`) : '-'}
-              </td>
+  {
+    entry.bestLapTime
+      ? (
+          entry.bestLapTime.toString().length >= 4
+            ? `${(entry.bestLapTime / 100).toFixed(2)}s`
+            : `${entry.bestLapTime}s`
+        )
+      : '-'
+  }              </td>
               {/* <td
                 style={{
                   padding: '20px',

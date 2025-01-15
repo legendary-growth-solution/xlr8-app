@@ -1,5 +1,6 @@
 import {
   Box,
+  Chip,
   CircularProgress,
   Paper,
   Table,
@@ -8,11 +9,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
 } from "@mui/material";
+import { alpha, useTheme } from '@mui/material/styles';
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { alpha, useTheme } from '@mui/material/styles';
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
 
 interface Lap {
@@ -138,7 +138,14 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                               }}
                             />
                             <Chip
-                              label={`${user?.lap_time?.toFixed(2)}s`}
+                              // label={`${user?.lap_time?.toFixed(2)}s`}
+                              label={ user.lap_time
+                                ? (
+                                (user.lap_time.toString().length >= 4 && !user.lap_time.toString().includes('.'))
+                                      ? `${(user.lap_time / 100).toFixed(2)}s`
+                                      : `${user.lap_time}s`
+                                  )
+                                : '-'}
                               color={index === 0 ? "warning" : "default"}
                               sx={{
                                 minWidth: '100px',
