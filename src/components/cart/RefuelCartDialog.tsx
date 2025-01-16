@@ -31,7 +31,7 @@ export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: Refu
   const [operation, setOperation] = useState<Operation>('refuel');
 
   const fuelCapacity = cart?.fuelCapacity || 10;
-  const currentVolume = ((cart?.current_level || 0) * fuelCapacity) / 100;
+  const currentVolume = ((cart?.current_level || 0) * (cart?.fuel_capacity || 3.1)) / 100;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +75,7 @@ export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: Refu
         <DialogContent>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              Current Fuel Level: {currentVolume.toFixed(1)}L / {fuelCapacity}L ({cart?.current_level}%)
+              Current Fuel Level: {currentVolume.toFixed(1)}L / {cart?.fuel_capacity}L ({cart?.current_level}%)
             </Typography>
           </Box>
           

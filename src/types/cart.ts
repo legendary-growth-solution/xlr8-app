@@ -20,6 +20,7 @@ export interface Cart {
   last_refuel_date?: string;
   total_distance?: number;
   fuelCapacity: number;
+  fuel_capacity?: number;
   current_user_name?: string;
   variant?: string;
 }
