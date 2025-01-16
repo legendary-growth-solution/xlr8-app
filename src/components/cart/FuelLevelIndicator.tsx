@@ -24,7 +24,7 @@ export default function FuelLevelIndicator({ value }: FuelLevelIndicatorProps) {
           }}
         />
       </Box>
-      <Typography variant="body2">{value}%</Typography>
+      <Typography variant="body2">{value?.toFixed(2)}%</Typography>
     </Box>
   );
 } 

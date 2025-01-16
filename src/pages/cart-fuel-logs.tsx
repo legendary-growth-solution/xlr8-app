@@ -60,7 +60,7 @@ export default function CartFuelLogsPage() {
       id: 'fuelLevel', 
       label: 'Fuel Level',
       minWidth: 150,
-      format: (value: number, row: FuelLog) => `${row.previousLevel}% → ${row.currentLevel}%`,
+      format: (value: number, row: FuelLog) => `${row.previousLevel?.toFixed(2)}% → ${row.currentLevel?.toFixed(2)}%`,
     },
   ];
 

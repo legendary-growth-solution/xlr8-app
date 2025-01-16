@@ -58,7 +58,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
   useEffect(() => {
     if (sessionId) {
       axios
-        .get<Lap[]>(`http://127.0.0.1:5000/api/sessions/lap-data/${sessionId}`)
+        .get<Lap[]>(`http://192.168.31.39:5000/api/sessions/lap-data/${sessionId}`)
         .then((response: any) => {
           const laps = response.data.laps;
           const grouped = Object.values(
