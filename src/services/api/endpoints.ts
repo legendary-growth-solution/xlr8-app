@@ -55,6 +55,7 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => createEndpoint(`/api/carts/${id}`),
     DELETE: (id: string) => createEndpoint(`/api/carts/${id}`),
     ASSIGN: (id: string) => createEndpoint(`/api/carts/${id}/assign`),
+    FORCE_UNASSIGN: (rfidNumber: string) => createEndpoint(`/api/carts/${rfidNumber}/force-unassign`),
     REFUEL: (id: string) => createEndpoint(`/api/carts/${id}/refuel`),
     MAINTENANCE: {
       GET: (id?: string) => createEndpoint(`/api/carts/maintenance-logs${id ? `/${id}` : ''}`),

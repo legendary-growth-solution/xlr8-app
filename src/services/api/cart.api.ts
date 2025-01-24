@@ -61,6 +61,10 @@ export const cartApi = {
     return response.data;
   },
 
+  forceUnassign: async (rfidNumber: string): Promise<void> => {
+    await apiClient.post(API_ENDPOINTS.CARTS.FORCE_UNASSIGN(rfidNumber));
+  },
+
   getFuelLogs: async (): Promise<FuelLog[]> => {
     const response = await apiClient.get(API_ENDPOINTS.CARTS.FUEL_LOGS());
     return response.data;

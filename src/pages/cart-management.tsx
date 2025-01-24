@@ -12,6 +12,7 @@ import CartStatsGrid from 'src/components/cart/CartStatsGrid';
 import FuelLevelIndicator from 'src/components/cart/FuelLevelIndicator';
 import MaintenanceDialog from 'src/components/cart/MaintenanceDialog';
 import AssignmentHistoryDialog from 'src/components/cart/AssignmentHistoryDialog';
+import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import type { AssignmentHistory } from 'src/services/api/cart.api';
 
 export default function CartManagementPage() {
@@ -23,9 +24,11 @@ export default function CartManagementPage() {
   const [openNewCartDialog, setOpenNewCartDialog] = useState(false);
   const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
   const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
+  const [openForceUnassignDialog, setOpenForceUnassignDialog] = useState(false);
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistory[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [forceUnassignLoading, setForceUnassignLoading] = useState(false);
 
   const fetchCarts = async () => {
     try {
@@ -197,6 +200,28 @@ export default function CartManagementPage() {
     }
   };
 
+  const handleForceUnassign = async (cart: Cart) => {
+    if (!cart.rfid_number) return;
+    setSelectedCart(cart);
+    setOpenForceUnassignDialog(true);
+  };
+
+  const handleConfirmForceUnassign = async () => {
+    if (!selectedCart?.rfid_number) return;
+    
+    try {
+      setForceUnassignLoading(true);
+      await cartApi.forceUnassign(selectedCart.rfid_number);
+      await fetchCarts();
+    } catch (error) {
+      console.error('Failed to force unassign cart:', error);
+    } finally {
+      setForceUnassignLoading(false);
+      setOpenForceUnassignDialog(false);
+      setSelectedCart(null);
+    }
+  };
+
   const handleViewHistory = async (cart: Cart) => {
     try {
       setSelectedCart(cart);
@@ -214,18 +239,32 @@ export default function CartManagementPage() {
   };
 
   const actions = (cart: Cart) => (
-    <Stack direction="row" spacing={1} justifyContent="flex-end">
+    <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="nowrap" sx={{ '& .MuiButton-root': { minWidth: 'auto' } }}>
       <Button
         size="small"
         variant="outlined"
+        color="primary"
+        sx={{ borderRadius: '8px' }}
         onClick={() => handleViewHistory(cart)}
       >
         View History
       </Button>
+      {cart.status === 'in-use' && (
+        <Button
+          size="small"
+          variant="outlined"
+          color="error"
+          sx={{ borderRadius: '8px' }}
+          onClick={() => handleForceUnassign(cart)}
+        >
+          Force Unassign
+        </Button>
+      )}
       <Button
         size="small"
         variant="outlined"
         color="warning"
+        sx={{ borderRadius: '8px' }}
         onClick={() => handleRefuelCart(cart)}
         disabled={
           cart.status === 'in-use' || cart.status === 'maintenance' || cart.status === 'refueling'
@@ -237,6 +276,7 @@ export default function CartManagementPage() {
         size="small"
         variant="outlined"
         color={cart.status === 'maintenance' || cart.status === 'refueling' ? 'success' : 'info'}
+        sx={{ borderRadius: '8px' }}
         onClick={() => {
           setSelectedCart(cart);
           setOpenMaintenanceDialog(true);
@@ -324,6 +364,20 @@ export default function CartManagementPage() {
         history={assignmentHistory}
         hasMore={hasMore}
         loading={historyLoading}
+      />
+
+      <ConfirmDialog
+        open={openForceUnassignDialog}
+        title="Force Unassign Cart"
+        content="Warning: This will force unassign the cart even if a race is in progress. Are you sure you want to continue?"
+        confirmText="Force Unassign"
+        confirmColor="error"
+        loading={forceUnassignLoading}
+        onClose={() => {
+          setOpenForceUnassignDialog(false);
+          setSelectedCart(null);
+        }}
+        onConfirm={handleConfirmForceUnassign}
       />
     </PageContainer>
   );

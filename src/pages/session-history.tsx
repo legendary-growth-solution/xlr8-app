@@ -100,7 +100,13 @@ export default function SessionHistoryPage() {
           search: searchQuery,
         });
 
-        setSessions(response.sessions);
+        const sortedSessions = response.sessions.sort((a: Session, b: Session) => {
+          const dateOne = new Date(a?.start_time).getTime();
+          const dateTwo = new Date(b?.start_time).getTime();
+          return dateTwo - dateOne;
+        });
+
+        setSessions(sortedSessions);
         setTotalPages(response.total);
       } catch (apiError) {
         console.error('API Error:', apiError);
@@ -176,3 +182,4 @@ export default function SessionHistoryPage() {
     </>
   );
 }
+
