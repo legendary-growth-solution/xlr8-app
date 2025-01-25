@@ -249,7 +249,7 @@ export default function CartManagementPage() {
       >
         View History
       </Button>
-      {cart.status === 'in-use' && (
+      {(cart.status === 'in-use' || cart.assigned_to !== null || cart.current_user !== null) && (
         <Button
           size="small"
           variant="outlined"
