@@ -1,5 +1,5 @@
 import { Badge, Box, Button, Card, Grid, Stack, Typography } from '@mui/material';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
@@ -8,175 +8,526 @@ import { CreateGroupDialog } from 'src/components/session/create-group-dialog';
 import { GroupCard } from 'src/components/session/group-card';
 import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
 import Toast, { showToast } from 'src/components/toast';
-import { Cart, Group, NewUser, Plan, Session, User, UserRaceStatus } from 'src/types/session';
-import LiveLeaderboard from './live-leaderboard';
+import {
+  Cart,
+  Group,
+  NewUser,
+  Plan,
+  Session,
+  UpdatingUser,
+  User,
+  UserRaceStatus,
+} from 'src/types/session';
 import { api } from 'src/api/api';
+import axios from 'axios';
+import { apiEndpoints } from 'src/api/apiEndpoints';
+import LiveLeaderboard from './live-leaderboard';
 
+interface CartAssignment {
+  group_id: string;
+  user_id: string;
+  cart_id: string;
+  timestamp: number;
+}
 
 export default function SessionActivePage() {
   const [reviewConfirmation, setReviewConfirmation] = useState<boolean>(false);
   const [openEndSession, setOpenEndSession] = useState<boolean>(false);
   const [openNewGroup, setOpenNewGroup] = useState<boolean>(false);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [createGroupLoading, setCreateGroupLoading] = useState<boolean>(false);
+  const [users, setUsers] = useState<User[]>([]);
   const [session, setSession] = useState<Session>();
   const [carts, setCarts] = useState<Cart[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const navigate = useNavigate();
-  const extractAllUsers = useCallback((session: Session): User[] => session.groups.flatMap((group) => group.users),[]);
+
+  useEffect(() => {
+    console.log('session', session);
+  }, [session]);
+
+  const pendingCartAssignments = useRef<Record<string, string>>({});
+  const confirmedAssignments = useRef<Record<string, CartAssignment>>({});
+  const lastPollingTime = useRef<number>(0);
+  const releasedCarts = useRef<Record<string, boolean>>({});
+
+  const getActiveSession = useCallback(() => {
+    setLoading(true);
+    api.session.getActiveSession
+      .then((res: any) => {
+        if (!res?.active) {
+          api.session.startSession
+            .then((startRes: any) => {
+              showToast.success(startRes?.message);
+              setSession(startRes);
+            })
+            .catch((err: any) => {
+              showToast.error(err?.response?.error);
+            });
+        } else {
+          setSession(res);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const extractAllUsers = useCallback(
+    (session1: Session): User[] => session1?.groups?.flatMap((group) => group?.users || []) || [],
+    []
+  );
+
   const getCarts = useCallback(() => {
     api.cart.getCarts
-      .then((res) => setCarts(res?.carts))
-      .catch((err) => {
-        console.log(err)
+      .then((res) => {
+        const processedCarts = res.carts.map((cart: Cart) => {
+          const isAssignedLocally = Object.values(confirmedAssignments.current).some(
+            (assignment) => assignment.cart_id === cart.cart_id
+          );
+
+          const isReleased = releasedCarts.current[cart.cart_id];
+
+          return {
+            ...cart,
+            is_assigned: isReleased ? false : isAssignedLocally || cart.is_assigned,
+          };
+        });
+
+        setCarts(processedCarts);
       })
+      .catch((err) => {
+        console.log(err);
+      });
   }, []);
+
+  useEffect(() => {
+    getCarts();
+
+    const intervalId = setInterval(() => {
+      getCarts();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [getCarts]);
+
   const getPlans = useCallback(() => {
     api.plan.getPlans
       .then((res) => {
-        setPlans(res?.plans)
+        setPlans(res?.plans);
       })
       .catch((err) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
   }, []);
-  const getActiveSession = useCallback(() => {
-    setLoading(true)
-    api.session.getActiveSession
-      .then((res) => {
-        setSession(res)
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, []);
+
   const handleEndSession = useCallback(() => {
     if (session?.session_id) {
-      api.session.endSession(session?.session_id)
+      api.session
+        .endSession(session?.session_id)
         .then((res) => {
-          navigate('/sessions/history')
+          navigate('/sessions/history');
         })
         .catch((err) => {
-          console.log(err)
-        })
+          console.log(err);
+        });
     }
   }, [session?.session_id, navigate]);
-  const handleAssignCart = useCallback((group_id: string, user_id: string, cart_id: string) => {
-    if (session?.session_id) {
-      api.session.group.users.cart.assign(session?.session_id, group_id, user_id, {
-        cart_id: cart_id
-      })
-        .then((res) => {
-          // assign cart to the relevant user
-          getCarts()
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    }
-  }, [session?.session_id, getCarts]);
-  const handleRemoveUser = useCallback((group_id: string, user_id: string) => {
-    if (session?.session_id) {
-      api.session.group.users.delete(session?.session_id, group_id, user_id)
-        .then((res) => {
-          // assign cart to the relevant user
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    }
-  }, [session?.session_id]);
-  const handleCreateGroup = useCallback((name: string) => {
-    if (session?.session_id) {
-      api.session.group.create(session?.session_id, {
-        name: name
-      })
-        .then((res) => {
-          // add a new group to the session?.group array
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    }
-  }, [session?.session_id]);
-  const handleDeleteGroup = useCallback((group_id: string) => {
-    if (session?.session_id) {
-      api.session.group.delete(session?.session_id, group_id)
-        .then((res) => {
-          // remove this group from the session?.group array
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    }
-  }, [session?.session_id]);
-  const handleAddUsers = useCallback((group_id: string, data: NewUser[]) => {
-    if (session?.session_id) {
-      api.session.group.users.create(session?.session_id, group_id, data)
-        .then((res) => {
-          // add new users to the group
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    }
-  }, [session?.session_id]);
-  const handleUpdateUser = useCallback((group_id: string, user_id: string, data: NewUser) => {
-    if (session?.session_id) {
-      api.session.group.users.update(session?.session_id, group_id, user_id, data)
-        .then((res) => {
-          // update user to the group
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    }
-  }, [session?.session_id]);
-  const handleManageUserRace = useCallback((group_id: string, user_id: string, status: UserRaceStatus) => {
-    if (session?.session_id) {
-      switch (status) {
-        case 'start':
-          api.session.group.users.race.start(session?.session_id, group_id, user_id)
-            .then((res) => {
-              // handle start race for user
-            })
-            .catch((err) => {
-              console.log(err)
-            });
-          break;
 
-        case 'pause':
-          api.session.group.users.race.pause(session?.session_id, group_id, user_id)
-            .then((res) => {
-              // handle pause race for user
-            })
-            .catch((err) => {
-              console.log(err)
-            });
-          break;
+  const handleAssignCart = useCallback(
+    (group_id: string, user_id: string, cart_id: string) => {
+      if (!session?.session_id) return;
 
-        case 'end':
-          api.session.group.users.race.end(session?.session_id, group_id, user_id)
-            .then((res) => {
-              // handle end race for user
-            })
-            .catch((err) => {
-              console.log(err)
-            });
-          break;
+      const currentCartId =
+        session.groups
+          .find((g) => g.group_id === group_id)
+          ?.users.find((u) => u.user_id === user_id)?.cart_id ?? null;
+
+      if (currentCartId === cart_id) return;
+
+      const userKey = `${group_id}:${user_id}`;
+
+      pendingCartAssignments.current[userKey] = cart_id;
+
+      if (currentCartId) {
+        releasedCarts.current[currentCartId] = true;
+
+        Object.keys(confirmedAssignments.current).forEach((key) => {
+          if (confirmedAssignments.current[key].cart_id === currentCartId) {
+            delete confirmedAssignments.current[key];
+          }
+        });
       }
-    }
-  }, [session?.session_id]);
+
+      confirmedAssignments.current[userKey] = {
+        group_id,
+        user_id,
+        cart_id,
+        timestamp: Date.now(),
+      };
+
+      setSession((prevSession) => {
+        if (!prevSession) return prevSession;
+
+        const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
+
+        updatedSession.groups.forEach((group) => {
+          if (group.group_id === group_id) {
+            group.users.forEach((user) => {
+              if (user.user_id === user_id) {
+                user.cart_id = cart_id;
+              }
+            });
+          }
+        });
+
+        return updatedSession;
+      });
+
+      setCarts((prevCarts) =>
+        prevCarts.map((cart) => {
+          if (cart.cart_id === cart_id) {
+            return { ...cart, is_assigned: true };
+          }
+
+          if (cart.cart_id === currentCartId) {
+            const isAssignedToOthers = Object.values(confirmedAssignments.current).some(
+              (assignment) =>
+                assignment.cart_id === currentCartId &&
+                !(assignment.group_id === group_id && assignment.user_id === user_id)
+            );
+
+            return { ...cart, is_assigned: isAssignedToOthers };
+          }
+
+          return cart;
+        })
+      );
+
+      api.session.group.users.cart
+        .assign(session.session_id, group_id, user_id, { cart_id })
+        .then(() => {
+          delete pendingCartAssignments.current[userKey];
+
+          if (currentCartId) {
+            setTimeout(() => {
+              delete releasedCarts.current[currentCartId];
+            }, 5000);
+          }
+
+          showToast.success('Cart assigned successfully');
+        })
+        .catch((err) => {
+          console.log(err);
+
+          delete pendingCartAssignments.current[userKey];
+          delete confirmedAssignments.current[userKey];
+
+          if (currentCartId) {
+            delete releasedCarts.current[currentCartId];
+          }
+
+          setSession((prevSession) => {
+            if (!prevSession) return prevSession;
+
+            const revertedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
+
+            revertedSession.groups.forEach((group) => {
+              if (group.group_id === group_id) {
+                group.users.forEach((user) => {
+                  if (user.user_id === user_id) {
+                    user.cart_id = currentCartId;
+                  }
+                });
+              }
+            });
+
+            return revertedSession;
+          });
+
+          setCarts((prevCarts) =>
+            prevCarts.map((cart) => {
+              if (cart.cart_id === cart_id) {
+                const isAssignedToOthers = Object.values(confirmedAssignments.current).some(
+                  (assignment) => assignment.cart_id === cart_id
+                );
+
+                return { ...cart, is_assigned: isAssignedToOthers };
+              }
+
+              if (cart.cart_id === currentCartId) {
+                return { ...cart, is_assigned: true };
+              }
+
+              return cart;
+            })
+          );
+
+          showToast.error('Failed to assign cart');
+        });
+    },
+    [session]
+  );
+
+  const handleRemoveUser = useCallback(
+    (group_id: string, user_id: string) => {
+      if (session?.session_id) {
+        api.session.group.users
+          .delete(session?.session_id, group_id, user_id)
+          .then((res) => {})
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+    },
+    [session?.session_id]
+  );
+  const handleCreateGroup = useCallback(
+    (name: string) => {
+      if (session?.session_id) {
+        setCreateGroupLoading(true);
+        api.session.group
+          .create(session?.session_id, {
+            name,
+          })
+          .then((res) => {
+            const groupWithUsers = {
+              ...res.group,
+              users: [],
+            };
+            setSession((prev) => ({
+              ...prev!,
+              groups: [...(prev?.groups || []), groupWithUsers],
+            }));
+            setOpenNewGroup(false);
+            showToast.success('Group created successfully');
+          })
+          .catch((err) => {
+            console.error('Error creating group:', err);
+            showToast.error(err?.response?.data?.error || 'Failed to create group');
+          })
+          .finally(() => {
+            setCreateGroupLoading(false);
+          });
+      }
+    },
+    [session?.session_id]
+  );
+  const handleDeleteGroup = useCallback(
+    (group_id: string) => {
+      if (session?.session_id) {
+        api.session.group
+          .delete(session?.session_id, group_id)
+          .then((res) => {
+            setSession((prev) => ({
+              ...prev!,
+              groups: prev!.groups.filter((g) => g.group_id !== group_id),
+            }));
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+    },
+    [session?.session_id]
+  );
+  const handleAddUsers = useCallback(
+    (group_id: string, data: NewUser[]) => {
+      if (session?.session_id) {
+        api.session.group.users
+          .create(session?.session_id, group_id, data)
+          .then((res) => {})
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+    },
+    [session?.session_id]
+  );
+
+  const handleUpdateUser = useCallback(
+    (group_id: string, user_id: string, data: UpdatingUser) => {
+      if (session?.session_id) {
+        api.session.group.users
+          .update(session?.session_id, group_id, user_id, data)
+          .then((res) => {
+            setSession((prevSession) => {
+              if (!prevSession) return prevSession;
+
+              return {
+                ...prevSession,
+                groups: prevSession.groups.map((group) => {
+                  if (group.group_id === group_id) {
+                    return {
+                      ...group,
+                      users: group.users.map((user) => {
+                        if (user.user_id === user_id) {
+                          return {
+                            ...user,
+                            ...data,
+                          };
+                        }
+                        return user;
+                      }),
+                    };
+                  }
+                  return group;
+                }),
+              };
+            });
+            showToast.success('User updated successfully');
+          })
+          .catch((err) => {
+            console.log(err);
+            showToast.error('Failed to update user');
+          });
+      }
+    },
+    [session?.session_id]
+  );
+  const refreshSession = useCallback(() => {
+    axios
+      .get(apiEndpoints.session.activeSession)
+      .then((res: any) => {
+        setSession(res?.data);
+      })
+      .catch((err: any) => {
+        console.log(err);
+      });
+  }, []);
+  const handleManageUserRace = useCallback(
+    (group_id: string, user_id: string, status: UserRaceStatus) => {
+      if (!session?.session_id) return Promise.reject(new Error('No active session'));
+
+      return new Promise((resolve, reject) => {
+        switch (status) {
+          case 'start':
+            api.session.group.users.race
+              .start(session?.session_id, group_id, user_id)
+              .then((res) => {
+                setSession((prevSession) => {
+                  if (!prevSession) return prevSession;
+
+                  const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
+
+                  updatedSession.groups.forEach((group) => {
+                    if (group.group_id === group_id) {
+                      group.users.forEach((user) => {
+                        if (user.user_id === user_id) {
+                          user.race_active = true;
+                          user.race_end_time = res.race_end_time;
+                          user.total_remaining_seconds = res.total_remaining_seconds;
+                        }
+                      });
+                    }
+                  });
+
+                  return updatedSession;
+                });
+                showToast.success('Race started successfully');
+                resolve(res);
+              })
+              .catch((err) => {
+                console.log(err);
+                showToast.error(err?.response?.data?.error || 'Failed to start race');
+                reject(err);
+              });
+            break;
+
+          case 'pause':
+            api.session.group.users.race
+              .pause(session?.session_id, group_id, user_id)
+              .then((res) => {
+                setSession((prevSession) => {
+                  if (!prevSession) return prevSession;
+
+                  const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
+
+                  updatedSession.groups.forEach((group) => {
+                    if (group.group_id === group_id) {
+                      group.users.forEach((user) => {
+                        if (user.user_id === user_id) {
+                          user.race_active = false;
+                          user.race_end_time = '';
+                          user.total_remaining_seconds = res.total_remaining_seconds;
+                        }
+                      });
+                    }
+                  });
+
+                  return updatedSession;
+                });
+
+                showToast.success('Race paused successfully');
+                resolve(res);
+              })
+              .catch((err) => {
+                console.log(err);
+                showToast.error(err?.response?.data?.error || 'Failed to pause race');
+                reject(err);
+              });
+            break;
+
+          case 'end':
+            api.session.group.users.race
+              .end(session?.session_id, group_id, user_id)
+              .then((res) => {
+                setSession((prevSession) => {
+                  if (!prevSession) return prevSession;
+
+                  const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
+
+                  updatedSession.groups.forEach((group) => {
+                    if (group.group_id === group_id) {
+                      group.users.forEach((user) => {
+                        if (user.user_id === user_id) {
+                          user.race_active = false;
+                          user.total_remaining_seconds = 0;
+                        }
+                      });
+                    }
+                  });
+
+                  return updatedSession;
+                });
+
+                showToast.success('Race ended successfully');
+                resolve(res);
+              })
+              .catch((err) => {
+                console.log(err);
+                showToast.error(err?.response?.data?.error || 'Failed to end race');
+                reject(err);
+              });
+            break;
+
+          default:
+            reject(new Error('Invalid status'));
+            break;
+        }
+      });
+    },
+    [session]
+  );
   const handleReviewLink = () => {
     showToast.error('Feature under development!');
   };
 
-  useLayoutEffect(() => { getActiveSession() }, [getActiveSession]);
-  useEffect(() => { getPlans() }, [getPlans])
-  useEffect(() => { if (session) setUsers(extractAllUsers(session)) }, [session, extractAllUsers])
+  useLayoutEffect(() => {
+    getActiveSession();
+  }, [getActiveSession]);
+  useEffect(() => {
+    getPlans();
+  }, [getPlans]);
+  useEffect(() => {
+    getCarts();
+  }, [getCarts]);
+  useEffect(() => {
+    if (session) setUsers(extractAllUsers(session));
+  }, [session, extractAllUsers]);
 
   if (loading) return <SessionPageSkeleton />;
 
@@ -195,9 +546,7 @@ export default function SessionActivePage() {
           mb={5}
         >
           <Stack direction="column" spacing={2}>
-            <Typography variant="h4">
-              {session?.name}
-            </Typography>
+            <Typography variant="h4">{session?.name}</Typography>
             <Typography variant="subtitle2" color="text.secondary" marginTop="-2px !important">
               SID #{session?.session_id}
             </Typography>
@@ -213,10 +562,7 @@ export default function SessionActivePage() {
               </Button>
             )}
             {!session?.active && (
-              <Button
-                variant="contained"
-                onClick={() => setReviewConfirmation(true)}
-              >
+              <Button variant="contained" onClick={() => setReviewConfirmation(true)}>
                 Send Review Link
               </Button>
             )}
@@ -231,23 +577,27 @@ export default function SessionActivePage() {
         <Card sx={{ p: 3, mb: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={4}>
-              {session?.start_time && <Stack spacing={1}>
-                <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
-                  Start Time
-                </Typography>
-                <Typography variant="body1">
-                  {new Date(session?.start_time).toLocaleString()}
-                </Typography>
-              </Stack>}
+              {session?.start_time && (
+                <Stack spacing={1}>
+                  <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                    Start Time
+                  </Typography>
+                  <Typography variant="body1">
+                    {new Date(session?.start_time).toLocaleString()}
+                  </Typography>
+                </Stack>
+              )}
 
-              {session?.end_time && <Stack spacing={1}>
-                <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
-                  End Time
-                </Typography>
-                <Typography variant="body1">
-                  {new Date(session?.end_time).toLocaleString()}
-                </Typography>
-              </Stack>}
+              {session?.end_time && (
+                <Stack spacing={1}>
+                  <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                    End Time
+                  </Typography>
+                  <Typography variant="body1">
+                    {new Date(session?.end_time).toLocaleString()}
+                  </Typography>
+                </Stack>
+              )}
             </Grid>
           </Grid>
         </Card>
@@ -285,7 +635,8 @@ export default function SessionActivePage() {
             ) : (
               <Grid container spacing={3}>
                 {session?.groups
-                  .map((group: Group) => (
+                  ?.filter((group) => group?.group_id)
+                  ?.map((group: Group) => (
                     <Grid key={group.group_id} item xs={12} md={6} lg={4}>
                       <GroupCard
                         group={group}
@@ -307,12 +658,14 @@ export default function SessionActivePage() {
             )}
           </>
         )}
-        {!session?.active && !!session?.session_id && <LiveLeaderboard session_id={session?.session_id} />}
+        {!session?.active && !!session?.session_id && (
+          <LiveLeaderboard session_id={session?.session_id} />
+        )}
       </Box>
 
       <CreateGroupDialog
         open={openNewGroup}
-        loading={false}
+        loading={createGroupLoading}
         onClose={() => setOpenNewGroup(false)}
         onSubmit={handleCreateGroup}
       />

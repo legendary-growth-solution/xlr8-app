@@ -90,16 +90,6 @@ export default function Page() {
     },
   ] as const;
 
-  const createNewSession = useCallback(() => {
-    api.session.startSession
-      .then((res) => {
-        showToast.success(res?.message);
-      })
-      .catch((err) => {
-        showToast.error(err?.response?.error)
-      })
-  }, []);
-
   return (
     <>
       <Helmet>
@@ -115,14 +105,6 @@ export default function Page() {
           <Typography variant="h4">
             Go Kart Racing Dashboard
           </Typography>
-
-          <Button
-            variant="contained"
-            startIcon={<Iconify icon="eva:plus-fill" />}
-            onClick={()=>createNewSession()}
-          >
-            New Session
-          </Button>
         </Stack>
         <Grid container spacing={3}>
           {DASHBOARD_CARDS.map((card, index) => (

@@ -25,6 +25,7 @@ export interface User {
   race_start_times: string[];
   race_pause_times: string[];
   total_remaining_seconds?: number;
+  time_in_minutes?: number;
 }
 
 export interface Cart {
@@ -32,8 +33,8 @@ export interface Cart {
   amount: number;
   cart_id: string;
   cost: number;
-  created_at: string;    // Could be a Date if parsed
-  date: string;          // Could be a Date if parsed
+  created_at: string; // Could be a Date if parsed
+  date: string; // Could be a Date if parsed
   fuel: number;
   fuel_capacity: number;
   fuel_level: number;
@@ -45,6 +46,7 @@ export interface Cart {
   status: string;
   type: string;
   variant: string;
+  is_assigned?: boolean;
 }
 
 export interface Plan {
@@ -66,12 +68,19 @@ export interface BillingData {
 }
 
 export interface NewUser {
-  plan_id: string;
   user_id: string;
-  user_name: string
+  user_name: string;
+  plan_id: string;
+  time_in_minutes?: number;
 }
 
-export type UserRaceStatus = 'pause' | 'end' | 'start'
+export interface UpdatingUser {
+  plan_id: string;
+  user_id: string;
+  time_in_minutes?: number;
+}
+
+export type UserRaceStatus = 'pause' | 'end' | 'start';
 
 export interface Leaderboard {
   rank: number;

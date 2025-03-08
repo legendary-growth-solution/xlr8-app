@@ -46,7 +46,7 @@ interface Props {
   session_id: string;
 }
 
-const LiveLeaderboard = ({session_id}: Props) => {
+const LiveLeaderboard = ({ session_id }: Props) => {
   const theme = useTheme();
   const [leaderboard, setLeaderboard] = useState<Leaderboard[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,16 +57,20 @@ const LiveLeaderboard = ({session_id}: Props) => {
 
   const fetchLeaderboard = useCallback(() => {
     try {
-      setLoading(true)
-      api.session.getSessionLeaderboard(session_id)
-      .then((res)=>setLeaderboard(res?.leaderboard?.map((item: Leaderboard, index: number)=>{
-        return {
-          ...item, rank: index+1
-        }
-      })))
-      .catch((err)=>{
-        setError(err?.response?.message);
-      })
+      setLoading(true);
+      api.session
+        .getSessionLeaderboard(session_id)
+        .then((res) =>
+          setLeaderboard(
+            res?.leaderboard?.map((item: Leaderboard, index: number) => ({
+              ...item,
+              rank: index + 1,
+            }))
+          )
+        )
+        .catch((err) => {
+          setError(err?.response?.message);
+        });
     } catch (err) {
       if (err instanceof Error) {
         setError(`Failed to load leaderboard: ${err.message}`);
@@ -76,7 +80,7 @@ const LiveLeaderboard = ({session_id}: Props) => {
     } finally {
       setLoading(false);
     }
-  },[session_id]);
+  }, [session_id]);
 
   const handleZoomChange = (_: Event, newValue: number | number[]) => {
     setZoom(newValue as number);

@@ -63,7 +63,7 @@ export default function SessionHistoryPage() {
       label: 'End Time',
       minWidth: 160,
       format: (value: string) => (value ? new Date(value).toLocaleString() : '-'),
-    }
+    },
   ];
 
   const fetchSessionHistory = useCallback(() => {
@@ -73,14 +73,17 @@ export default function SessionHistoryPage() {
         setSessions(res.sessions);
       })
       .catch((err) => {
-        showToast.error(err?.data?.error)
+        showToast.error(err?.data?.error);
       })
       .finally(() => {
-        setLoading(false)
-      })
-  },[page, rowsPerPage, searchQuery]);
+        setLoading(false);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, searchQuery]);
 
-  useEffect(()=>{fetchSessionHistory()},[fetchSessionHistory])
+  useEffect(() => {
+    fetchSessionHistory();
+  }, [fetchSessionHistory]);
 
   return (
     <>

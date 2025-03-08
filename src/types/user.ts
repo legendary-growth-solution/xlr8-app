@@ -4,4 +4,6 @@ export interface User {
   user_id: string;
   phone: string;
   dob?: string;
+  race_active?: boolean;
+  total_active_seconds?: number;
 }

@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, Box, Stack, Typography, Button } from '@mui/material';
-import { Cart, Group, NewUser, Plan, User, UserRaceStatus } from 'src/types/session';
+import { Cart, Group, NewUser, Plan, UpdatingUser, User, UserRaceStatus } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
 import { GroupUserList } from './group-user-list';
 import { ConfirmDialog } from '../dialog/confirm-dialog';
@@ -8,15 +8,15 @@ import { DeleteButton } from '../delete-button';
 import { ManageUsersDialog } from './manage-users-dialog';
 
 interface GroupCardProps {
-  group: Group
-  carts: Cart[]
-  getCarts: VoidFunction
+  group: Group;
+  carts: Cart[];
+  getCarts: VoidFunction;
   plans: Plan[];
   handleAssignCart: (group_id: string, user_id: string, cart_id: string) => void;
   handleRemoveUser: (group_id: string, user_id: string) => void;
   handleDeleteGroup: (group_id: string) => void;
   handleAddUsers: (group_id: string, data: NewUser[]) => void;
-  handleUpdateUser: (group_id: string, user_id: string, data: NewUser) => void;
+  handleUpdateUser: (group_id: string, user_id: string, data: UpdatingUser) => void;
   handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus) => void;
   sessionId: string;
   users: User[];
@@ -34,180 +34,100 @@ export function GroupCard({
   handleAddUsers,
   handleUpdateUser,
   sessionId,
-  users
+  users,
 }: GroupCardProps) {
-  // const [localGroupUsers, setLocalGroupUsers] = useState<any[]>([]);
-  // const [isExpanded, setIsExpanded] = useState(false);
-  // const [openBilling, setOpenBilling] = useState(false);
-  // const [billingData, setBillingData] = useState<BillingData>({
-  //   discountAmount: 0,
-  //   totalAmount: 0,
-  // });
-  // const [isGeneratingBill, setIsGeneratingBill] = useState(false);
-  // const [billGenError, setBillGenError] = useState<string | null>(null);
-  // const [loadingBilling, setLoadingBilling] = useState(false);
-  // const [hasBillingData, setHasBillingData] = useState(false);
-  // const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showManageUsers, setShowManageUsers] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [localGroup, setLocalGroup] = useState(group);
 
-  // const [isDeleting, setIsDeleting] = useState(false);
+  useEffect(() => {
+    setLocalGroup((prev) => {
+      const optimisticUsers = prev?.users?.filter((u) => (u as any)._isOptimistic) || [];
+      const nonOptimisticUsers = group.users.filter(
+        (u) => !optimisticUsers.some((ou) => ou.user_id === u.user_id)
+      );
 
-  // const getBillingData = async () => {
-  //   try {
-  //     setLoadingBilling(true);
-  //     api.billing.get()
-  //     const response = await billingApi.getBillingData(group.id);
-  //     if (response.data && Object.keys(response.data).length > 0) {
-  //       setBillingData(response.data as any);
-  //       setHasBillingData(true);
-  //     } else {
-  //       setHasBillingData(false);
-  //     }
-  //     setLoadingBilling(false);
-  //   } catch (error) {
-  //     console.error('Error fetching billing data:', error);
-  //   }
-  // };
+      return {
+        ...group,
+        users: [...nonOptimisticUsers, ...optimisticUsers],
+      };
+    });
+  }, [group]);
 
-  // const getUserDuration = (userId: string) => {
-  //   const activeUser = activeGroupUsers.find(
-  //     (gu) => gu.user_id === userId && gu.group_id === group.id
-  //   );
-  //   if (activeUser) {
-  //     return activeUser?.time_in_minutes || activeUser?.allowed_duration || 0;
-  //   }
-  //   const groupUser = localGroupUsers.find((gu) => gu.user_id === userId);
-  //   return groupUser?.time_in_minutes || groupUser?.allowed_duration || 0;
-  // };
+  const handleLocalRemoveUser = useCallback(
+    (groupId: string, userId: string) => {
+      handleRemoveUser(groupId, userId);
+      setLocalGroup((prev) => ({
+        ...prev,
+        users: prev.users.filter((u) => u.user_id !== userId),
+      }));
+    },
+    [handleRemoveUser]
+  );
 
+  const handleLocalAddUsers = useCallback(
+    async (groupId: string, newUsers: NewUser[], onComplete?: () => void) => {
+      const optimisticUsers = newUsers.map((user) => ({
+        user_id: user.user_id,
+        user_name: user.user_name,
+        plan_id: user.plan_id,
+        time_in_minutes: user.time_in_minutes,
+        cart_id: null,
+        race_active: false,
+        total_active_seconds: 0,
+        time_allotted: user.time_in_minutes ? user.time_in_minutes * 60 : 0,
+        race_end_time: '',
+        race_start_times: [],
+        race_pause_times: [],
+        total_remaining_seconds: user.time_in_minutes ? user.time_in_minutes * 60 : 0,
+        _isOptimistic: true,
+      }));
 
-  // const mainUsers = localGroupUsers.length > 3 ? localGroupUsers.slice(0, 2) : localGroupUsers;
-  // const remainingUsers = localGroupUsers.length > 3 ? localGroupUsers.slice(2) : [];
+      setLocalGroup((prev) => ({
+        ...prev,
+        users: [...prev.users, ...optimisticUsers] as any,
+      }));
 
-  // const getActiveUserData = (userId: string) =>
-  //   activeGroupUsers.find((gu) => gu.user_id === userId && gu.group_id === group.id);
-
-  // const handleGenerateBill = async () => {
-  //   try {
-  //     // const totalAmount = localGroupUsers.reduce((sum, user) => {
-  //     //   const duration = getUserDuration(user.user_id);
-  //     //   return sum + 70000 * (duration / 60);
-  //     // }, 0);
-
-  //     setBillingData((prev) => ({
-  //       ...prev,
-  //       totalAmount: 0,
-  //       totalUsers: localGroupUsers.length,
-  //     }));
-  //     setOpenBilling(true);
-  //   } catch (error) {
-  //     console.error('Error generating bill:', error);
-  //   }
-  // };
-
-  // const handleDiscountCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   setBillGenError(null);
-  //   setBillingData((prev) => ({ ...prev, discountCode: e.target.value }));
-  // };
-
-  // const handleDownloadBill = async () => {
-  //   try {
-  //     setIsGeneratingBill(true);
-  //     setBillGenError(null);
-
-  //     const usersWithDurations = localGroupUsers.map((user) => ({
-  //       user_id: user.user_id,
-  //       time_in_minutes: getUserDuration(user.user_id),
-  //     }));
-
-  //     const response = await billingApi.generateInvoice(group.group_id, {
-  //       billingData: {
-  //         gstNumber: billingData.gstNumber,
-  //         remarks: billingData.remarks,
-  //         discountCode: billingData.discountCode,
-  //       },
-  //       users: usersWithDurations,
-  //     });
-  //     if (response.data) {
-  //       setBillGenError(null);
-  //       showToast.success('Bill generated successfully');
-  //       setOpenBilling(false);
-  //     }
-
-  //     // const blob = new Blob([response.data], { type: 'application/pdf' });
-  //     // const url = window.URL.createObjectURL(blob);
-  //     // const a = document.createElement('a');
-  //     // a.href = url;
-  //     // a.download = `invoice-${group.name}.pdf`;
-  //     // a.click();
-  //     // window.URL.revokeObjectURL(url);
-  //     // setOpenBilling(false);
-  //   } catch (error: any) {
-  //     if (error.response?.status === 400) {
-  //       setBillGenError(
-  //         error.response.data.error || 'Error generating bill. Check coupon/details & try again.'
-  //       );
-  //     } else {
-  //       setBillGenError('An error occurred while generating the bill');
-  //     }
-  //   } finally {
-  //     setIsGeneratingBill(false);
-  //   }
-  // };
-
-  // const handleUserUpdate = useCallback((updatedUsers: any[], isLoading = true) => {
-  //   setLocalGroupUsers(updatedUsers);
-  //   setIsUpdating(isLoading);
-  // }, []);
-
-  // const handleManageUsers = useCallback(
-  //   (grp: Group) => {
-  //     onManageUsers({
-  //       ...grp,
-  //       onUpdate: handleUserUpdate,
-  //     });
-  //   },
-  //   [onManageUsers, handleUserUpdate]
-  // );
+      try {
+        await handleAddUsers(groupId, newUsers);
+        onComplete?.();
+      } catch (error) {
+        console.error('Error adding users:', error);
+        setLocalGroup((prev) => ({
+          ...prev,
+          users: prev.users.filter((u) => !(u as any)._isOptimistic),
+        }));
+      }
+    },
+    [handleAddUsers]
+  );
 
   return (
     <Box sx={{ position: 'relative', height: '100%' }}>
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          bgcolor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 998,
-          cursor: 'pointer',
-        }}
-      />
       <Card
         sx={{
-          // height: '380px',
           transition: 'all 0.2s ease-in-out',
-          // position: 'relative',
-          '&:hover .delete-icon': {
-            opacity: 1,
+          '&:hover': {
+            transform: isDeleting ? 'none' : 'scale(1.02)',
+            boxShadow: isDeleting ? 'none' : 24,
+            zIndex: 999,
           },
-          position: 'absolute',
-          zIndex: 999,
-          left: 0,
-          right: 0,
-          height: 'auto',
-          minHeight: '100%',
-          boxShadow: 24,
+          '&:hover .delete-icon': {
+            opacity: isDeleting ? 0 : 1,
+          },
+          height: '100%',
           overflow: 'visible',
-          mb: 3,
+          opacity: isDeleting ? 0.5 : 1,
+          pointerEvents: isDeleting ? 'none' : 'auto',
+          filter: isDeleting ? 'grayscale(100%)' : 'none',
         }}
       >
         <DeleteButton
           className="delete-icon"
           onDelete={() => setShowDeleteDialog(true)}
-        // disabled={!isActive || gucDataLoading || isUpdating || isDeleting}
+          sx={{ opacity: 1 }}
+          disabled={isDeleting}
         />
 
         <Box
@@ -221,7 +141,7 @@ export function GroupCard({
         >
           <Stack spacing={3} sx={{ flexGrow: 1 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Typography variant="h6">{group.name}</Typography>
+              <Typography variant="h6">{localGroup.name}</Typography>
               <Typography
                 variant="caption"
                 sx={{
@@ -233,45 +153,31 @@ export function GroupCard({
                   fontWeight: 'bold',
                 }}
               >
-                {group?.users.length} Racers
+                {localGroup?.users.length} Racers
               </Typography>
             </Stack>
 
             <GroupUserList
-              users={group?.users}
-              group={group}
+              users={localGroup?.users}
+              group={localGroup}
               carts={carts}
               getCarts={getCarts}
               handleAssignCart={handleAssignCart}
               handleManageUserRace={handleManageUserRace}
+              plans={plans}
             />
           </Stack>
 
-          <Stack
-            direction={{ xs: 'column', sm: 'row', lg: 'column' }}
-            spacing={2}
-          // sx={{ mt: mainUsers.length > 0 && !isExpanded ? 0 : 3 }}
-          >
+          <Stack direction={{ xs: 'column', sm: 'row', lg: 'column' }} spacing={2} marginTop={2}>
             <Button
               variant="contained"
               color="primary"
               startIcon={<Iconify icon="solar:users-group-rounded-bold" />}
               onClick={() => setShowManageUsers(true)}
-            // disabled={!isActive || gucDataLoading || isUpdating}
+              disabled={isDeleting}
             >
               Manage Group Users
             </Button>
-
-            {/* <Button
-              variant="contained"
-              color="secondary"
-              startIcon={<Iconify icon="solar:bill-list-bold" />}
-              onClick={handleGenerateBill}
-              disabled={localGroupUsers.length === 0}
-              // disabled
-            >
-              {(group as any)?.isBillGenerated ? 'View' : 'Generate'} Bill
-            </Button> */}
           </Stack>
         </Box>
       </Card>
@@ -282,37 +188,27 @@ export function GroupCard({
         content={`Are you sure you want to delete ${group.name}? This action cannot be undone.`}
         confirmText="Delete"
         confirmColor="error"
-        // loading={isDeleting}
+        loading={isDeleting}
         onClose={() => setShowDeleteDialog(false)}
-        onConfirm={() => handleDeleteGroup(group?.group_id)}
+        onConfirm={() => {
+          setIsDeleting(true);
+          handleDeleteGroup(group?.group_id);
+          setShowDeleteDialog(false);
+        }}
       />
 
       <ManageUsersDialog
         open={showManageUsers}
-        onClose={()=>{setShowManageUsers(false)}}
-        group={group}
+        onClose={() => {
+          setShowManageUsers(false);
+        }}
+        group={localGroup}
         handleUpdateUser={handleUpdateUser}
-        handleAddUsers={handleAddUsers}
-        handleRemoveUser={handleRemoveUser}
+        handleAddUsers={handleLocalAddUsers}
+        handleRemoveUser={handleLocalRemoveUser}
         plans={plans}
+        sessionUsers={users as any}
       />
-
-
-      {/* <BillingDialog
-        open={openBilling}
-        onClose={() => setOpenBilling(false)}
-        groupName={group.name}
-        groupId={group.group_id}
-        billingData={billingData}
-        onBillingDataChange={(data) => setBillingData((prev: BillingData) => ({ ...prev, ...data }))}
-        onDownload={handleDownloadBill}
-        isGenerating={isGeneratingBill}
-        billGenError={billGenError}
-        loading={loadingBilling}
-        hasBillingData={hasBillingData}
-        fetchBillingData={getBillingData}
-        localGroupUsers={localGroupUsers}
-      /> */}
     </Box>
   );
 }

@@ -1,14 +1,16 @@
-import { Avatar, Box, Stack, Typography } from '@mui/material';
-import { CartControls } from './cart-controls';
+import { Box, Stack, Avatar, Typography } from '@mui/material';
 import { Cart, Group, Plan, User, UserRaceStatus } from 'src/types/session';
+import { CartControls } from './cart-controls';
 
 interface GroupUserListProps {
   users: User[];
   group: Group;
   carts: Cart[];
+  // eslint-disable-next-line react/no-unused-prop-types
   getCarts: VoidFunction;
   handleAssignCart: (group_id: string, user_id: string, cart_id: string) => void;
   handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus) => void;
+  plans?: Plan[];
 }
 
 export function GroupUserList({
@@ -16,7 +18,8 @@ export function GroupUserList({
   group,
   carts,
   handleAssignCart,
-  handleManageUserRace
+  handleManageUserRace,
+  plans = [],
 }: GroupUserListProps) {
   if (users.length === 0) {
     return (
@@ -37,6 +40,17 @@ export function GroupUserList({
       </Box>
     );
   }
+
+  const getUserTime = (user: User) => {
+    if (user?.time_in_minutes) return user.time_in_minutes;
+
+    if (user?.plan_id && plans?.length) {
+      const userPlan = plans.find((plan) => plan.plan_id === user.plan_id);
+      if (userPlan?.timeInMinutes) return userPlan.timeInMinutes;
+    }
+
+    return user?.time_allotted || 0;
+  };
 
   return (
     <Box sx={{ pt: 0.5, mt: '0px !important' }}>
@@ -62,7 +76,10 @@ export function GroupUserList({
                 fontSize: '1rem',
               }}
             >
-              {user.user_name}
+              {user.user_name
+                .split(' ')
+                .map((name) => name[0]?.toUpperCase())
+                .join('')}
             </Avatar>
             <Typography
               variant="caption"
@@ -81,7 +98,7 @@ export function GroupUserList({
                 whiteSpace: 'nowrap',
               }}
             >
-              {user?.time_allotted}m
+              {getUserTime(user)}m
             </Typography>
           </Box>
 
@@ -90,9 +107,9 @@ export function GroupUserList({
               flexGrow: 1,
               minWidth: 0,
               width: '40%',
-              mr: 2
+              mr: 2,
             }}
-          // onClick={handleRedirect}
+            // onClick={handleRedirect}
           >
             <Typography variant="subtitle2" noWrap>
               {user?.user_name}
