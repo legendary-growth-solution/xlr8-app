@@ -1,10 +1,7 @@
-import { Box, Button, Card, CardContent, CircularProgress, Grid, Stack, Typography } from '@mui/material';
+import { Box, Card, CardContent, CircularProgress, Grid, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { api } from 'src/api/api';
-import { Iconify } from 'src/components/iconify';
-import { showToast } from 'src/components/toast';
 import { CONFIG } from 'src/config-global';
 import { apiClient } from 'src/services/api/api-client';
 
@@ -15,7 +12,7 @@ interface AnalyticsData {
 }
 
 // Helper function for comma formatting
-const formatNumber = (num: number) => num.toLocaleString('en-US');
+const formatNumber = (num: number) => num?.toLocaleString('en-US');
 
 export default function Page() {
   // 1. Local state for analytics data

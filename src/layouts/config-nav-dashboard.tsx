@@ -75,6 +75,21 @@ const navConfig = [
     icon: <Iconify icon="solar:bill-list-bold-duotone" />,
   },
   {
+    title: 'Inventory',
+    path: '/inventory',
+    icon: <Iconify icon="solar:box-bold-duotone" />,
+    children: [
+      {
+        title: 'Items',
+        path: '/inventory/items',
+      },
+      {
+        title: 'Logs',
+        path: '/inventory/logs',
+      },
+    ],
+  },
+  {
     title: 'Logout',
     path: '/logout',
     icon: <Iconify icon="solar:logout-2-bold-duotone" />,

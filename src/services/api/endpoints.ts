@@ -1,4 +1,5 @@
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || console.error('API URI is not set');
+export const BASE_URL = 'http://127.0.0.1:5000'
+// export const BASE_URL = import.meta.env.VITE_API_BASE_URL || console.error('API URI is not set');
 
 export const createEndpoint = (path: string) => `${BASE_URL}${path}`;
 
@@ -74,5 +75,15 @@ export const API_ENDPOINTS = {
     getBillingData: (groupId: string) => `/api/billing/groups/${groupId}/data`,
     allInvoices: createEndpoint('/api/billing/all-invoices'),
     deleteBill: (groupId: string) => `/api/billing/groups/${groupId}/delete-bill`,
+  },
+  INVENTORY: {
+    ITEMS: {
+      LIST: createEndpoint('/inventory/items'),
+      CREATE: createEndpoint('/inventory/items'),
+      UPDATE: (id: string) => createEndpoint(`/inventory/items/${id}`),
+      DELETE: (id: string) => createEndpoint(`/inventory/items/${id}`),
+      UPDATE_QUANTITY: (id: string) => createEndpoint(`/inventory/items/${id}/quantity`),
+    },
+    LOGS: createEndpoint('/inventory/logs'),
   },
 } as const;

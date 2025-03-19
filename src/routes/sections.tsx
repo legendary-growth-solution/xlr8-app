@@ -12,6 +12,8 @@ import { DashboardLayout } from 'src/layouts/dashboard';
 import AuthPage from 'src/pages/auth';
 import CartLapLogsPage from 'src/pages/cart-lap-logs';
 import DiscountManagementPage from 'src/pages/discount-management';
+import InventoryItemsPage from 'src/pages/inventory-items';
+import InventoryLogsPage from 'src/pages/inventory-logs';
 import PasswordHashPage from 'src/pages/password-hash';
 import RegisterUserPage from 'src/pages/register-user';
 import { varAlpha } from 'src/theme/styles';
@@ -117,6 +119,8 @@ export function Router() {
         { path: 'plans', element: <TimeManagementPage /> },
         { path: 'discounts', element: <DiscountManagementPage /> },
         { path: 'billings', element: <BillingsPage /> },
+        { path: 'inventory/items', element: <InventoryItemsPage /> },
+        { path: 'inventory/logs', element: <InventoryLogsPage /> },
         { path: '/logout', element: <LogoutRoute /> }
       ],
     },

@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, CircularProgress, Box, Typography } from '@mui/material';
+import { Box, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography } from '@mui/material';
 import { Iconify } from '../iconify';
 
 export interface Column {
@@ -49,14 +49,24 @@ export default function DataTable({
   };
 
   const adjustedPage = Math.min(page, Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1));
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const LoadingOverlay = () => (
+    <Box
+      sx={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        zIndex: 1,
+      }}
+    >
+      <CircularProgress />
+    </Box>
+  );
 
   const renderEmptyState = () => {
     if (emptyState) {
@@ -89,7 +99,8 @@ export default function DataTable({
   };
 
   return (
-    <Box sx={{ bgcolor: 'background.default', borderRadius: '0 0 8px 8px' }}>
+    <Box sx={{ bgcolor: 'background.default', borderRadius: '0 0 8px 8px', position: 'relative' }}>
+      {loading && <LoadingOverlay />}
       <TableContainer>
         <Table stickyHeader>
           <TableHead>
@@ -177,4 +188,4 @@ export default function DataTable({
       )}
     </Box>
   );
-} 
+}
