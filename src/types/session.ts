@@ -30,6 +30,7 @@ export interface User {
 
 export interface Cart {
   active_status: boolean;
+  available_status: boolean;
   amount: number;
   cart_id: string;
   cost: number;
@@ -47,6 +48,7 @@ export interface Cart {
   type: string;
   variant: string;
   is_assigned?: boolean;
+  available
 }
 
 export interface Plan {

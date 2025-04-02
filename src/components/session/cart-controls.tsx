@@ -51,6 +51,7 @@ export function CartControls({
   const isUpdating = false;
   const isOptimistic = !!optimisticCartId;
   const [isStartingRace, setIsStartingRace] = useState<boolean>(false);
+  const isOptimisticUser = (user as any)._isOptimistic;
 
   const raceCompleted = useMemo(() => {
     if (!user?.race_end_time) return false;
@@ -74,6 +75,7 @@ export function CartControls({
   };
 
   const handleOpenCartMenu = (event: React.MouseEvent<HTMLElement>) => {
+    if (isOptimisticUser) return;
     setAnchorEl(event.currentTarget);
   };
 
@@ -86,7 +88,7 @@ export function CartControls({
   };
 
   const handleCartAssignment = (cart_id: string) => {
-    if (isAssigning || user?.cart_id === cart_id) {
+    if (isAssigning || user?.cart_id === cart_id || isOptimisticUser) {
       handleCloseCartMenu();
       return;
     }
@@ -219,24 +221,24 @@ export function CartControls({
       <Stack direction="row" spacing={1} alignItems="center">
         {showAsAssigned ? (
           <Box
-            onClick={user?.race_active || raceCompleted ? handleOpenCartMenu : undefined}
+            onClick={handleOpenCartMenu}
             sx={{
-              pointerEvents: user?.race_active || raceCompleted ? 'none' : 'auto',
+              pointerEvents: user?.race_active || raceCompleted || isOptimisticUser ? 'none' : 'auto',
               display: 'flex',
               alignItems: 'center',
-              bgcolor: user?.race_active || raceCompleted ? 'grey.200' : 'success.lighter',
+              bgcolor: user?.race_active || raceCompleted || isOptimisticUser ? 'grey.200' : 'success.lighter',
               borderRadius: '8px',
               height: '32px',
               minWidth: 'fit-content !important',
               padding: '0 8px',
               width: '52px',
               border: '1px solid',
-              borderColor: user?.race_active || raceCompleted ? 'grey.300' : 'success.light',
+              borderColor: user?.race_active || raceCompleted || isOptimisticUser ? 'grey.300' : 'success.light',
               position: 'relative',
               transition: 'all 0.2s',
-              cursor: user?.race_active || raceCompleted ? 'default' : 'pointer',
+              cursor: user?.race_active || raceCompleted || isOptimisticUser ? 'default' : 'pointer',
               '&:hover': {
-                borderColor: !user?.race_active || raceCompleted ? 'grey.300' : 'success.main',
+                borderColor: user?.race_active || raceCompleted || isOptimisticUser ? 'grey.300' : 'success.main',
               },
             }}
           >
@@ -245,9 +247,9 @@ export function CartControls({
               alignItems="center"
               sx={{
                 width: '100%',
-                cursor: user?.race_active || raceCompleted ? 'default' : 'pointer',
+                cursor: user?.race_active || raceCompleted || isOptimisticUser ? 'default' : 'pointer',
               }}
-              onClick={user?.race_active || raceCompleted ? undefined : handleOpenCartMenu}
+              onClick={user?.race_active || raceCompleted || isOptimisticUser ? undefined : handleOpenCartMenu}
             >
               <Typography
                 variant="caption"
@@ -284,17 +286,17 @@ export function CartControls({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: isAssigning || user?.race_active || raceCompleted ? 'default' : 'pointer',
+                cursor: isAssigning || user?.race_active || raceCompleted || isOptimisticUser ? 'default' : 'pointer',
                 border: '1px solid',
                 borderColor: isAssigning ? 'action.disabled' : 'success.light',
                 '&:hover': {
                   bgcolor:
-                    isAssigning || user?.race_active || raceCompleted
+                    isAssigning || user?.race_active || raceCompleted || isOptimisticUser
                       ? 'action.disabled'
                       : 'success.dark',
                 },
               }}
-              onClick={user?.race_active || raceCompleted ? undefined : handleOpenCartMenu}
+              onClick={user?.race_active || raceCompleted || isOptimisticUser ? undefined : handleOpenCartMenu}
             >
               {isAssigning ? (
                 <LoadingButton
@@ -323,7 +325,7 @@ export function CartControls({
           <IconButton
             size="small"
             onClick={handleOpenCartMenu}
-            disabled={user?.race_active || isAssigning}
+            disabled={user?.race_active || isAssigning || isOptimisticUser}
             sx={{
               color: 'primary.main',
               '&:hover': { bgcolor: 'primary.lighter' },
@@ -369,7 +371,7 @@ export function CartControls({
                   () => setIsStartingRace(false)
                 );
               }}
-              disabled={!user?.cart_id || isStartingRace}
+              disabled={!(user?.cart_id || optimisticCartId) || isStartingRace || isOptimisticUser}
               sx={{
                 color: 'success.main',
                 '&:hover': { bgcolor: 'success.lighter' },
@@ -426,7 +428,7 @@ export function CartControls({
                   : formatTime(timeLeft || 0)}
               </Typography>
 
-              {!raceCompleted && user?.race_end_time && user?.race_end_time !== '' && (
+              {/* {!raceCompleted && user?.race_end_time && user?.race_end_time !== '' && (
                 <Tooltip title="Stop timer">
                   <IconButton
                     className="stop-button"
@@ -452,7 +454,7 @@ export function CartControls({
                     <Iconify icon="mdi:stop" width={16} />
                   </IconButton>
                 </Tooltip>
-              )}
+              )} */}
 
               {user?.race_active &&
                 user?.race_end_time &&
@@ -519,9 +521,7 @@ export function CartControls({
 
       <Menu
         anchorEl={anchorEl}
-        open={
-          Boolean(anchorEl) && !isAssigning && !user.race_active && !isOptimistic && !isUpdating
-        }
+        open={Boolean(anchorEl) && !isAssigning && !user.race_active && !isOptimistic && !isUpdating && !isOptimisticUser}
         onClose={handleCloseCartMenu}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}

@@ -124,6 +124,17 @@ export default function SessionActivePage() {
       });
   }, []);
 
+  const refreshSession = useCallback(() => {
+    axios
+      .get(apiEndpoints.session.activeSession)
+      .then((res: any) => {
+        setSession(res?.data);
+      })
+      .catch((err: any) => {
+        console.log(err);
+      });
+  }, []);
+
   const handleEndSession = useCallback(() => {
     if (session?.session_id) {
       api.session
@@ -171,9 +182,9 @@ export default function SessionActivePage() {
 
       setSession((prevSession) => {
         if (!prevSession) return prevSession;
-
+        
         const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
-
+        
         updatedSession.groups.forEach((group) => {
           if (group.group_id === group_id) {
             group.users.forEach((user) => {
@@ -183,7 +194,7 @@ export default function SessionActivePage() {
             });
           }
         });
-
+        
         return updatedSession;
       });
 
@@ -209,7 +220,7 @@ export default function SessionActivePage() {
 
       api.session.group.users.cart
         .assign(session.session_id, group_id, user_id, { cart_id })
-        .then(() => {
+        .then((res) => {
           delete pendingCartAssignments.current[userKey];
 
           if (currentCartId) {
@@ -218,6 +229,7 @@ export default function SessionActivePage() {
             }, 5000);
           }
 
+          refreshSession();
           showToast.success('Cart assigned successfully');
         })
         .catch((err) => {
@@ -269,7 +281,7 @@ export default function SessionActivePage() {
           showToast.error('Failed to assign cart');
         });
     },
-    [session]
+    [session, refreshSession]
   );
 
   const handleRemoveUser = useCallback(
@@ -277,7 +289,23 @@ export default function SessionActivePage() {
       if (session?.session_id) {
         api.session.group.users
           .delete(session?.session_id, group_id, user_id)
-          .then((res) => {})
+          .then((res) => {
+            setSession((prevSession) => {
+              if (!prevSession) return prevSession;
+              return {
+                ...prevSession,
+                groups: prevSession.groups.map((group) => {
+                  if (group.group_id === group_id) {
+                    return {
+                      ...group,
+                      users: group.users.filter(user => user.user_id !== user_id)
+                    };
+                  }
+                  return group;
+                })
+              };
+            });
+          })
           .catch((err) => {
             console.log(err);
           });
@@ -334,18 +362,27 @@ export default function SessionActivePage() {
     },
     [session?.session_id]
   );
+  
   const handleAddUsers = useCallback(
-    (group_id: string, data: NewUser[]) => {
+    (group_id: string, data: NewUser[], onComplete?: () => void) => {
       if (session?.session_id) {
-        api.session.group.users
+        return api.session.group.users
           .create(session?.session_id, group_id, data)
-          .then((res) => {})
+          .then((res) => {
+            refreshSession();
+            return res;
+          })
           .catch((err) => {
             console.log(err);
+            throw err;
+          })
+          .finally(() => {
+            if (onComplete) onComplete();
           });
       }
+      return Promise.reject(new Error('No active session'));
     },
-    [session?.session_id]
+    [session?.session_id, refreshSession]
   );
 
   const handleUpdateUser = useCallback(
@@ -388,16 +425,6 @@ export default function SessionActivePage() {
     },
     [session?.session_id]
   );
-  const refreshSession = useCallback(() => {
-    axios
-      .get(apiEndpoints.session.activeSession)
-      .then((res: any) => {
-        setSession(res?.data);
-      })
-      .catch((err: any) => {
-        console.log(err);
-      });
-  }, []);
   const handleManageUserRace = useCallback(
     (group_id: string, user_id: string, status: UserRaceStatus) => {
       if (!session?.session_id) return Promise.reject(new Error('No active session'));
@@ -471,38 +498,38 @@ export default function SessionActivePage() {
               });
             break;
 
-          case 'end':
-            api.session.group.users.race
-              .end(session?.session_id, group_id, user_id)
-              .then((res) => {
-                setSession((prevSession) => {
-                  if (!prevSession) return prevSession;
+          // case 'end':
+          //   api.session.group.users.race
+          //     .end(session?.session_id, group_id, user_id)
+          //     .then((res) => {
+          //       setSession((prevSession) => {
+          //         if (!prevSession) return prevSession;
 
-                  const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
+          //         const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
 
-                  updatedSession.groups.forEach((group) => {
-                    if (group.group_id === group_id) {
-                      group.users.forEach((user) => {
-                        if (user.user_id === user_id) {
-                          user.race_active = false;
-                          user.total_remaining_seconds = 0;
-                        }
-                      });
-                    }
-                  });
+          //         updatedSession.groups.forEach((group) => {
+          //           if (group.group_id === group_id) {
+          //             group.users.forEach((user) => {
+          //               if (user.user_id === user_id) {
+          //                 user.race_active = false;
+          //                 user.total_remaining_seconds = 0;
+          //               }
+          //             });
+          //           }
+          //         });
 
-                  return updatedSession;
-                });
+          //         return updatedSession;
+          //       });
 
-                showToast.success('Race ended successfully');
-                resolve(res);
-              })
-              .catch((err) => {
-                console.log(err);
-                showToast.error(err?.response?.data?.error || 'Failed to end race');
-                reject(err);
-              });
-            break;
+          //       showToast.success('Race ended successfully');
+          //       resolve(res);
+          //     })
+          //     .catch((err) => {
+          //       console.log(err);
+          //       showToast.error(err?.response?.data?.error || 'Failed to end race');
+          //       reject(err);
+          //     });
+          //   break;
 
           default:
             reject(new Error('Invalid status'));

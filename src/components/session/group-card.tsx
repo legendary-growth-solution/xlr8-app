@@ -71,16 +71,19 @@ export function GroupCard({
       const optimisticUsers = newUsers.map((user) => ({
         user_id: user.user_id,
         user_name: user.user_name,
+        name: user.user_name,
+        email: '',
+        phone: '',
         plan_id: user.plan_id,
         time_in_minutes: user.time_in_minutes,
         cart_id: null,
         race_active: false,
         total_active_seconds: 0,
-        time_allotted: user.time_in_minutes ? user.time_in_minutes * 60 : 0,
+        time_allotted: user.time_in_minutes || 0,
         race_end_time: '',
         race_start_times: [],
         race_pause_times: [],
-        total_remaining_seconds: user.time_in_minutes ? user.time_in_minutes * 60 : 0,
+        total_remaining_seconds: user.time_in_minutes || 0,
         _isOptimistic: true,
       }));
 
@@ -91,13 +94,23 @@ export function GroupCard({
 
       try {
         await handleAddUsers(groupId, newUsers);
-        onComplete?.();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setLocalGroup((prev) => ({
+          ...prev,
+          users: prev.users.map(u => 
+            (u as any)._isOptimistic ? 
+              { ...u, _isOptimistic: false } : 
+              u
+          ),
+        }));
+        if (onComplete) onComplete();
       } catch (error) {
         console.error('Error adding users:', error);
         setLocalGroup((prev) => ({
           ...prev,
           users: prev.users.filter((u) => !(u as any)._isOptimistic),
         }));
+        if (onComplete) onComplete();
       }
     },
     [handleAddUsers]

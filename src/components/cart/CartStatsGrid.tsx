@@ -14,12 +14,12 @@ export default function CartStatsGrid({ carts }: CartStatsGridProps) {
     },
     {
       title: 'Available',
-      value: carts.filter(cart => cart.status === 'available' && cart.active_status === false).length,
+      value: carts.filter(cart => cart.status === 'available' && cart.is_assigned === false).length,
       color: 'success.main'
     },
     {
       title: 'In Use',
-      value: carts.filter(cart => cart.active_status).length,
+      value: carts.filter(cart => cart.is_assigned).length, 
       color: 'primary.main'
     },
     {

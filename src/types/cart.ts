@@ -25,6 +25,7 @@ export interface Cart {
   fuelCapacity: number;
   current_user_name?: string;
   variant?: string;
+  is_assigned?: boolean;
 }
 
 export interface FuelLog {
