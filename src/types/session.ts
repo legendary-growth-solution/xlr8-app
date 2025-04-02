@@ -48,7 +48,6 @@ export interface Cart {
   type: string;
   variant: string;
   is_assigned?: boolean;
-  available
 }
 
 export interface Plan {

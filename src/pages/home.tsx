@@ -1,7 +1,19 @@
-import { Box, Card, CardContent, CircularProgress, Grid, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Grid,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
+import { api } from 'src/api/api';
+import { showToast } from 'src/components/toast';
 import { CONFIG } from 'src/config-global';
 import { apiClient } from 'src/services/api/api-client';
 
@@ -30,7 +42,8 @@ export default function Page() {
 
   // 2. Loading state
   const [loading, setLoading] = useState<boolean>(false);
-
+  const [creating, setCreating] = useState<boolean>(false);
+  const navigate = useNavigate();
   // 3. Fetch data when the component mounts
   useEffect(() => {
     fetchAnalyticsData();
@@ -51,6 +64,24 @@ export default function Page() {
     } finally {
       setLoading(false); // Stop loader
     }
+  };
+
+  const handleCreateSession = async () => {
+    setCreating(true);
+    api.session.createSession()
+      .then((res) => {
+        showToast.success(res?.message || 'Session created successfully');
+        navigate(`/active-session`);
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err, "err");
+        showToast.error(err?.response?.data?.error || 'Failed to create session');
+      })
+      .finally(() => {
+        setCreating(false);
+      });
+    await fetchAnalyticsData();
   };
 
   // 4. Define your dashboard cards
@@ -99,9 +130,15 @@ export default function Page() {
 
       <Box sx={{ py: 5, px: 3 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-          <Typography variant="h4">
-            Go Kart Racing Dashboard
-          </Typography>
+          <Typography variant="h4">Go Kart Racing Dashboard</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCreateSession}
+            disabled={creating}
+          >
+            {creating ? 'Creating...' : 'Create Session'}
+          </Button>
         </Stack>
         <Grid container spacing={3}>
           {DASHBOARD_CARDS.map((card, index) => (
@@ -132,8 +169,7 @@ export default function Page() {
                         borderRadius: 1.5,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        bgcolor: (theme) =>
-                          alpha(theme.palette[card.color].main, 0.08),
+                        bgcolor: (theme) => alpha(theme.palette[card.color].main, 0.08),
                       }}
                     >
                       <Typography variant="h5" component="h3">
@@ -163,7 +199,7 @@ export default function Page() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       borderRadius: 1, // match card corners if desired
-                      zIndex: 9999, // ensure it’s on top
+                      zIndex: 9999, // ensure it's on top
                     }}
                   >
                     <CircularProgress />

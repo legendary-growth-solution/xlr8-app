@@ -4,7 +4,8 @@ import { apiEndpoints } from './apiEndpoints';
 export const api = {
   session: {
     getActiveSession: axios.get(apiEndpoints.session.activeSession).then((res) => res.data),
-    startSession: axios.post(apiEndpoints.session.startSession).then((res) => res.data),
+    createSession: () => 
+      axios.post(apiEndpoints.session.startSession).then((res) => res.data),
     endSession: (sessionId: string) =>
       axios.post(apiEndpoints.session.endSession(sessionId)).then((res) => res.data),
     get: (sessionId: string) =>

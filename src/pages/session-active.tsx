@@ -40,6 +40,7 @@ export default function SessionActivePage() {
   const [session, setSession] = useState<Session>();
   const [carts, setCarts] = useState<Cart[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [isSessionEnding, setIsSessionEnding] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,25 +57,20 @@ export default function SessionActivePage() {
     api.session.getActiveSession
       .then((res: any) => {
         if (!res?.active) {
-          api.session.startSession
-            .then((startRes: any) => {
-              showToast.success(startRes?.message);
-              setSession(startRes);
-            })
-            .catch((err: any) => {
-              showToast.error(err?.response?.error);
-            });
-        } else {
-          setSession(res);
-        }
+          showToast.error('Session is not active');
+          return
+        }  
+        setSession(res);
       })
       .catch((err) => {
+        showToast.error(err?.response?.data?.error || 'Failed to get active session');
+        navigate('/');
         console.log(err);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [navigate]);
 
   const extractAllUsers = useCallback(
     (session1: Session): User[] => session1?.groups?.flatMap((group) => group?.users || []) || [],
@@ -137,6 +133,7 @@ export default function SessionActivePage() {
 
   const handleEndSession = useCallback(() => {
     if (session?.session_id) {
+      setIsSessionEnding(true);
       api.session
         .endSession(session?.session_id)
         .then((res) => {
@@ -144,6 +141,9 @@ export default function SessionActivePage() {
         })
         .catch((err) => {
           console.log(err);
+        })
+        .finally(() => {
+          setIsSessionEnding(false);
         });
     }
   }, [session?.session_id, navigate]);
@@ -703,7 +703,7 @@ export default function SessionActivePage() {
         content="Are you sure you want to end this session? This action cannot be undone."
         confirmText="End Session"
         confirmColor="error"
-        loading={loading}
+        loading={isSessionEnding}
         onClose={() => setOpenEndSession(false)}
         onConfirm={handleEndSession}
       />
