@@ -113,6 +113,7 @@ export function Router() {
         { path: 'carts', element: <CartManagementPage /> },
         { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
         { path: 'timeslots', element: <TimeSlots /> },
+        { path: 'leaderboard', element: <LiveLeaderboard /> },
         { path: 'carts/lap-logs', element: <CartLapLogsPage /> },
         { path: 'carts/maintenance-logs', element: <CartMaintenanceLogsPage /> },
         { path: 'password-hash', element: <PasswordHashPage /> },
@@ -121,7 +122,7 @@ export function Router() {
         { path: 'billings', element: <BillingsPage /> },
         { path: 'inventory/items', element: <InventoryItemsPage /> },
         { path: 'inventory/logs', element: <InventoryLogsPage /> },
-        { path: '/logout', element: <LogoutRoute /> }
+        { path: '/logout', element: <LogoutRoute /> },
       ],
     },
 

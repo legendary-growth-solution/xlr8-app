@@ -3,18 +3,17 @@ import { apiEndpoints } from './apiEndpoints';
 
 export const api = {
   session: {
-    getActiveSession: axios.get(apiEndpoints.session.activeSession).then((res) => res.data),
-    createSession: () => 
-      axios.post(apiEndpoints.session.startSession).then((res) => res.data),
+    getActiveSession: () => axios.get(apiEndpoints.session.activeSession).then((res) => res.data),
+    createSession: () => axios.post(apiEndpoints.session.startSession).then((res) => res.data),
     endSession: (sessionId: string) =>
       axios.post(apiEndpoints.session.endSession(sessionId)).then((res) => res.data),
     get: (sessionId: string) =>
-      axios.post(apiEndpoints.session.sessionById(sessionId)).then((res) => res.data),
+      axios.get(apiEndpoints.session.sessionById(sessionId)).then((res) => res.data),
     getCompletedSessions: axios.get(apiEndpoints.session.completedSessions).then((res) => res.data),
     getSessionLaps: (sessionId: string) =>
       axios.post(apiEndpoints.session.sessionLaps(sessionId)).then((res) => res.data),
     getSessionLeaderboard: (sessionId: string) =>
-      axios.post(apiEndpoints.session.sessionLeaderboard(sessionId)).then((res) => res.data),
+      axios.get(apiEndpoints.session.sessionLeaderboard(sessionId)).then((res) => res.data),
     group: {
       getList: (sessionId: string) =>
         axios.post(apiEndpoints.session.group.groupsBySessionId(sessionId)).then((res) => res.data),
@@ -112,6 +111,8 @@ export const api = {
   },
   cart: {
     getCarts: axios.get(apiEndpoints.cart.cart).then((res) => res.data),
+    unassign: (cartId: string) =>
+      axios.post(apiEndpoints.cart.unassign(cartId)).then((res) => res.data),
   },
   plan: {
     getPlans: axios.get(apiEndpoints.plan.plan).then((res) => res.data),

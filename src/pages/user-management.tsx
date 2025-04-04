@@ -75,7 +75,17 @@ export default function UserManagementPage() {
       id: 'created_at',
       label: 'Joined',
       minWidth: 160,
-      format: (value: string) => new Date(value).toLocaleString(),
+      format: (value: string) => {
+        const date = new Date(value);
+        return date.toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      },
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
     },

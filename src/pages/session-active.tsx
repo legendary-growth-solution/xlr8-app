@@ -54,7 +54,7 @@ export default function SessionActivePage() {
 
   const getActiveSession = useCallback(() => {
     setLoading(true);
-    api.session.getActiveSession
+    api.session.getActiveSession()
       .then((res: any) => {
         if (!res?.active) {
           showToast.error('Session is not active');
@@ -133,20 +133,21 @@ export default function SessionActivePage() {
 
   const handleEndSession = useCallback(() => {
     if (session?.session_id) {
-      setIsSessionEnding(true);
-      api.session
-        .endSession(session?.session_id)
-        .then((res) => {
-          navigate('/sessions/history');
-        })
-        .catch((err) => {
-          console.log(err);
-        })
-        .finally(() => {
-          setIsSessionEnding(false);
-        });
+        setIsSessionEnding(true);
+        api.session
+            .endSession(session?.session_id)
+            .then((res) => {
+                refreshSession();
+                navigate('/sessions/history');
+            })
+            .catch((err) => {
+                console.log(err);
+            })
+            .finally(() => {
+                setIsSessionEnding(false);
+            });
     }
-  }, [session?.session_id, navigate]);
+  }, [session?.session_id, navigate, refreshSession]);
 
   const handleAssignCart = useCallback(
     (group_id: string, user_id: string, cart_id: string) => {
@@ -543,7 +544,7 @@ export default function SessionActivePage() {
     showToast.error('Feature under development!');
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     getActiveSession();
   }, [getActiveSession]);
   useEffect(() => {

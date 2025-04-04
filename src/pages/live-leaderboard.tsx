@@ -43,7 +43,7 @@ import { Leaderboard } from 'src/types/session';
 // );
 
 interface Props {
-  session_id: string;
+  session_id?: string;
 }
 
 const LiveLeaderboard = ({ session_id }: Props) => {
@@ -59,7 +59,7 @@ const LiveLeaderboard = ({ session_id }: Props) => {
     try {
       setLoading(true);
       api.session
-        .getSessionLeaderboard(session_id)
+        .getSessionLeaderboard(session_id ?? '')
         .then((res) =>
           setLeaderboard(
             res?.leaderboard?.map((item: Leaderboard, index: number) => ({

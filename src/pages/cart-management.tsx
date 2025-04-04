@@ -1,5 +1,7 @@
 import { Button, Card, Chip, Stack } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
+import { api } from 'src/api/api';
 import AssignCartDialog from 'src/components/cart/AssignCartDialog';
 import AssignmentHistoryDialog from 'src/components/cart/AssignmentHistoryDialog';
 import CartStatsGrid from 'src/components/cart/CartStatsGrid';
@@ -12,6 +14,7 @@ import DataTable from 'src/components/table/DataTable';
 import type { AssignmentHistory } from 'src/services/api/cart.api';
 import { cartApi } from 'src/services/api/cart.api';
 import { Cart } from 'src/types/cart';
+import { showToast } from 'src/components/toast';
 
 export default function CartManagementPage() {
   const [carts, setCarts] = useState<Cart[]>([]);
@@ -25,6 +28,7 @@ export default function CartManagementPage() {
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistory[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [unassignCartId, setUnassignCartId] = useState<string | null>(null);
 
   const fetchCarts = async () => {
     try {
@@ -80,7 +84,7 @@ export default function CartManagementPage() {
       id: 'fuel',
       label: 'Remaining Fuel (L)',
       minWidth: 120,
-      format: (value: number) => value? `${value} L` : '-',
+      format: (value: number) => (value ? `${value} L` : '-'),
       // format: (value: number, row: Cart) =>
       //   `${((value * ((row as any)?.fuel_level || 0) / 100).toFixed(1))} L`,
     },
@@ -171,6 +175,21 @@ export default function CartManagementPage() {
     setOpenNewCartDialog(false);
   };
 
+  const handleUnassignCart = async () => {
+    if (!unassignCartId) return;
+    try {
+      setLoading(true);
+      await api.cart.unassign(unassignCartId);
+      await fetchCarts();
+    } catch (error) {
+      showToast.error('Failed to unassign cart');
+      console.error('Failed to unassign cart:', error);
+    } finally {
+      setLoading(false);
+      setUnassignCartId(null);
+    }
+  };
+
   const handleMaintenanceSubmit = async (
     cartId: string,
     data: { status: 'maintenance' | 'refueling'; notes?: string }
@@ -181,7 +200,6 @@ export default function CartManagementPage() {
         console.error('No cart selected for maintenance');
         return;
       }
-
 
       const rfidNumber = (carts.find((cart) => cart.cart_id === cartId) as any)?.rfid_number;
       if (!rfidNumber) {
@@ -204,7 +222,7 @@ export default function CartManagementPage() {
       setSelectedCart(cart);
       setHistoryLoading(true);
       setOpenHistoryDialog(true);
-      
+
       const response = await cartApi.getAssignmentHistory(cart.rfid_number || '');
       setAssignmentHistory(response.history);
       setHasMore(response.has_more);
@@ -234,6 +252,15 @@ export default function CartManagementPage() {
         }
       >
         Update Fuel
+      </Button>
+      <Button
+        size="small"
+        variant="outlined"
+        color="error"
+        onClick={() => setUnassignCartId(cart.cart_id || '')}
+        disabled={cart.status !== 'in-use'}
+      >
+        Unassign Cart
       </Button>
       <Button
         size="small"
@@ -326,6 +353,17 @@ export default function CartManagementPage() {
         history={assignmentHistory}
         hasMore={hasMore}
         loading={historyLoading}
+      />
+
+      <ConfirmDialog
+        open={!!unassignCartId}
+        title="Unassign Cart"
+        content="Are you sure you want to force unassign this cart?"
+        confirmText="Force Unassign"
+        confirmColor="error"
+        loading={loading}
+        onClose={() => setUnassignCartId(null)}
+        onConfirm={handleUnassignCart}
       />
     </PageContainer>
   );

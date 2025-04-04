@@ -1,4 +1,15 @@
-import { Box, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import { Iconify } from '../iconify';
 
 export interface Column {
@@ -73,11 +84,11 @@ export default function DataTable({
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3 }}>
           {emptyState.icon && (
-            <Iconify 
-              icon={emptyState.icon} 
-              width={40} 
-              height={40} 
-              sx={{ color: 'text.secondary', mb: 2 }} 
+            <Iconify
+              icon={emptyState.icon}
+              width={40}
+              height={40}
+              sx={{ color: 'text.secondary', mb: 2 }}
             />
           )}
           <Typography variant="h6" paragraph>
@@ -124,13 +135,15 @@ export default function DataTable({
                 </TableCell>
               ))}
               {actions && (
-                <TableCell 
+                <TableCell
                   align="right"
-                  sx={{ 
+                  sx={{
                     bgcolor: 'primary.lighter',
                     color: 'primary.darker',
                     fontWeight: 600,
                     borderTopRightRadius: 8,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
                   }}
                 >
                   Actions
@@ -151,8 +164,8 @@ export default function DataTable({
                   {columns.map((column) => {
                     const value = row[column.id];
                     return (
-                      <TableCell 
-                        key={column.id} 
+                      <TableCell
+                        key={column.id}
                         align={column.align}
                         sx={{
                           whiteSpace: column.noWrap ? 'nowrap' : 'normal',
@@ -164,7 +177,7 @@ export default function DataTable({
                     );
                   })}
                   {actions && (
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                       {actions(row)}
                     </TableCell>
                   )}
@@ -174,7 +187,7 @@ export default function DataTable({
           </TableBody>
         </Table>
       </TableContainer>
-      
+
       {(onPageChange || onRowsPerPageChange) && (
         <TablePagination
           rowsPerPageOptions={[10, 25, 100]}

@@ -8,7 +8,8 @@ export const apiEndpoints = {
     completedSessions: `${BASE_URL}/sessions/completed`,
     sessionById: (sessionId: string) => `${BASE_URL}/sessions/${sessionId}`,
     sessionLaps: (sessionId: string) => `${BASE_URL}/sessions/${sessionId}/laps`,
-    sessionLeaderboard: (sessionId: string) => `${BASE_URL}/sessions/${sessionId}/leaderboard`,
+    sessionLeaderboard: (sessionId?: string) =>
+      `${BASE_URL}/sessions/${sessionId || 'current'}/leaderboard`,
     group: {
       groupsBySessionId: (sessionId: string) => `${BASE_URL}/sessions/${sessionId}/groups`,
       groupByGroupId: (sessionId: string, groupId: string) =>
@@ -45,6 +46,7 @@ export const apiEndpoints = {
   },
   cart: {
     cart: `${BASE_URL}/carts`,
+    unassign: (cartId: string) => `${BASE_URL}/carts/${cartId}/unassign`,
   },
   plan: {
     plan: `${BASE_URL}/plans`,
