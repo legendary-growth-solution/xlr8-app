@@ -1,13 +1,14 @@
 import { Helmet } from 'react-helmet-async';
 import { Box, Button, Typography, Card, Stack, TextField } from '@mui/material';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Session } from 'src/types/session';
 import DataTable from 'src/components/table/DataTable';
 import { Iconify } from 'src/components/iconify';
 import { useNavigate } from 'react-router-dom';
 import ExportMenu from 'src/components/export/ExportMenu';
-import { api } from 'src/api/api';
 import { showToast } from 'src/components/toast';
+import axios from 'axios';
+import { apiEndpoints } from 'src/api/apiEndpoints';
 
 export default function SessionHistoryPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -16,9 +17,11 @@ export default function SessionHistoryPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   const navigate = useNavigate();
+  const searchTimeout = useRef<NodeJS.Timeout>();
+  const currentSearch = useRef('');
 
   const handleExportClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -66,24 +69,64 @@ export default function SessionHistoryPage() {
     },
   ];
 
-  const fetchSessionHistory = useCallback(() => {
-    setLoading(true);
-    api.session.getCompletedSessions
-      .then((res) => {
-        setSessions(res.sessions);
-      })
-      .catch((err) => {
-        showToast.error(err?.data?.error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, searchQuery]);
+  const fetchSessionHistory = useCallback(async (resetPage = false) => {
+    try {
+      setLoading(true);
+      
+      const currentPage = resetPage ? 1 : page;
+      if (resetPage) {
+        setPage(1);
+      }
 
+      const response = await axios.get(apiEndpoints.session.completedSessions, {
+        params: {
+          page: currentPage,
+          pageSize: rowsPerPage,
+          search: currentSearch.current,
+        },
+      });
+      
+      const res = response.data;
+      setSessions(res.sessions);
+      setTotalPages(res.pagination?.totalPages || 0);
+    } catch (err) {
+      showToast.error(err?.data?.error);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, rowsPerPage]);
+
+  const handleSearch = (value: string) => {
+    currentSearch.current = value;
+    setSearchQuery(value);
+
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    searchTimeout.current = setTimeout(() => {
+      fetchSessionHistory(true);
+    }, 500);
+  };
+
+  // Clean up effect
   useEffect(() => {
     fetchSessionHistory();
-  }, [fetchSessionHistory]);
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Pagination effect - only trigger if not from search
+  useEffect(() => {
+    if (sessions.length > 0) {
+      fetchSessionHistory(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
 
   return (
     <>
@@ -117,7 +160,7 @@ export default function SessionHistoryPage() {
             <TextField
               placeholder="Search sessions..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />
@@ -131,8 +174,12 @@ export default function SessionHistoryPage() {
               rows={sessions}
               page={page}
               rowsPerPage={rowsPerPage}
-              onPageChange={setPage}
-              onRowsPerPageChange={setRowsPerPage}
+              totalPages={totalPages}
+              onPageChange={(newPage) => setPage(newPage)}
+              onRowsPerPageChange={(newRowsPerPage) => {
+                setRowsPerPage(newRowsPerPage);
+                setPage(1);
+              }}
               actions={(row) => (
                 <Button
                   variant="outlined"

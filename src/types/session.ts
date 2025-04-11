@@ -53,7 +53,7 @@ export interface Cart {
 export interface Plan {
   amount: number;
   created_at: string; // Could be a Date if parsed appropriately
-  name: string;
+  name?: string; // to remove later
   plan_id: string;
   timeInMinutes: number;
   title: string;

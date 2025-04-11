@@ -51,6 +51,12 @@ export function CreateGroupDialog({ open, loading, onClose, onSubmit }: CreateGr
             helperText={error}
             onChange={(e) => setValue(e?.target?.value)}
             disabled={loading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
           />
         </Stack>
       </DialogContent>

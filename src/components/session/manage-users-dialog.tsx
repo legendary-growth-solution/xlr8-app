@@ -451,7 +451,7 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
                         >
                           {plans.map((plan) => (
                             <MenuItem key={plan.plan_id} value={plan.plan_id}>
-                              {plan.name}
+                              {plan.title}
                             </MenuItem>
                           ))}
                         </Select>
@@ -476,7 +476,7 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
                         >
                           {plans.map((plan) => (
                             <MenuItem key={plan.plan_id} value={plan.plan_id}>
-                              {plan.name}
+                              {plan.title}
                             </MenuItem>
                           ))}
                         </Select>

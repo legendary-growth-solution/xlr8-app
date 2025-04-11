@@ -9,7 +9,8 @@ export default function UserCreatePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     // dob: '',
@@ -19,8 +20,12 @@ export default function UserCreatePage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First Name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last Name is required';
     }
 
     if (!formData.email.trim()) {
@@ -46,9 +51,15 @@ export default function UserCreatePage() {
       return;
     }
 
+    const submitData = {
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      phone: formData.phone,
+    };
+
     try {
       setLoading(true);
-      await userApi.create(formData);
+      await userApi.create(submitData);
       navigate('/users');
     } catch (error) {
       console.error('Error creating user:', error);
@@ -78,12 +89,24 @@ export default function UserCreatePage() {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Full Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  label="First Name"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   required
-                  error={!!errors.name}
-                  helperText={errors.name}
+                  error={!!errors.firstName}
+                  helperText={errors.firstName}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  required
+                  error={!!errors.lastName}
+                  helperText={errors.lastName}
                 />
               </Grid>
 

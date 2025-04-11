@@ -54,12 +54,13 @@ export default function SessionActivePage() {
 
   const getActiveSession = useCallback(() => {
     setLoading(true);
-    api.session.getActiveSession()
+    api.session
+      .getActiveSession()
       .then((res: any) => {
         if (!res?.active) {
           showToast.error('Session is not active');
-          return
-        }  
+          return;
+        }
         setSession(res);
       })
       .catch((err) => {
@@ -133,19 +134,19 @@ export default function SessionActivePage() {
 
   const handleEndSession = useCallback(() => {
     if (session?.session_id) {
-        setIsSessionEnding(true);
-        api.session
-            .endSession(session?.session_id)
-            .then((res) => {
-                refreshSession();
-                navigate('/sessions/history');
-            })
-            .catch((err) => {
-                console.log(err);
-            })
-            .finally(() => {
-                setIsSessionEnding(false);
-            });
+      setIsSessionEnding(true);
+      api.session
+        .endSession(session?.session_id)
+        .then((res) => {
+          refreshSession();
+          navigate('/sessions/history');
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          setIsSessionEnding(false);
+        });
     }
   }, [session?.session_id, navigate, refreshSession]);
 
@@ -183,9 +184,9 @@ export default function SessionActivePage() {
 
       setSession((prevSession) => {
         if (!prevSession) return prevSession;
-        
+
         const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
-        
+
         updatedSession.groups.forEach((group) => {
           if (group.group_id === group_id) {
             group.users.forEach((user) => {
@@ -195,7 +196,7 @@ export default function SessionActivePage() {
             });
           }
         });
-        
+
         return updatedSession;
       });
 
@@ -299,11 +300,11 @@ export default function SessionActivePage() {
                   if (group.group_id === group_id) {
                     return {
                       ...group,
-                      users: group.users.filter(user => user.user_id !== user_id)
+                      users: group.users.filter((user) => user.user_id !== user_id),
                     };
                   }
                   return group;
-                })
+                }),
               };
             });
           })
@@ -363,7 +364,7 @@ export default function SessionActivePage() {
     },
     [session?.session_id]
   );
-  
+
   const handleAddUsers = useCallback(
     (group_id: string, data: NewUser[], onComplete?: () => void) => {
       if (session?.session_id) {
@@ -545,6 +546,20 @@ export default function SessionActivePage() {
   };
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        setOpenNewGroup(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
     getActiveSession();
   }, [getActiveSession]);
   useEffect(() => {
@@ -641,6 +656,9 @@ export default function SessionActivePage() {
                   onClick={() => setOpenNewGroup(true)}
                 >
                   New Group
+                  <Typography variant="caption" sx={{ ml: 1, opacity: 0.72 }}>
+                    (⌘G/Ctrl+G)
+                  </Typography>
                 </Button>
               )}
             </Stack>
