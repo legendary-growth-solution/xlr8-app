@@ -18,7 +18,9 @@ import {
   Typography,
   Box,
   Stack,
+  InputAdornment,
 } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
@@ -26,6 +28,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Group, NewUser, Plan, UpdatingUser, User as SessionUser } from 'src/types/session';
 import { userApi } from 'src/services/api/user.api';
 import { User } from 'src/types/user';
+import { Scrollbar } from 'src/components/scrollbar';
+import { UserTableSkeleton } from 'src/components/skeleton';
 
 interface ManageUsersDialogProps {
   open: boolean;
@@ -55,16 +59,20 @@ function useDebounce(value: string, delay: number) {
   return debouncedValue;
 }
 
-async function fetchAllUsers(searchTerm?: string): Promise<User[]> {
+async function fetchAllUsers(searchTerm?: string, page: number = 1, pageSize: number = 10): Promise<{users: User[], hasMore: boolean}> {
   try {
     const response = await userApi.list({
       search: searchTerm,
-      pageSize: 100,
+      pageSize,
+      page,
     });
-    return response.users;
+    return {
+      users: response.users,
+      hasMore: response.users.length >= pageSize
+    };
   } catch (error) {
     console.error('Error fetching users:', error);
-    return [];
+    return { users: [], hasMore: false };
   }
 }
 
@@ -81,6 +89,12 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const pageSize = 10;
 
   // For newly selected users
   // Key: user_id -> { plan_id, user_name, user_id }
@@ -110,11 +124,41 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
    */
   useEffect(() => {
     if (open) {
-      fetchAllUsers(debouncedSearchTerm).then((users) => {
+      setLoadingUsers(true);
+      fetchAllUsers(debouncedSearchTerm, 1, pageSize).then(({ users, hasMore: moreResults }) => {
         setAllUsers(users);
+        setHasMore(moreResults);
+        setCurrentPage(1);
+        setLoadingUsers(false);
       });
     }
-  }, [open, debouncedSearchTerm]);
+  }, [open, debouncedSearchTerm, pageSize]);
+
+  /**
+   * Function to load more users when scrolling
+   */
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+    
+    try {
+      const { users: newUsers, hasMore: moreAvailable } = await fetchAllUsers(debouncedSearchTerm, nextPage, pageSize);
+      
+      const newUniqueUsers = newUsers.filter(
+        newUser => !allUsers.some(existingUser => existingUser.user_id === newUser.user_id)
+      );
+      
+      setAllUsers(prevUsers => [...prevUsers, ...newUniqueUsers]);
+      setHasMore(moreAvailable);
+      setCurrentPage(nextPage);
+    } catch (error) {
+      console.error('Error loading more users:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   /**
    * Reset states when dialog closes
@@ -134,7 +178,12 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
    * Handler for search input change
    */
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+    
+    if (newSearchTerm.length >= 2 || newSearchTerm.length === 0) {
+      setLoadingUsers(true);
+    }
   };
 
   /**
@@ -381,196 +430,239 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
       <DialogContent>
         {/* Search bar */}
         <Box display="flex" alignItems="center" mb={2}>
-          <SearchIcon sx={{ mr: 1 }} />
           <TextField
             label="Search users..."
             variant="outlined"
             fullWidth
             value={searchTerm}
+            style={{ marginTop: 5 }}
             onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
           />
         </Box>
 
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell />
-              <TableCell style={{ whiteSpace: 'nowrap' }}>User Name</TableCell>
-              <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
-              <TableCell style={{ whiteSpace: 'nowrap' }}>Phone</TableCell>
-              <TableCell style={{ whiteSpace: 'nowrap' }}>Plan</TableCell>
-              <TableCell style={{ whiteSpace: 'nowrap' }}>Custom Duration (min)</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredUsers.map((user) => {
-              const inGroup = isUserInGroup(user.user_id);
-              const selected = isSelectedForAddition(user.user_id);
+        <Scrollbar>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell />
+                <TableCell style={{ whiteSpace: 'nowrap' }}>User Name</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Phone</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Plan</TableCell>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>Custom Duration (min)</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loadingUsers ? (
+                <UserTableSkeleton rows={5} />
+              ) : (
+                <>
+                  {filteredUsers.map((user) => {
+                    const inGroup = isUserInGroup(user.user_id);
+                    const selected = isSelectedForAddition(user.user_id);
 
-              return (
-                <TableRow
-                  key={user.user_id}
-                  sx={{
-                    opacity: isUserInOtherGroup(user.user_id) ? 0.5 : 1,
-                    bgcolor: isUserInOtherGroup(user.user_id) ? 'action.hover' : 'inherit',
-                  }}
-                >
-                  <TableCell>
-                    {!inGroup && (
-                      <Checkbox
-                        checked={selected}
-                        onChange={() => handleToggleUserSelection(user)}
-                        disabled={isUserInOtherGroup(user.user_id) || user.race_active}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.phone}</TableCell>
-                  <TableCell>
-                    {/* If user is already in group, show plan dropdown for editing if editingUserId matches */}
-                    {inGroup ? (
-                      editingUserId === user.user_id ? (
-                        <Select
-                          value={editingPlanId}
-                          onChange={(e) => {
-                            const newPlanId = e.target.value as string;
-                            setEditingPlanId(newPlanId);
+                    return (
+                      <TableRow
+                        key={user.user_id}
+                        sx={{
+                          opacity: isUserInOtherGroup(user.user_id) ? 0.5 : 1,
+                          bgcolor: isUserInOtherGroup(user.user_id) ? 'action.hover' : 'inherit',
+                        }}
+                      >
+                        <TableCell>
+                          {!inGroup && (
+                            <Checkbox
+                              checked={selected}
+                              onChange={() => handleToggleUserSelection(user)}
+                              disabled={isUserInOtherGroup(user.user_id) || user.race_active}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.phone}</TableCell>
+                        <TableCell>
+                          {/* If user is already in group, show plan dropdown for editing if editingUserId matches */}
+                          {inGroup ? (
+                            editingUserId === user.user_id ? (
+                              <Select
+                                value={editingPlanId}
+                                onChange={(e) => {
+                                  const newPlanId = e.target.value as string;
+                                  setEditingPlanId(newPlanId);
 
-                            const selectedPlan = plans.find((p) => p.plan_id === newPlanId);
-                            if (selectedPlan) {
-                              setCustomTime((prev) => ({
-                                ...prev,
-                                [user.user_id]: selectedPlan.timeInMinutes,
-                              }));
+                                  const selectedPlan = plans.find((p) => p.plan_id === newPlanId);
+                                  if (selectedPlan) {
+                                    setCustomTime((prev) => ({
+                                      ...prev,
+                                      [user.user_id]: selectedPlan.timeInMinutes,
+                                    }));
+                                  }
+                                }}
+                                size="small"
+                                sx={{ minWidth: 120 }}
+                              >
+                                {plans.map((plan) => (
+                                  <MenuItem key={plan.plan_id} value={plan.plan_id}>
+                                    {plan.title}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            ) : (
+                              // Display read-only plan name
+                              <Typography variant="body2">
+                                {
+                                  plans.find((p) => p.plan_id === getUserPlanFromGroup(user.user_id))
+                                    ?.name
+                                }
+                              </Typography>
+                            )
+                          ) : (
+                            selected && (
+                              <Select
+                                value={selectedUsers[user.user_id]?.plan_id || ''}
+                                onChange={(e: any) => handleSelectPlanForNewUser(user, e)}
+                                size="small"
+                                sx={{ minWidth: 120 }}
+                                disabled={isUserInOtherGroup(user.user_id)}
+                              >
+                                {plans.map((plan) => (
+                                  <MenuItem key={plan.plan_id} value={plan.plan_id}>
+                                    {plan.title}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            )
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            type="number"
+                            size="small"
+                            value={
+                              editingUserId === user.user_id
+                                ? customTime[user.user_id] || ''
+                                : inGroup
+                                  ? group.users.find((u) => u.user_id === user.user_id)
+                                      ?.time_in_minutes ||
+                                    group.users.find((u) => u.user_id === user.user_id)?.time_allotted ||
+                                    plans.find((p) => p.plan_id === getUserPlanFromGroup(user.user_id))
+                                      ?.timeInMinutes ||
+                                    ''
+                                  : customTime[user.user_id] || ''
                             }
-                          }}
-                          size="small"
-                          sx={{ minWidth: 120 }}
-                        >
-                          {plans.map((plan) => (
-                            <MenuItem key={plan.plan_id} value={plan.plan_id}>
-                              {plan.title}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      ) : (
-                        // Display read-only plan name
-                        <Typography variant="body2">
-                          {
-                            plans.find((p) => p.plan_id === getUserPlanFromGroup(user.user_id))
-                              ?.name
-                          }
-                        </Typography>
-                      )
-                    ) : (
-                      // If user is not in group, plan dropdown for new user
-                      selected && (
-                        <Select
-                          value={selectedUsers[user.user_id]?.plan_id || ''}
-                          onChange={(e: any) => handleSelectPlanForNewUser(user, e)}
-                          size="small"
-                          sx={{ minWidth: 120 }}
-                          disabled={isUserInOtherGroup(user.user_id)}
-                        >
-                          {plans.map((plan) => (
-                            <MenuItem key={plan.plan_id} value={plan.plan_id}>
-                              {plan.title}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      size="small"
-                      value={
-                        editingUserId === user.user_id
-                          ? customTime[user.user_id] || ''
-                          : inGroup
-                            ? group.users.find((u) => u.user_id === user.user_id)
-                                ?.time_in_minutes ||
-                              group.users.find((u) => u.user_id === user.user_id)?.time_allotted ||
-                              plans.find((p) => p.plan_id === getUserPlanFromGroup(user.user_id))
-                                ?.timeInMinutes ||
-                              ''
-                            : customTime[user.user_id] || ''
-                      }
-                      onChange={(e) => handleCustomTimeChange(user, Number(e.target.value))}
-                      disabled={
-                        (inGroup && editingUserId !== user.user_id) ||
-                        (!inGroup && !selected) ||
-                        isUserInOtherGroup(user.user_id)
-                      }
-                      InputProps={{ inputProps: { min: 1 } }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    {inGroup && (
-                      <Stack direction="row" spacing={1}>
-                        {editingUserId === user.user_id ? (
-                          <>
-                            <Button
-                              variant="outlined"
-                              color="primary"
-                              size="small"
-                              onClick={handleConfirmUpdateUser}
-                              disabled={!hasEditingChanges()}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="inherit"
-                              size="small"
-                              onClick={() => {
-                                setEditingUserId(null);
-                                setOriginalUserData(null);
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            {(() => {
-                              const groupUser = group.users.find((u) => u.user_id === user.user_id);
-                              const isUserActive =
-                                groupUser?.race_active ||
-                                (groupUser?.total_active_seconds || 0) > 0;
-                              return (
+                            onChange={(e) => handleCustomTimeChange(user, Number(e.target.value))}
+                            disabled={
+                              (inGroup && editingUserId !== user.user_id) ||
+                              (!inGroup && !selected) ||
+                              isUserInOtherGroup(user.user_id)
+                            }
+                            InputProps={{ inputProps: { min: 1 } }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          {inGroup && (
+                            <Stack direction="row" spacing={1}>
+                              {editingUserId === user.user_id ? (
                                 <>
-                                  <IconButton
-                                    onClick={() => handleEditUser(user.user_id)}
+                                  <Button
+                                    variant="outlined"
+                                    color="primary"
                                     size="small"
-                                    disabled={isUserActive}
+                                    onClick={handleConfirmUpdateUser}
+                                    disabled={!hasEditingChanges()}
                                   >
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton
-                                    onClick={() => setConfirmRemoveUserId(user.user_id)}
-                                    color="error"
+                                    Save
+                                  </Button>
+                                  <Button
+                                    variant="outlined"
+                                    color="inherit"
                                     size="small"
-                                    disabled={isUserActive}
+                                    onClick={() => {
+                                      setEditingUserId(null);
+                                      setOriginalUserData(null);
+                                    }}
                                   >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
+                                    Cancel
+                                  </Button>
                                 </>
-                              );
-                            })()}
-                          </>
-                        )}
-                      </Stack>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                              ) : (
+                                <>
+                                  {(() => {
+                                    const groupUser = group.users.find((u) => u.user_id === user.user_id);
+                                    const isUserActive =
+                                      groupUser?.race_active ||
+                                      (groupUser?.total_active_seconds || 0) > 0;
+                                    return (
+                                      <>
+                                        <IconButton
+                                          onClick={() => handleEditUser(user.user_id)}
+                                          size="small"
+                                          disabled={isUserActive}
+                                        >
+                                          <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                          onClick={() => setConfirmRemoveUserId(user.user_id)}
+                                          color="error"
+                                          size="small"
+                                          disabled={isUserActive}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </>
+                                    );
+                                  })()}
+                                </>
+                              )}
+                            </Stack>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  
+                  {loadingMore && (
+                    <UserTableSkeleton rows={3} />
+                  )}
+                  
+                  {/* Empty state when no results found */}
+                  {!loadingUsers && filteredUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                        <Typography variant="body2">No users found</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  
+                  {/* Load more button */}
+                  {hasMore && filteredUsers.length > 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ border: 0 }}>
+                        <LoadingButton
+                          loading={loadingMore}
+                          variant="text"
+                          onClick={handleLoadMore}
+                          startIcon={!loadingMore && <SearchIcon />}
+                        >
+                          {loadingMore ? 'Loading...' : 'Load More'}
+                        </LoadingButton>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </Scrollbar>
 
         {/* Confirm Remove Dialog (simple version) */}
         {confirmRemoveUserId && (
@@ -593,9 +685,15 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
         <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <Button onClick={handleSave} color="primary" disabled={!hasChanges || isSaving}>
-          {isSaving ? 'Saving...' : 'Save'}
-        </Button>
+        <LoadingButton 
+          loading={isSaving} 
+          onClick={handleSave} 
+          variant="contained"
+          color="primary" 
+          disabled={!hasChanges || isSaving || loadingUsers}
+        >
+          Save
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

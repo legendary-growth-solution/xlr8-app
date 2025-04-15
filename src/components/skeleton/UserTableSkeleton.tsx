@@ -56,7 +56,7 @@ export function UserTableSkeleton({ rows = 5 }: UserTableSkeletonProps) {
             <Stack direction="row" spacing={1} justifyContent="center">
               <Box
                 sx={{
-                  width: 120,
+                  width: 10,
                   height: 40,
                   borderRadius: 0.5,
                   bgcolor: 'background.neutral',

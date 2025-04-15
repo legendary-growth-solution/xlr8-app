@@ -79,7 +79,7 @@ export default function SessionActivePage() {
   );
 
   const getCarts = useCallback(() => {
-    api.cart.getCarts
+    api.cart.getCarts()
       .then((res) => {
         const processedCarts = res.carts.map((cart: Cart) => {
           const isAssignedLocally = Object.values(confirmedAssignments.current).some(
@@ -112,7 +112,7 @@ export default function SessionActivePage() {
   }, [getCarts]);
 
   const getPlans = useCallback(() => {
-    api.plan.getPlans
+    api.plan.getPlans()
       .then((res) => {
         setPlans(res?.plans);
       })

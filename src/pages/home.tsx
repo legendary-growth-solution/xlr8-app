@@ -40,29 +40,35 @@ export default function Page() {
     last7Days: 0,
   });
 
-  // 2. Loading state
-  const [loading, setLoading] = useState<boolean>(false);
+  const [ridesLoading, setRidesLoading] = useState<boolean>(false);
+  const [invoicesLoading, setInvoicesLoading] = useState<boolean>(false);
   const [creating, setCreating] = useState<boolean>(false);
   const navigate = useNavigate();
-  // 3. Fetch data when the component mounts
+  
   useEffect(() => {
     fetchAnalyticsData();
   }, []);
 
   const fetchAnalyticsData = async () => {
-    setLoading(true); // Start loader
+    setRidesLoading(true);
+    setInvoicesLoading(true);
+    
     try {
-      // Fetch rides
       const ridesRes = await apiClient.get('/ride-stats');
       setRidesData(ridesRes.data);
-
-      // Fetch invoices
+    } catch (error) {
+      console.error('Failed to fetch rides data:', error);
+    } finally {
+      setRidesLoading(false);
+    }
+    
+    try {
       const invoicesRes = await apiClient.get('/invoice-stats');
       setInvoicesData(invoicesRes.data);
     } catch (error) {
-      console.error('Failed to fetch analytics data:', error);
+      console.error('Failed to fetch invoices data:', error);
     } finally {
-      setLoading(false); // Stop loader
+      setInvoicesLoading(false);
     }
   };
 
@@ -90,31 +96,37 @@ export default function Page() {
       title: 'Rides (Today)',
       color: 'primary' as const,
       value: ridesData.today,
+      loading: ridesLoading,
     },
     {
       title: 'Rides (Yesterday)',
       color: 'primary' as const,
       value: ridesData.yesterday,
+      loading: ridesLoading,
     },
     {
       title: 'Rides (Last 7 days)',
       color: 'primary' as const,
       value: ridesData.last7Days,
+      loading: ridesLoading,
     },
     {
       title: 'Collection (Today)',
       color: 'success' as const,
       value: invoicesData.today,
+      loading: invoicesLoading,
     },
     {
       title: 'Collection (Yesterday)',
       color: 'success' as const,
       value: invoicesData.yesterday,
+      loading: invoicesLoading,
     },
     {
       title: 'Collection (Last 7 days)',
       color: 'success' as const,
       value: invoicesData.last7Days,
+      loading: invoicesLoading,
     },
   ] as const;
 
@@ -186,7 +198,7 @@ export default function Page() {
                 </Card>
 
                 {/* Overlay Loader - only shows when loading */}
-                {loading && (
+                {card.loading && (
                   <Box
                     sx={{
                       position: 'absolute',

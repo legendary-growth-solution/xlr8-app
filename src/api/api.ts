@@ -9,7 +9,7 @@ export const api = {
       axios.post(apiEndpoints.session.endSession(sessionId)).then((res) => res.data),
     get: (sessionId: string) =>
       axios.get(apiEndpoints.session.sessionById(sessionId)).then((res) => res.data),
-    getCompletedSessions: axios.get(apiEndpoints.session.completedSessions).then((res) => res.data),
+    getCompletedSessions: () => axios.get(apiEndpoints.session.completedSessions).then((res) => res.data),
     getSessionLaps: (sessionId: string) =>
       axios.post(apiEndpoints.session.sessionLaps(sessionId)).then((res) => res.data),
     getSessionLeaderboard: (sessionId: string) =>
@@ -110,12 +110,12 @@ export const api = {
     },
   },
   cart: {
-    getCarts: axios.get(apiEndpoints.cart.cart).then((res) => res.data),
+    getCarts: () => axios.get(apiEndpoints.cart.cart).then((res) => res.data),
     unassign: (cartId: string) =>
       axios.post(apiEndpoints.cart.unassign(cartId)).then((res) => res.data),
   },
   plan: {
-    getPlans: axios.get(apiEndpoints.plan.plan).then((res) => res.data),
+    getPlans: () => axios.get(apiEndpoints.plan.plan).then((res) => res.data),
   },
   billing: {
     create: (data: object) =>
