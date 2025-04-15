@@ -15,6 +15,8 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
 
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || console.error('API URI is not set');
+
 interface Lap {
   id: string;
   lap_time: number;
@@ -58,7 +60,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
   useEffect(() => {
     if (sessionId) {
       axios
-        .get<Lap[]>(`http://192.168.31.39:5000/api/sessions/lap-data/${sessionId}`)
+        .get<Lap[]>(`${BASE_URL}/api/sessions/lap-data/${sessionId}`)
         .then((response: any) => {
           const laps = response.data.laps;
           const grouped = Object.values(

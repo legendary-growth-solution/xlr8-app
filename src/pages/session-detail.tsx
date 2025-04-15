@@ -256,7 +256,7 @@ export default function SessionDetailPage() {
         return;
       }
 
-      await fetchSessionDetails();
+      // await fetchSessionDetails();
       manageUsers.onFalse();
       setSelectedUsers([]);
     } catch (error) {
@@ -290,6 +290,7 @@ export default function SessionDetailPage() {
       await cartApi.assign(cartId, {
         userId,
         groupUserMappingId: groupUserId,
+        sessionId: id
       });
 
       await refreshCarts();
@@ -403,7 +404,7 @@ export default function SessionDetailPage() {
               </Stack>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            {/* <Grid item xs={12} md={4}>
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
                   Participants
@@ -412,7 +413,7 @@ export default function SessionDetailPage() {
                   {session.current_participants}/{session.max_participants ?? '∞'}
                 </Typography>
               </Stack>
-            </Grid>
+            </Grid> */}
 
             <Grid item xs={12} md={4}>
               <Stack spacing={1}>

@@ -20,13 +20,14 @@ import { useGUCData } from 'src/contexts/DataContext';
 import { LoadingButton } from '@mui/lab';
 import { userApi } from 'src/services/api/user.api';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
+import { useParams } from 'react-router-dom';
 
 interface CartControlsProps {
   userId: string;
   groupId: string;
   cartAssignments: any[];
   groupUserId: string;
-  onAssignCart: (userId: string, cartId: string, groupUserId: string) => Promise<void>;
+  onAssignCart: (userId: string, cartId: string, groupUserId: string, sessionId: string) => Promise<void>;
   availableCarts: any[];
   activeUser: any;
   isOptimistic?: boolean;
@@ -45,6 +46,7 @@ export function CartControls({
   isUpdating = false,
 }: CartControlsProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const { id = '' } = useParams();
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [serverExpEndTime, setServerExpEndTime] = useState<number | null>(null);
   const [isRaceStarted, setIsRaceStarted] = useState(activeUser?.race_status === 'in_progress');
@@ -167,7 +169,7 @@ export function CartControls({
     setAnchorEl(null);
 
     try {
-      await onAssignCart(userId, cartId, groupUserId);
+      await onAssignCart(userId, cartId, groupUserId, id);
       setCurrentCartId(cartId);
     } catch (e) {
       setError('Failed to assign cart. Please try again.');

@@ -8,7 +8,7 @@ interface GroupUserListProps {
   remainingUsers: any[];
   group: any;
   availableCarts: any[];
-  onAssignCart: (userId: string, cartId: string, groupUserId: string) => Promise<void>;
+  onAssignCart: (userId: string, cartId: string, groupUserId: string, sessionId: string) => Promise<void>;
   getActiveUserData: (userId: string) => any;
   isExpanded: boolean;
   onExpand: (expanded: boolean) => void;

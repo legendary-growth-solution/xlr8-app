@@ -26,10 +26,10 @@ const SessionCard = ({ startTime, name, numParticipants, maxParticipants, onView
                     <AccessTime sx={{ verticalAlign: 'middle', marginRight: 1 }} />
                     {new Date(startTime).toLocaleString()}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                {/* <Typography variant="body2" color="text.secondary">
                     <Group sx={{ verticalAlign: 'middle', marginRight: 1 }} />
                     {numParticipants ?? '-'}/{maxParticipants ?? '-'} Participants
-                </Typography>
+                </Typography> */}
             </CardContent>
             <CardActions sx={{ justifyContent: 'space-between', padding: '16px' }}>
                 <Button size="large" variant="contained" color="primary" onClick={onView}>

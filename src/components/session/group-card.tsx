@@ -23,7 +23,8 @@ interface GroupCardProps {
     groupId: string,
     userId: string,
     cartId: string,
-    groupUserId: string
+    groupUserId: string,
+    sessionId: string
   ) => Promise<void>;
   onGroupDeleted: (groupId: string, success: boolean) => void;
   sessionId: string;
@@ -114,7 +115,7 @@ export function GroupCard({
   };
 
   const handleAssignCart = async (userId: string, cartId: string, groupUserId: string) => {
-    await onAssignCart(group.id, userId, cartId, groupUserId);
+    await onAssignCart(group.id, userId, cartId, groupUserId, sessionId);
   };
 
   const mainUsers = localGroupUsers.length > 3 ? localGroupUsers.slice(0, 2) : localGroupUsers;

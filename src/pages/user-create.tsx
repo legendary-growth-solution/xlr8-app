@@ -23,11 +23,11 @@ export default function UserCreatePage() {
       newErrors.name = 'Name is required';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
+    // if (!formData.email.trim()) {
+    //   newErrors.email = 'Email is required';
+    // } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    //   newErrors.email = 'Invalid email format';
+    // }
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone is required';
@@ -94,8 +94,8 @@ export default function UserCreatePage() {
                   label="Email Address"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  error={!!errors.email}
+                  // required
+                  // error={!!errors.email}
                   helperText={errors.email}
                 />
               </Grid>

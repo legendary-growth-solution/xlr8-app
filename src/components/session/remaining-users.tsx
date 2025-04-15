@@ -9,7 +9,7 @@ interface RemainingUsersProps {
   users: GroupUserMappingWithUser[];
   groupId: string;
   cartAssignments: any[];
-  onAssignCart: (userId: string, cartId: string, groupUserId: string) => Promise<void>;
+  onAssignCart: (userId: string, cartId: string, groupUserId: string, sessionId: string) => Promise<void>;
   isExpanded: boolean;
   onExpand: (expanded: boolean) => void;
   availableCarts?: Cart[];

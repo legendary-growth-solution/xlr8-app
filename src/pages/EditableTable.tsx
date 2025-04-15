@@ -17,6 +17,8 @@ import {
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || console.error('API URI is not set');
+
 // Define types for lap data
 interface Lap {
   id: string;
@@ -52,7 +54,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId, groupI
     // Fetch lap data from the API
     if(groupId && userId){
     axios
-      .get<Lap[]>(`http://192.168.31.39:5000/api/sessions/${groupId}/${userId}`)
+      .get<Lap[]>(`${BASE_URL}/api/sessions/${groupId}/${userId}`)
       .then((response : any) => {
         setLapData(response.data.laps);
         setLoading(false);
@@ -72,7 +74,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId, groupI
   const handleSave = async () => {
     if (editRowId) {
       await axios
-        .put("http://192.168.31.39:5000/api/sessions/update-lap", { id: editRowId, updates: editedRow })
+        .put(`${BASE_URL}/api/sessions/update-lap`, { id: editRowId, updates: editedRow })
         .then(() => {
           setLapData((prevData) =>
             prevData.map((row) =>
@@ -88,7 +90,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId, groupI
 
   const handleDelete = async (id: string) => {
     await axios
-      .delete(`http://192.168.31.39:5000/api/sessions/delete-lap/${id}`)
+      .delete(`${BASE_URL}/api/sessions/delete-lap/${id}`)
       .then(() =>
         setLapData((prevData) => prevData.filter((row) => row.id !== id))
       )
@@ -103,7 +105,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ sessionId, userId, groupI
     };
 
     await axios
-      .post("http://192.168.31.39:5000/api/sessions/add-lap", newLapData)
+      .post(`${BASE_URL}/api/sessions/add-lap`, newLapData)
       .then((response) => {
         setLapData((prevData) => [...prevData, response.data]);
         setNewLap({
