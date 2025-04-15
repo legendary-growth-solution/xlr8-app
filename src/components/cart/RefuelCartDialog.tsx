@@ -30,7 +30,7 @@ export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: Refu
   const [notes, setNotes] = useState('');
   const [operation, setOperation] = useState<Operation>('refuel');
 
-  const fuelCapacity = cart?.fuelCapacity || 10;
+  const fuelCapacity = cart?.fuel_capacity || 10;
   const currentVolume = ((cart?.fuel || 0) * fuelCapacity) / 100;
 
   const handleSubmit = (e: React.FormEvent) => {
