@@ -1,9 +1,6 @@
 import {
   Box,
-  Card,
   Container,
-  Divider,
-  Grid,
   Paper,
   Stack,
   Typography,
@@ -14,7 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Iconify } from 'src/components/iconify';
 import { UserStatsSkeleton } from 'src/components/skeleton';
 import { userApi, UserStats } from 'src/services/api/user.api';
-import { formatTime } from 'src/utils/format-time';
+import UserStatsBox from 'src/components/UserStatsBox';
 
 export default function UserStatsPage() {
   const navigate = useNavigate();
@@ -114,58 +111,7 @@ export default function UserStatsPage() {
           </Typography>
         </Box>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Card sx={{ p: 3, height: '100%', borderRadius: 2 }}>
-              <Typography variant="h6" gutterBottom textAlign="center">
-                Performance Overview
-              </Typography>
-              <Divider sx={{ mb: 3 }} />
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Stack spacing={1} alignItems="center" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.neutral' }}>
-                    <Typography color="text.secondary" variant="subtitle2">
-                      Total Sessions
-                    </Typography>
-                    <Typography variant="h4">{stats.stats.total_sessions}</Typography>
-                  </Stack>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <Stack spacing={1} alignItems="center" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.neutral' }}>
-                    <Typography color="text.secondary" variant="subtitle2">
-                      Total Laps
-                    </Typography>
-                    <Typography variant="h4">{stats.stats.total_laps}</Typography>
-                  </Stack>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <Stack spacing={1} alignItems="center" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.neutral' }}>
-                    <Typography color="text.secondary" variant="subtitle2">
-                      Best Lap
-                    </Typography>
-                    <Typography variant="h4">
-                      {stats.stats.best_time ? formatTime(stats.stats.best_time) : '-'}
-                    </Typography>
-                  </Stack>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <Stack spacing={1} alignItems="center" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.neutral' }}>
-                    <Typography color="text.secondary" variant="subtitle2">
-                      Average Lap
-                    </Typography>
-                    <Typography variant="h4">
-                      {stats.stats.average_lap_time ? formatTime(stats.stats.average_lap_time) : '-'}
-                    </Typography>
-                  </Stack>
-                </Grid>
-              </Grid>
-            </Card>
-          </Grid>
-        </Grid>
+        <UserStatsBox stats={stats.stats} />
       </Container>
     </>
   );

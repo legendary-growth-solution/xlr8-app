@@ -113,8 +113,12 @@ export function fToNow(date: DatePickerFormat) {
 export function formatTime(time: number): string {
   if (!time) return '-';
   
-  const minutes = Math.floor(time / 60000);
-  const seconds = ((time % 60000) / 1000).toFixed(2);
+  const minutes = Math.floor(time / 60);
+  const seconds = minutes ? Math.floor(time % 60) : (time % 60).toFixed(2);
+  
+  if (!minutes && time >= 60) {
+    return time.toFixed(2);
+  }
   
   return `${minutes ? `${minutes}:` : ''}${minutes && Number(seconds) < 10 ? '0' : ''}${seconds}`;
 }
