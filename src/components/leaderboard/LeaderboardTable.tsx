@@ -100,6 +100,8 @@ export const LeaderboardTable = ({
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
                   color: theme.palette.text.primary,
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {entry.group_name}
@@ -134,7 +136,7 @@ export const LeaderboardTable = ({
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.best_lap_time ? formatLapTime(entry.best_lap_time) : '-'}
+                {entry.best_lap_time ? formatLapTime(Number(entry.best_lap_time)) : '-'}
               </td>
             </tr>
           ))}
