@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { alpha, useTheme } from '@mui/material/styles';
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
 import { api } from "src/api/api";
+import { formatLapTime } from "src/utils/timeFormatter";
 
 interface Lap {
   duration: number;
@@ -149,7 +150,8 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                               }}
                             />
                             <Chip
-                              label={`${user.duration}s`}
+                              // label={`${user?.lap_time?.toFixed(2)}s`}
+                              label={formatLapTime(user?.duration)}
                               color={index === 0 ? "warning" : "default"}
                               sx={{
                                 minWidth: '100px',

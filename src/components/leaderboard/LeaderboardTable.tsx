@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { Leaderboard } from 'src/types/session';
 import { RankCircle } from './RankCircle';
+import { formatLapTime } from 'src/utils/timeFormatter';
 
 type LeaderboardTableProps = {
   entries: Leaderboard[];
@@ -131,7 +132,7 @@ export const LeaderboardTable = ({
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.best_lap_time ? (`${entry.best_lap_time}s`) : '-'}
+                {entry.best_lap_time ? (formatLapTime(entry.best_lap_time)) : '-'}
               </td>
               {/* <td
                 style={{
