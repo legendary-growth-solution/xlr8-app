@@ -16,11 +16,11 @@ export default function AuthPage() {
     try {
       setLoading(true);
       setError('');
-      
+
       await login(code);
-      
+
       navigate('/');
-      
+
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -30,10 +30,10 @@ export default function AuthPage() {
 
   return (
     <Container maxWidth="sm">
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        justifyContent="center" 
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
         alignItems="center"
         minHeight="100vh"
       >
@@ -41,7 +41,7 @@ export default function AuthPage() {
           <Typography variant="h4" paragraph textAlign="center">
             Enter Access Code
           </Typography>
-          
+
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 5 }} textAlign="center">
             Please enter your access code to continue
           </Typography>
@@ -57,9 +57,9 @@ export default function AuthPage() {
                 error={!!error}
                 helperText={error}
                 inputProps={{
-                  style: { 
-                    textAlign: 'center', 
-                    fontSize: '1.5rem', 
+                  style: {
+                    textAlign: 'center',
+                    fontSize: '1.5rem',
                     letterSpacing: '0.5rem',
                     fontFamily: 'monospace'
                   }
@@ -81,4 +81,4 @@ export default function AuthPage() {
       </Box>
     </Container>
   );
-} 
+}

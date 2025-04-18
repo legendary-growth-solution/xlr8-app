@@ -8,7 +8,6 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
@@ -16,7 +15,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
 import { SessionLapTableSkeleton } from 'src/components/skeleton';
 import { api } from "src/api/api";
-import LapChip, { SessionBestChip, PersonalSessionBestChip } from 'src/components/lap-chip/LapChip';
+import { SessionBestChip, PersonalSessionBestChip } from 'src/components/lap-chip/LapChip';
 
 interface Lap {
   id: string;

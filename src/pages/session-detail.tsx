@@ -80,7 +80,7 @@ export default function SessionDetailPage() {
 
         <Card sx={{ p: 3, mb: 3 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               {session?.start_time && <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
                   Start Time
@@ -89,8 +89,10 @@ export default function SessionDetailPage() {
                   {new Date(session?.start_time).toLocaleString()}
                 </Typography>
               </Stack>}
+              </Grid>
 
-              {session?.end_time && <Stack marginTop={2} spacing={1}>
+              <Grid item xs={12} md={6}>
+              {session?.end_time && <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
                   End Time
                 </Typography>

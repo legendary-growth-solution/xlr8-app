@@ -20,25 +20,24 @@ export function SessionDetailSkeleton() {
 
       <Card sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <Stack spacing={1}>
               <Skeleton variant="text" width={100} height={20} />
               <Skeleton variant="text" width={150} height={30} />
-              <div style={{ marginTop: '10px' }}>
-                <Skeleton variant="text" width={100} height={20} />
-                <Skeleton variant="text" width={150} height={30} />
-              </div>
+            </Stack>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Stack spacing={1}>
+              <Skeleton variant="text" width={100} height={20} />
+              <Skeleton variant="text" width={150} height={30} />
             </Stack>
           </Grid>
         </Grid>
       </Card>
 
       {/* Leaderboard skeleton for inactive sessions */}
-      <Box sx={{ p: 3, minHeight: '50vh', bgcolor: 'background.default', position: 'relative' }}>
-        <Stack direction="row" alignItems="center" justifyContent="flex-end" mb={2}>
-          <Skeleton variant="rounded" width={120} height={30} />
-        </Stack>
-
+      <Box sx={{  bgcolor: 'background.default', position: 'relative' }}>
+      
         <Paper
           elevation={24}
           sx={{

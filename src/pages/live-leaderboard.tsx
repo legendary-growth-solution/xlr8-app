@@ -122,8 +122,8 @@ const LiveLeaderboard = ({ session_id, isSessionActive }: Props) => {
   return (
     <Box
       sx={{
-        p: 3,
-        minHeight: '100vh',
+        // p: 3,
+        // minHeight: '100vh',
         bgcolor: 'background.default',
         position: 'relative',
       }}

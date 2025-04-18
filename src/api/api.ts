@@ -57,7 +57,7 @@ export const api = {
               .then((res) => res.data),
           create: (sessionId: string, groupId: string, userId: string, data: object) =>
             axios
-              .get(
+              .post(
                 apiEndpoints.session.group.user.laps.lapsByUserId(sessionId, groupId, userId),
                 data
               )
