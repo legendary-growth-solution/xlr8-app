@@ -17,6 +17,8 @@ import InventoryLogsPage from 'src/pages/inventory-logs';
 import PasswordHashPage from 'src/pages/password-hash';
 import RegisterUserPage from 'src/pages/register-user';
 import { varAlpha } from 'src/theme/styles';
+import UserStatsPage from 'src/pages/user-stats';
+import UserHistoryPage from 'src/pages/user-history';
 
 // ----------------------------------------------------------------------
 
@@ -103,6 +105,8 @@ export function Router() {
 
         { path: 'users', element: <UserManagement /> },
         { path: 'users/create', element: <UserCreate /> },
+        { path: 'users/:userId/stats', element: <UserStatsPage /> },
+        { path: 'users/:userId/history', element: <UserHistoryPage /> },
 
         { path: 'active-session', element: <SessionActivePage /> },
         // { path: 'sessions', element: <SessionManagementPage /> },

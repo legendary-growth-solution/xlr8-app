@@ -174,6 +174,14 @@ export default function UserManagementPage() {
     setIsDeleting(true);
   };
 
+  const handleViewUserStats = (user: User) => {
+    navigate(`/users/${user.user_id}/stats`);
+  };
+
+  const handleViewUserHistory = (user: User) => {
+    navigate(`/users/${user.user_id}/history`);
+  };
+
   const searchTimeout = useRef<NodeJS.Timeout>();
   const currentSearch = useRef('');  // Add this to track current search value
 
@@ -256,6 +264,22 @@ useEffect(() => {
               }}
               actions={(row) => (
                 <Stack direction="row" spacing={1}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="primary"
+                    onClick={() => handleViewUserStats(row)}
+                  >
+                    Stats
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="secondary"
+                    onClick={() => handleViewUserHistory(row)}
+                  >
+                    History
+                  </Button>
                   <Button
                     variant="outlined"
                     size="small"

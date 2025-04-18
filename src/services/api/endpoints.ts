@@ -48,6 +48,8 @@ export const API_ENDPOINTS = {
     CREATE: createEndpoint('/users'),
     UPDATE: (id: string) => createEndpoint(`/users/${id}`),
     DELETE: (id: string) => createEndpoint(`/users/${id}`),
+    STATS: (id: string) => createEndpoint(`/users/${id}/stats`),
+    SESSIONS: (id: string) => createEndpoint(`/users/${id}/sessions`),
   },
   CARTS: {
     LIST: createEndpoint('/carts'),

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Alert, Box, Paper, Typography, CircularProgress, Button } from '@mui/material';
+import { Alert, Box, Paper, Typography, Button } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
 import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
@@ -44,9 +44,10 @@ import { Leaderboard } from 'src/types/session';
 
 interface Props {
   session_id?: string;
+  isSessionActive?: boolean;
 }
 
-const LiveLeaderboard = ({ session_id }: Props) => {
+const LiveLeaderboard = ({ session_id, isSessionActive }: Props) => {
   const theme = useTheme();
   const [leaderboard, setLeaderboard] = useState<Leaderboard[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -60,16 +61,19 @@ const LiveLeaderboard = ({ session_id }: Props) => {
       setLoading(true);
       api.session
         .getSessionLeaderboard(session_id ?? '')
-        .then((res) =>
+        .then((res) => {
           setLeaderboard(
             res?.leaderboard?.map((item: Leaderboard, index: number) => ({
               ...item,
               rank: index + 1,
+              total_laps: item.total_laps,
             }))
-          )
-        )
+          );
+          setLoading(false);
+        })
         .catch((err) => {
           setError(err?.response?.message);
+          setLoading(false);
         });
     } catch (err) {
       if (err instanceof Error) {
@@ -77,8 +81,6 @@ const LiveLeaderboard = ({ session_id }: Props) => {
       } else {
         setError('An unexpected error occurred while loading the leaderboard');
       }
-    } finally {
-      setLoading(false);
     }
   }, [session_id]);
 
@@ -99,14 +101,6 @@ const LiveLeaderboard = ({ session_id }: Props) => {
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress size={60} />
-      </Box>
-    );
-  }
 
   if (error) {
     return (
@@ -186,7 +180,11 @@ const LiveLeaderboard = ({ session_id }: Props) => {
 
         {/* <SessionInfo name={sessionName} id={sessionId} /> */}
 
-        <LeaderboardTable entries={leaderboard} />
+        <LeaderboardTable 
+          entries={leaderboard} 
+          loading={loading} 
+          isInactiveSession={!isSessionActive}
+        />
 
         <LeaderboardFooter />
       </Paper>

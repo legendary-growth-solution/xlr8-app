@@ -11,7 +11,7 @@ export const api = {
       axios.get(apiEndpoints.session.sessionById(sessionId)).then((res) => res.data),
     getCompletedSessions: () => axios.get(apiEndpoints.session.completedSessions).then((res) => res.data),
     getSessionLaps: (sessionId: string) =>
-      axios.post(apiEndpoints.session.sessionLaps(sessionId)).then((res) => res.data),
+      axios.get(apiEndpoints.session.sessionLaps(sessionId)).then((res) => res.data),
     getSessionLeaderboard: (sessionId: string) =>
       axios.get(apiEndpoints.session.sessionLeaderboard(sessionId)).then((res) => res.data),
     group: {

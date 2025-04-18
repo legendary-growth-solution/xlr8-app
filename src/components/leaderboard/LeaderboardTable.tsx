@@ -4,9 +4,12 @@ import { Box, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { Leaderboard } from 'src/types/session';
 import { RankCircle } from './RankCircle';
+import { LeaderboardSkeleton } from '../skeleton';
 
 type LeaderboardTableProps = {
   entries: Leaderboard[];
+  loading?: boolean;
+  isInactiveSession?: boolean;
   // onUserClick?: (userId: string, groupId: string) => void;
 };
 
@@ -25,14 +28,23 @@ const getRankColor = (rank: number, theme: any, primary: boolean = false) => {
 
 export const LeaderboardTable = ({
   entries,
+  loading = false,
+  isInactiveSession = false,
   // onUserClick,
 }: LeaderboardTableProps) => {
   const theme = useTheme();
 
+  if (loading) {
+    return <LeaderboardSkeleton />;
+  }
+
   if (entries?.length === 0) {
     return (
       <Box display="flex" justifyContent="center" p={4}>
-        <Typography variant="h5" color="text.secondary">
+        <Typography 
+          variant="h5" 
+          color={isInactiveSession ? "text.disabled" : "text.secondary"}
+        >
           No active racers found
         </Typography>
       </Box>
@@ -49,6 +61,7 @@ export const LeaderboardTable = ({
               'Name',
               'Best Lap',
               'Best Lap Time',
+              'Total Laps',
             ]
               .filter(Boolean)
               .map((header) => (
@@ -83,12 +96,18 @@ export const LeaderboardTable = ({
                   padding: '20px',
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                  color: theme.palette.text.primary,
                 }}
                 // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {entry.user_name}
               </td>
-              <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
+              <td style={{ 
+                padding: '20px', 
+                fontSize: '1.5rem', 
+                textAlign: 'center',
+                color: theme.palette.text.primary,
+              }}>
                 {entry.best_lap_number}
               </td>
               <td
@@ -97,37 +116,20 @@ export const LeaderboardTable = ({
                   fontSize: '1.5rem',
                   textAlign: 'center',
                   color: entry.best_lap_time
-                    ? theme.palette.success.main
-                    : theme.palette.text.secondary,
+                      ? theme.palette.success.main
+                      : theme.palette.text.secondary,
                 }}
               >
                 {entry.best_lap_time ? (`${entry.best_lap_time}s`) : '-'}
               </td>
-              {/* <td
-                style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  textAlign: 'center',
-                  color: entry.endTime ? theme.palette.info.main : theme.palette.text.secondary,
-                }}
-              >
-                {getTimeRemaining(entry)}
+              <td style={{ 
+                padding: '20px', 
+                fontSize: '1.5rem', 
+                textAlign: 'center',
+                color: 'inherit',
+              }}>
+                {entry.total_laps}
               </td>
-              <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
-                <Chip
-                  label={entry.raceStatus.replace('_', ' ')}
-                  style={{
-                    backgroundColor: {
-                      not_started: theme.palette.grey[500],
-                      in_progress: theme.palette.info.main,
-                      completed: theme.palette.success.main,
-                      cancelled: theme.palette.error.main,
-                    }[entry.raceStatus],
-                    padding: '10px !important',
-                    color: theme.palette.common.white,
-                  }}
-                />
-              </td> */}
             </tr>
           ))}
         </tbody>

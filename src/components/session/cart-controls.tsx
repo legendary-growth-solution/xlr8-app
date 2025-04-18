@@ -68,10 +68,16 @@ export function CartControls({
     [user?.race_active, user?.race_end_time]
   );
 
+  const isPaused = useMemo(() => {
+    if (user?.time_in_minutes && user?.total_active_seconds !== undefined) {
+      const totalAllottedSeconds = user.time_in_minutes * 60;
+      return !user.race_active && (user.total_active_seconds < totalAllottedSeconds) && user?.total_active_seconds !== 0
+    }
+    return false;
+  }, [user?.time_in_minutes, user?.total_active_seconds, user?.race_active]);
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${Math.ceil(seconds % 60).toString().padStart(2, '0')}`;
   };
 
   const handleOpenCartMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -155,10 +161,10 @@ export function CartControls({
   };
 
   useEffect(() => {
-    if (user?.total_remaining_seconds !== undefined) {
-      setTimeLeft(user.total_remaining_seconds);
+    if (user?.total_active_seconds !== undefined && user?.time_in_minutes !== undefined) {
+      setTimeLeft(user.time_in_minutes * 60 - user.total_active_seconds);
     }
-  }, [user?.total_remaining_seconds]);
+  }, [user?.total_active_seconds, user?.time_in_minutes]);
 
   useEffect(() => {
     if (optimisticCartId && user?.cart_id === optimisticCartId) {
@@ -194,6 +200,11 @@ export function CartControls({
       }, 1000);
     } else if (!isRaceActive && user?.total_remaining_seconds !== undefined) {
       setTimeLeft(user.total_remaining_seconds);
+    } else if (isPaused && user?.time_in_minutes && user?.total_active_seconds !== undefined) {
+      // If paused, calculate remaining time from time_in_minutes and total_active_seconds
+      const totalAllottedSeconds = user.time_in_minutes * 60;
+      const remainingSeconds = Math.max(0, totalAllottedSeconds - user.total_active_seconds);
+      setTimeLeft(remainingSeconds);
     }
 
     return () => {
@@ -204,6 +215,9 @@ export function CartControls({
     isRaceActive,
     raceCompleted,
     user?.total_remaining_seconds,
+    user?.time_in_minutes,
+    user?.total_active_seconds,
+    isPaused,
     handleManageUserRace,
     group_id,
     user?.user_id,
@@ -215,7 +229,6 @@ export function CartControls({
   }, [carts, user?.cart_id, optimisticCartId]);
 
   const showAsAssigned = !!user?.cart_id || !!optimisticCartId;
-  console.log(raceCompleted, 'raceCompleted', user?.user_name);
   return (
     <>
       <Stack direction="row" spacing={1} alignItems="center">
@@ -362,7 +375,7 @@ export function CartControls({
                 bgcolor: 'background.neutral',
               }}
             />
-          ) : !user?.race_end_time || user?.race_end_time === '' ? (
+          ) :( !user?.race_end_time || user?.race_end_time === '') && !isPaused  ? (
             <IconButton
               size="small"
               onClick={() => {
@@ -488,31 +501,36 @@ export function CartControls({
                 )}
 
               {!user?.race_active && user?.race_end_time === '' && timeLeft > 0 && (
-                <Tooltip title="Resume timer">
-                  <IconButton
-                    className="pause-button"
-                    size="small"
-                    onClick={() => handleManageUserRace(group_id, user?.user_id, 'start')}
-                    sx={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      opacity: 0,
-                      transition: 'opacity 0.2s',
-                      pointerEvents: 'none',
-                      bgcolor: 'success.main',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'success.dark',
-                      },
-                      width: 24,
-                      height: 24,
-                    }}
-                  >
-                    <Iconify icon="mdi:play" width={16} />
-                  </IconButton>
-                </Tooltip>
+                <>
+                  <Tooltip title="Resume timer">
+                    <IconButton
+                      className="pause-button"
+                      size="small"
+                      onClick={() => handleManageUserRace(group_id, user?.user_id, 'start')}
+                      sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        opacity: 0,
+                        transition: 'opacity 0.2s',
+                        pointerEvents: 'none',
+                        bgcolor: 'success.main',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'success.dark',
+                        },
+                        width: 24,
+                        height: 24,
+                      }}
+                    >
+                      <Iconify icon="mdi:play" width={16} />
+                    </IconButton>
+                  </Tooltip>
+                  <Typography variant="body2" sx={{ position: 'absolute', bottom: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white' }}>
+                    {formatTime(timeLeft)}
+                  </Typography>
+                </>
               )}
             </Box>
           )}

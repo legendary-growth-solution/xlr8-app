@@ -4,6 +4,7 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import { useEffect } from 'react';
 
 type ZoomControlsProps = {
   zoom: number;
@@ -14,6 +15,20 @@ type ZoomControlsProps = {
 
 export const ZoomControls = ({ zoom, isFullscreen, onZoomChange, onFullscreenToggle }: ZoomControlsProps) => {
   const theme = useTheme();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'f' || event.key === 'F') {
+        onFullscreenToggle();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onFullscreenToggle]);
 
   return (
     <Box
@@ -62,7 +77,8 @@ export const ZoomControls = ({ zoom, isFullscreen, onZoomChange, onFullscreenTog
         onClick={onFullscreenToggle}
         size="small"
       >
-        {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+        <FullscreenIcon />
+        <span style={{ fontSize: '12px', color: 'gray', fontStyle: 'italic', marginLeft: '4px' }}>( <strong>F</strong> to toggle )</span>
       </IconButton>
     </Box>
   );
