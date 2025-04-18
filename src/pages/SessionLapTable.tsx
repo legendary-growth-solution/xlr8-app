@@ -14,6 +14,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { alpha, useTheme } from '@mui/material/styles';
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
+import { formatLapTime } from "src/utils/timeFormatter";
 
 interface Lap {
   id: string;
@@ -138,7 +139,8 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                               }}
                             />
                             <Chip
-                              label={`${user?.lap_time?.toFixed(2)}s`}
+                              // label={`${user?.lap_time?.toFixed(2)}s`}
+                              label={formatLapTime(user?.lap_time)}
                               color={index === 0 ? "warning" : "default"}
                               sx={{
                                 minWidth: '100px',

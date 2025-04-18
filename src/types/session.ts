@@ -86,7 +86,7 @@ export type UserRaceStatus = 'pause' | 'end' | 'start';
 export interface Leaderboard {
   rank: number;
   best_lap_number: number;
-  best_lap_time: string | number;
+  best_lap_time:  number;
   user_id: string;
   user_name: string;
 }
