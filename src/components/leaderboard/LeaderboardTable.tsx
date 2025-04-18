@@ -47,6 +47,8 @@ export const LeaderboardTable = ({
             {[
               'Rank',
               'Name',
+              'Group',
+              'Total Laps',
               'Best Lap',
               'Best Lap Time',
             ]
@@ -84,11 +86,39 @@ export const LeaderboardTable = ({
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
                 }}
-                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {entry.user_name}
               </td>
-              <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
+              <td
+                style={{
+                  padding: '20px',
+                  fontSize: '1.5rem',
+                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                }}
+              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+              >
+                {entry.group_name}
+              </td>
+              <td
+                style={{
+                  padding: '20px',
+                  fontSize: '1.5rem',
+                  textAlign: 'center',
+                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                }}
+              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+              >
+                {entry.total_laps}
+              </td>
+              <td style={{
+                padding: '20px',
+                fontSize: '1.5rem',
+                textAlign: 'center',
+                color: entry.best_lap_time
+                  ? theme.palette.success.main
+                  : theme.palette.text.secondary,
+              }}>
                 {entry.best_lap_number}
               </td>
               <td

@@ -50,7 +50,7 @@ const LiveLeaderboard = ({ session_id }: Props) => {
   const theme = useTheme();
   const [leaderboard, setLeaderboard] = useState<Leaderboard[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const leaderboardRef = useRef<HTMLDivElement>(null);
@@ -60,16 +60,18 @@ const LiveLeaderboard = ({ session_id }: Props) => {
       setLoading(true);
       api.session
         .getSessionLeaderboard(session_id ?? '')
-        .then((res) =>
+        .then((res) => {
+          setLoading(false);
           setLeaderboard(
             res?.leaderboard?.map((item: Leaderboard, index: number) => ({
               ...item,
               rank: index + 1,
             }))
           )
-        )
+        })
         .catch((err) => {
           setError(err?.response?.message);
+          setLoading(false);
         });
     } catch (err) {
       if (err instanceof Error) {
@@ -78,7 +80,6 @@ const LiveLeaderboard = ({ session_id }: Props) => {
         setError('An unexpected error occurred while loading the leaderboard');
       }
     } finally {
-      setLoading(false);
     }
   }, [session_id]);
 
@@ -102,7 +103,7 @@ const LiveLeaderboard = ({ session_id }: Props) => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
         <CircularProgress size={60} />
       </Box>
     );
@@ -128,8 +129,8 @@ const LiveLeaderboard = ({ session_id }: Props) => {
   return (
     <Box
       sx={{
-        p: 3,
-        minHeight: '100vh',
+        // p: 2,
+        // minHeight: '100vh',
         bgcolor: 'background.default',
         position: 'relative',
       }}
@@ -183,8 +184,6 @@ const LiveLeaderboard = ({ session_id }: Props) => {
         >
           Leaderboard
         </Typography>
-
-        {/* <SessionInfo name={sessionName} id={sessionId} /> */}
 
         <LeaderboardTable entries={leaderboard} />
 

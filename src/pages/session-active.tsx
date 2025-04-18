@@ -101,16 +101,6 @@ export default function SessionActivePage() {
       });
   }, []);
 
-  useEffect(() => {
-    getCarts();
-
-    const intervalId = setInterval(() => {
-      getCarts();
-    }, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [getCarts]);
-
   const getPlans = useCallback(() => {
     api.plan.getPlans()
       .then((res) => {
@@ -315,6 +305,7 @@ export default function SessionActivePage() {
     },
     [session?.session_id]
   );
+
   const handleCreateGroup = useCallback(
     (name: string) => {
       if (session?.session_id) {
@@ -346,6 +337,7 @@ export default function SessionActivePage() {
     },
     [session?.session_id]
   );
+
   const handleDeleteGroup = useCallback(
     (group_id: string) => {
       if (session?.session_id) {
@@ -427,6 +419,7 @@ export default function SessionActivePage() {
     },
     [session?.session_id]
   );
+
   const handleManageUserRace = useCallback(
     (group_id: string, user_id: string, status: UserRaceStatus) => {
       if (!session?.session_id) return Promise.reject(new Error('No active session'));
@@ -541,6 +534,7 @@ export default function SessionActivePage() {
     },
     [session]
   );
+
   const handleReviewLink = () => {
     showToast.error('Feature under development!');
   };
@@ -619,7 +613,7 @@ export default function SessionActivePage() {
 
         <Card sx={{ p: 3, mb: 3 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               {session?.start_time && (
                 <Stack spacing={1}>
                   <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
@@ -630,7 +624,9 @@ export default function SessionActivePage() {
                   </Typography>
                 </Stack>
               )}
+            </Grid>
 
+            <Grid item xs={12} md={6}>
               {session?.end_time && (
                 <Stack spacing={1}>
                   <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>

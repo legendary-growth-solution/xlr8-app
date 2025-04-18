@@ -8,28 +8,26 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Typography,
   Chip,
 } from "@mui/material";
-import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { alpha, useTheme } from '@mui/material/styles';
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
+import { api } from "src/api/api";
 
 interface Lap {
-  id: string;
-  lap_time: number;
-  lap_number: number;
-  timestamp: string;
-  last_ts: string;
-  user_id: string;
+  duration: number;
   user_name: string;
+  lap_number: number;
+  lap_id: string;
 }
 
 interface GroupedLap {
   lap_number: number;
   users: {
     user_name: string;
-    lap_time: number;
+    duration: number;
   }[];
 }
 
@@ -55,62 +53,75 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const theme = useTheme();
 
-  useEffect(() => {
-    if (sessionId) {
-      axios
-        .get<Lap[]>(`http://127.0.0.1:5000/api/sessions/lap-data/${sessionId}`)
-        .then((response: any) => {
-          const laps = response.data.laps;
-          const grouped = Object.values(
-            laps.reduce((acc: any, lap: Lap) => {
-              if (!acc[lap.lap_number]) {
-                acc[lap.lap_number] = {
-                  lap_number: lap.lap_number,
-                  users: [],
-                };
-              }
-              acc[lap.lap_number].users.push({
-                user_name: lap.user_name,
-                lap_time: lap.lap_time,
-              });
-              return acc;
-            }, {})
-          ).map((lap: any) => ({
-            ...lap,
-            users: lap.users.sort((a: any, b: any) => a.lap_time - b.lap_time)
-          }));
-          setGroupedLapData(grouped as GroupedLap[]);
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.error("Error fetching lap data:", error);
-          setLoading(false);
+  const getSessionLapData = useCallback(() => {
+    setLoading(true);
+    api.session.getSessionLaps(sessionId)
+      .then((response: any) => {
+        const laps = response.laps;
+        // Group laps by lap_number and sort users by duration
+        const groupedByLapNumber = laps.reduce((acc: { [key: number]: GroupedLap }, lap: Lap) => {
+          if (!acc[lap.lap_number]) {
+            acc[lap.lap_number] = {
+              lap_number: lap.lap_number,
+              users: [],
+            };
+          }
+          acc[lap.lap_number].users.push({
+            user_name: lap.user_name,
+            duration: lap.duration,
+          });
+          return acc;
+        }, {});
+
+        // Sort users within each lap by duration
+        (Object.values(groupedByLapNumber) as GroupedLap[]).forEach((group: GroupedLap) => {
+          group.users.sort((a, b) => a.duration - b.duration);
         });
-    }
+
+        // Convert to array and sort by lap number
+        const sortedGroups = (Object.values(groupedByLapNumber) as GroupedLap[])
+          .sort((a, b) => a.lap_number - b.lap_number);
+        setGroupedLapData(sortedGroups);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching lap data:", error);
+        setLoading(false);
+      });
   }, [sessionId]);
+
+  useEffect(() => {
+    getSessionLapData();
+  }, [getSessionLapData]);
 
   return (
     <Box sx={{ width: '100%', overflowX: 'auto' }}>
       {loading ? (
-        <CircularProgress />
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress />
+        </Box>
       ) : (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Lap Number</TableCell>
+                <TableCell>Lap</TableCell>
                 <TableCell>Racers</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {groupedLapData.map((lap) => (
                 <TableRow key={lap.lap_number}>
-                  <TableCell>{lap.lap_number}</TableCell>
+                  <TableCell>
+                    <Typography variant="h6">
+                      {lap.lap_number + 1}
+                    </Typography>
+                  </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {lap.users.map((user, index) => (
                         <Box
-                          key={index}
+                          key={`${lap.lap_number}-${index}`}
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
@@ -122,15 +133,15 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                           }}
                         >
                           <RankCircle rank={index + 1} />
-                          <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                          <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
                             gap: 1,
                             flex: 1,
                             justifyContent: 'space-between'
                           }}>
                             <Chip
-                              label={user?.user_name}
+                              label={user.user_name}
                               variant="outlined"
                               sx={{
                                 flex: 1,
@@ -138,7 +149,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                               }}
                             />
                             <Chip
-                              label={`${user?.lap_time?.toFixed(2)}s`}
+                              label={`${user.duration}s`}
                               color={index === 0 ? "warning" : "default"}
                               sx={{
                                 minWidth: '100px',
