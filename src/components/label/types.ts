@@ -19,3 +19,12 @@ export interface LabelProps extends BoxProps {
   endIcon?: React.ReactElement | null;
   startIcon?: React.ReactElement | null;
 }
+
+export interface ToastOptions {
+  description?: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  duration?: number;
+}

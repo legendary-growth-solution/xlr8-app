@@ -20,6 +20,7 @@ export interface Column {
   format?: (value: any, row?: any) => string | JSX.Element;
   noWrap?: boolean;
   sx?: object;
+  onClick?: (value: any) => void;
 }
 
 interface DataTableProps {
@@ -172,7 +173,9 @@ export default function DataTable({
                           ...column.sx,
                         }}
                       >
-                        {column.format ? column.format(value, row) : value}
+                        <Box onClick={() => column.onClick?.(value)} sx={{ cursor: column.onClick ? 'pointer' : 'default' }}>
+                          {column.format ? column.format(value, row) : value}
+                        </Box>
                       </TableCell>
                     );
                   })}

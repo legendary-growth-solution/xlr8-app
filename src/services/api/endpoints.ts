@@ -45,6 +45,7 @@ export const API_ENDPOINTS = {
   USERS: {
     LIST: createEndpoint('/users'),
     DETAIL: (id: string) => createEndpoint(`/api/users/${id}`),
+    STATS: (id: string) => createEndpoint(`/user_stats/${id}`),
     CREATE: createEndpoint('/users'),
     UPDATE: (id: string) => createEndpoint(`/users/${id}`),
     DELETE: (id: string) => createEndpoint(`/users/${id}`),
@@ -74,6 +75,7 @@ export const API_ENDPOINTS = {
     generateBill: (groupId: string) => `/api/billing/groups/${groupId}/generate`,
     getBillingData: (groupId: string) => `/api/billing/groups/${groupId}/data`,
     allInvoices: createEndpoint('/api/billing/all-invoices'),
+    // allInvoices: createEndpoint('/billings'),
     deleteBill: (groupId: string) => `/api/billing/groups/${groupId}/delete-bill`,
   },
   INVENTORY: {

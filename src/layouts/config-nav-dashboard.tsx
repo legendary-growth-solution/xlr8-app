@@ -69,11 +69,11 @@ const navConfig = [
     path: '/timeslots',
     icon: <Iconify icon="solar:clock-circle-bold" />,
   },
-  {
-    title: 'Billings',
-    path: '/billings',
-    icon: <Iconify icon="solar:bill-list-bold-duotone" />,
-  },
+  // {
+  //   title: 'Billings',
+  //   path: '/billings',
+  //   icon: <Iconify icon="solar:bill-list-bold-duotone" />,
+  // },
   {
     title: 'Inventory',
     path: '/inventory',

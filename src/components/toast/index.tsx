@@ -1,13 +1,6 @@
 import { Toaster, toast } from 'sonner';
+import { ToastOptions } from '../label';
 
-interface ToastOptions {
-  description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-  duration?: number;
-}
 
 const createToast = (type: 'error' | 'success' | 'info' | 'warning') => 
   (message: string, options?: ToastOptions) => 

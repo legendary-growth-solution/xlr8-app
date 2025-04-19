@@ -1,13 +1,15 @@
 import { LoadingButton } from '@mui/lab';
-import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { Iconify } from 'src/components/iconify';
 import DataTable from 'src/components/table/DataTable';
+import { showToast } from 'src/components/toast';
 import { userApi } from 'src/services/api/user.api';
 import { User } from 'src/types/user';
+import { formatLapTime } from 'src/utils/timeFormatter';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -20,8 +22,11 @@ export default function UserManagementPage() {
   const [editLoading, setEditLoading] = useState(false);
   const [editData, setEditData] = useState<Partial<User>>({});
   const [openEdit, setOpenEdit] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -54,14 +59,24 @@ export default function UserManagementPage() {
       label: 'Email',
       minWidth: 200,
       noWrap: true,
-      sx: { whiteSpace: 'nowrap' },
+      sx: { whiteSpace: 'nowrap', cursor: 'pointer' },
+      format: (value: string) => value,
+      onClick: (value: string) => {
+        navigator.clipboard.writeText(value);
+        showToast.success('Email copied to clipboard');
+      }
     },
     {
       id: 'phone',
       label: 'Phone',
       minWidth: 130,
       noWrap: true,
-      sx: { whiteSpace: 'nowrap' },
+      sx: { whiteSpace: 'nowrap', cursor: 'pointer' },
+      format: (value: string) => value,
+      onClick: (value: string) => {
+        navigator.clipboard.writeText(value);
+        showToast.success('Phone number copied to clipboard');
+      }
     },
     // {
     //   id: 'dob',
@@ -154,6 +169,22 @@ export default function UserManagementPage() {
       console.error('Error updating user:', error);
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const handleOpenView = async (user: User) => {
+    showToast.error('Feature under development!');
+    return;
+    setSelectedUser(user);
+    setOpenView(true);
+    setStatsLoading(true);
+    try {
+      const response = await userApi.getStats(user.user_id);
+      setUserStats(response);
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -259,6 +290,13 @@ useEffect(() => {
                   <Button
                     variant="outlined"
                     size="small"
+                    onClick={() => handleOpenView(row)}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
                     onClick={() => handleOpenEdit(row)}
                   >
                     Edit
@@ -318,6 +356,46 @@ useEffect(() => {
           <LoadingButton loading={editLoading} onClick={handleEditUser} variant="contained">
             Save Changes
           </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openView} onClose={() => setOpenView(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>User Details</DialogTitle>
+        <DialogContent>
+          {statsLoading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Stack spacing={2} mt={2}>
+              <Typography variant="subtitle1">
+                <strong>Name:</strong> {selectedUser?.name}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Email:</strong> {selectedUser?.email}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Phone:</strong> {selectedUser?.phone}
+              </Typography>
+              
+              <Typography variant="h6" sx={{ mt: 2 }}>User Stats</Typography>
+              <Typography variant="subtitle1">
+                <strong>Best Time:</strong> {formatLapTime(userStats?.best_time)}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Total Laps:</strong> {userStats?.total_laps || 0}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Total Sessions:</strong> {userStats?.total_sessions || 0}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Total Time:</strong> {userStats?.total_time ? (userStats.total_time.toString().length >= 4 ? ((userStats.total_time / 100) / 60).toFixed(2) : (userStats.total_time / 60).toFixed(2)) : 0} minutes
+              </Typography>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenView(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 

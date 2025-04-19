@@ -30,6 +30,11 @@ export const userApi = {
     return response.data;
   },
 
+  getStats: async (id: string): Promise<any> => {
+    const response = await apiClient.get(API_ENDPOINTS.USERS.STATS(id));
+    return response.data;
+  },
+
   create: async (data: Partial<User>): Promise<User> => {
     const response = await apiClient.post(API_ENDPOINTS.USERS.CREATE, data);
     return response.data;

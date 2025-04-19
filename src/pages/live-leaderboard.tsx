@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { Alert, Box, Paper, Typography, CircularProgress, Button } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
-import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
-import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
-import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from 'src/api/api';
+import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
+import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
+import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
+import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
 import { Leaderboard } from 'src/types/session';
 
 // const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
@@ -79,7 +79,6 @@ const LiveLeaderboard = ({ session_id }: Props) => {
       } else {
         setError('An unexpected error occurred while loading the leaderboard');
       }
-    } finally {
     }
   }, [session_id]);
 
