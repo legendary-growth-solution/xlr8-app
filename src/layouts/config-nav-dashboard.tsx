@@ -70,10 +70,15 @@ const navConfig = [
     icon: <Iconify icon="solar:clock-circle-bold" />,
   },
   {
-    title: 'Billings',
-    path: '/billings',
-    icon: <Iconify icon="solar:bill-list-bold-duotone" />,
+    title: 'Bookings',
+    path: '/bookings',
+    icon: <Iconify icon="solar:calendar-bold-duotone" />,
   },
+  // {
+  //   title: 'Billings',
+  //   path: '/billings',
+  //   icon: <Iconify icon="solar:bill-list-bold-duotone" />,
+  // },
   {
     title: 'Inventory',
     path: '/inventory',

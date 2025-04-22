@@ -54,7 +54,7 @@ export const LeaderboardTable = ({
       <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
         <thead>
           <tr>
-            {['Rank', 'Name', 'Group', 'Total Laps', 'Best Lap', 'Best Lap Time']
+            {['Rank', 'Name', 'Group', 'Total Laps', 'Best Lap', 'Best Lap Time', 'Cart Type']
               .filter(Boolean)
               .map((header) => (
                 <th
@@ -137,6 +137,16 @@ export const LeaderboardTable = ({
                 }}
               >
                 {entry.best_lap_time ? formatLapTime(Number(entry.best_lap_time)) : '-'}
+              </td>
+              <td
+                style={{
+                  padding: '20px',
+                  fontSize: '1.5rem',
+                  textAlign: 'center',
+                  color: theme.palette.text.primary,
+                }}
+              >
+                {entry?.cart_variant ? `Level ${entry?.cart_variant}` : ''}
               </td>
             </tr>
           ))}

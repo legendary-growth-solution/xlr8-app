@@ -45,6 +45,7 @@ export const LiveLeaderboard = lazy(() => import('src/pages/live-leaderboard'));
 // export const CartMaintenanceLogsPage = lazy(() => import('src/pages/cart-maintenance-logs'));
 export const CartMaintenanceLogsPage = lazy(() => import('src/pages/maintenance-logs'));
 export const BillingsPage = lazy(() => import('src/pages/billings'));
+export const BookingsPage = lazy(() => import('src/pages/bookings'));
 // ----------------------------------------------------------------------
 
 const renderFallback = (
@@ -117,6 +118,7 @@ export function Router() {
         { path: 'carts', element: <CartManagementPage /> },
         { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
         { path: 'timeslots', element: <TimeSlots /> },
+        { path: 'bookings', element: <BookingsPage /> },
         { path: 'leaderboard', element: <LiveLeaderboard /> },
         { path: 'carts/lap-logs', element: <CartLapLogsPage /> },
         { path: 'carts/maintenance-logs', element: <CartMaintenanceLogsPage /> },

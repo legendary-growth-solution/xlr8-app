@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-shadow */
 import { Box, Skeleton } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 
@@ -21,6 +22,7 @@ export const LeaderboardSkeleton = ({
               'Best Lap',
               'Best Lap Time',
               'Total Laps',
+              'Cart Type',
             ]
               .filter(Boolean)
               .map((header) => (
@@ -47,46 +49,19 @@ export const LeaderboardSkeleton = ({
                 backgroundColor: alpha(theme.palette.text.primary, 0.05),
               }}
             >
-              <td style={{ padding: '20px', textAlign: 'center' }}>
-                <Skeleton 
-                  variant="circular" 
-                  width={40} 
-                  height={40} 
-                />
-              </td>
-              <td style={{ padding: '20px' }}>
-                <Skeleton 
-                  variant="text" 
-                  sx={{ 
-                    fontSize: '1.5rem', 
-                    width: '80%', 
-                  }} 
-                />
-              </td>
-              <td style={{ padding: '20px', textAlign: 'center' }}>
-                <Skeleton 
-                  variant="text" 
-                  sx={{ 
-                    fontSize: '1.5rem', 
-                }} 
-                />
-              </td>
-              <td style={{ padding: '20px', textAlign: 'center' }}>
-                <Skeleton 
-                  variant="text" 
-                  sx={{ 
-                    fontSize: '1.5rem', 
-                  }} 
-                />
-              </td>
-              <td style={{ padding: '20px', textAlign: 'center' }}>
-                <Skeleton 
-                  variant="text" 
-                  sx={{ 
-                    fontSize: '1.5rem', 
-                  }} 
-                />
-              </td>
+              {[...Array(6)].map((_, cellIndex) => (
+                <td key={cellIndex} style={{ padding: '20px', textAlign: cellIndex === 0 ? 'center' : 'center' }}>
+                  <Skeleton 
+                    variant={cellIndex === 0 ? "circular" : "text"} 
+                    width={cellIndex === 0 ? 40 : undefined} 
+                    height={cellIndex === 0 ? 40 : undefined} 
+                    sx={{ 
+                      fontSize: '1.5rem', 
+                      width: cellIndex === 1 ? '80%' : undefined, 
+                    }} 
+                  />
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
