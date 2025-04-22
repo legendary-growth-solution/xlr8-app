@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://127.0.0.1:5000'
+export const BASE_URL = 'http://127.0.0.1:5000';
 // export const BASE_URL = import.meta.env.VITE_API_BASE_URL || console.error('API URI is not set');
 
 export const createEndpoint = (path: string) => `${BASE_URL}${path}`;
@@ -52,7 +52,6 @@ export const API_ENDPOINTS = {
   USERS: {
     LIST: createEndpoint('/users'),
     DETAIL: (id: string) => createEndpoint(`/api/users/${id}`),
-    STATS: (id: string) => createEndpoint(`/user_stats/${id}`),
     CREATE: createEndpoint('/users'),
     UPDATE: (id: string) => createEndpoint(`/users/${id}`),
     DELETE: (id: string) => createEndpoint(`/users/${id}`),
