@@ -49,6 +49,7 @@ export const LeaderboardTable = ({
               'Rank',
               'Name',
               'Group',
+              'Cart',
               'Total Laps',
               'Best Lap',
               'Best Lap Time',
@@ -100,6 +101,16 @@ export const LeaderboardTable = ({
               // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {entry.group_name}
+              </td>
+              <td
+                style={{
+                  padding: '20px',
+                  fontSize: '1.5rem',
+                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                }}
+              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+              >
+                {`L${entry.cart_type}`}
               </td>
               <td
                 style={{

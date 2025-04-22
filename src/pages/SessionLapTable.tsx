@@ -115,7 +115,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                 <TableRow key={lap.lap_number}>
                   <TableCell>
                     <Typography variant="h6">
-                      {lap.lap_number + 1}
+                      {lap.lap_number}
                     </Typography>
                   </TableCell>
                   <TableCell>

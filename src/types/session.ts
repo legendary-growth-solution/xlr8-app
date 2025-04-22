@@ -91,4 +91,5 @@ export interface Leaderboard {
   best_lap_time:  number;
   user_id: string;
   user_name: string;
+  cart_type: string | number;
 }

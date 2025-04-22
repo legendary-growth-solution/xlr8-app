@@ -43,9 +43,6 @@ export default function SessionActivePage() {
   const [isSessionEnding, setIsSessionEnding] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    console.log('session', session);
-  }, [session]);
 
   const pendingCartAssignments = useRef<Record<string, string>>({});
   const confirmedAssignments = useRef<Record<string, CartAssignment>>({});
@@ -128,8 +125,8 @@ export default function SessionActivePage() {
       api.session
         .endSession(session?.session_id)
         .then((res) => {
-          refreshSession();
-          navigate('/sessions/history');
+          // refreshSession();
+          navigate(`/sessions/${session?.session_id}`);
         })
         .catch((err) => {
           console.log(err);
@@ -138,7 +135,7 @@ export default function SessionActivePage() {
           setIsSessionEnding(false);
         });
     }
-  }, [session?.session_id, navigate, refreshSession]);
+  }, [session?.session_id, navigate]);
 
   const handleAssignCart = useCallback(
     (group_id: string, user_id: string, cart_id: string) => {

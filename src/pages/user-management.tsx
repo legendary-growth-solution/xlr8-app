@@ -174,7 +174,7 @@ export default function UserManagementPage() {
 
   const handleOpenView = async (user: User) => {
     showToast.error('Feature under development!');
-    return;
+    // return;
     setSelectedUser(user);
     setOpenView(true);
     setStatsLoading(true);
