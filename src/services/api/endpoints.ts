@@ -42,6 +42,13 @@ export const API_ENDPOINTS = {
           : createEndpoint(`/api/groups/${id}/race/${userId}/lap`),
     },
   },
+  BOOKINGS: {
+    LIST: createEndpoint('/bookings/'),
+    DETAIL: (id: string) => createEndpoint(`/bookings/${id}`),
+    UPDATE: (id: string) => createEndpoint(`/bookings/${id}`),
+    DELETE: (id: string) => createEndpoint(`/bookings/${id}`),
+    CONVERT: (id: string) => createEndpoint(`/bookings/${id}/convert`),
+  },
   USERS: {
     LIST: createEndpoint('/users'),
     DETAIL: (id: string) => createEndpoint(`/api/users/${id}`),
@@ -49,6 +56,8 @@ export const API_ENDPOINTS = {
     CREATE: createEndpoint('/users'),
     UPDATE: (id: string) => createEndpoint(`/users/${id}`),
     DELETE: (id: string) => createEndpoint(`/users/${id}`),
+    STATS: (id: string) => createEndpoint(`/users/${id}/stats`),
+    SESSIONS: (id: string) => createEndpoint(`/users/${id}/sessions`),
   },
   CARTS: {
     LIST: createEndpoint('/carts'),

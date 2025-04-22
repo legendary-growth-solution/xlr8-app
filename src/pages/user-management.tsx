@@ -1,5 +1,17 @@
 import { LoadingButton } from '@mui/lab';
-import { Box, Button, Card, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
@@ -64,7 +76,7 @@ export default function UserManagementPage() {
       onClick: (value: string) => {
         navigator.clipboard.writeText(value);
         showToast.success('Email copied to clipboard');
-      }
+      },
     },
     {
       id: 'phone',
@@ -76,7 +88,7 @@ export default function UserManagementPage() {
       onClick: (value: string) => {
         navigator.clipboard.writeText(value);
         showToast.success('Phone number copied to clipboard');
-      }
+      },
     },
     // {
     //   id: 'dob',
@@ -205,40 +217,48 @@ export default function UserManagementPage() {
     setIsDeleting(true);
   };
 
+  const handleViewUserStats = (user: User) => {
+    navigate(`/users/${user.user_id}/stats`);
+  };
+
+  const handleViewUserHistory = (user: User) => {
+    navigate(`/users/${user.user_id}/history`);
+  };
+
   const searchTimeout = useRef<NodeJS.Timeout>();
-  const currentSearch = useRef('');  // Add this to track current search value
+  const currentSearch = useRef(''); // Add this to track current search value
 
   const handleSearch = (value: string) => {
-    currentSearch.current = value;  // Update the ref immediately
-    setSearchQuery(value);  // Update state for input field
+    currentSearch.current = value; // Update the ref immediately
+    setSearchQuery(value); // Update state for input field
 
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
 
     searchTimeout.current = setTimeout(() => {
-      fetchUsers(true);  // This will now use the current search value
+      fetchUsers(true); // This will now use the current search value
     }, 500);
   };
 
-// Clean up effect
-useEffect(() => {
-  fetchUsers();
-  return () => {
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+  // Clean up effect
+  useEffect(() => {
+    fetchUsers();
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-// Pagination effect - only trigger if not from search
-useEffect(() => {
-  if (users.length > 0) {
-    fetchUsers(false);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [page, rowsPerPage]);
+  // Pagination effect - only trigger if not from search
+  useEffect(() => {
+    if (users.length > 0) {
+      fetchUsers(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
 
   return (
     <>
@@ -266,7 +286,9 @@ useEffect(() => {
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               InputProps={{
-                startAdornment: <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />,
+                startAdornment: (
+                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />
+                ),
               }}
             />
 
@@ -290,15 +312,20 @@ useEffect(() => {
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => handleOpenView(row)}
+                    color="primary"
+                    onClick={() => handleViewUserStats(row)}
                   >
-                    View
+                    Stats
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => handleOpenEdit(row)}
+                    color="secondary"
+                    onClick={() => handleViewUserHistory(row)}
                   >
+                    History
+                  </Button>
+                  <Button variant="outlined" size="small" onClick={() => handleOpenEdit(row)}>
                     Edit
                   </Button>
                   <Button
@@ -324,20 +351,20 @@ useEffect(() => {
               fullWidth
               label="Name"
               value={editData.name || ''}
-              onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => setEditData((prev) => ({ ...prev, name: e.target.value }))}
             />
             <TextField
               fullWidth
               label="Email"
               type="email"
               value={editData.email || ''}
-              onChange={(e) => setEditData(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => setEditData((prev) => ({ ...prev, email: e.target.value }))}
             />
             <TextField
               fullWidth
               label="Phone"
               value={editData.phone || ''}
-              onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
+              onChange={(e) => setEditData((prev) => ({ ...prev, phone: e.target.value }))}
             />
             {/* <TextField
               fullWidth
@@ -377,8 +404,10 @@ useEffect(() => {
               <Typography variant="subtitle1">
                 <strong>Phone:</strong> {selectedUser?.phone}
               </Typography>
-              
-              <Typography variant="h6" sx={{ mt: 2 }}>User Stats</Typography>
+
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                User Stats
+              </Typography>
               <Typography variant="subtitle1">
                 <strong>Best Time:</strong> {formatLapTime(userStats?.best_time)}
               </Typography>
@@ -389,7 +418,13 @@ useEffect(() => {
                 <strong>Total Sessions:</strong> {userStats?.total_sessions || 0}
               </Typography>
               <Typography variant="subtitle1">
-                <strong>Total Time:</strong> {userStats?.total_time ? (userStats.total_time.toString().length >= 4 ? ((userStats.total_time / 100) / 60).toFixed(2) : (userStats.total_time / 60).toFixed(2)) : 0} minutes
+                <strong>Total Time:</strong>{' '}
+                {userStats?.total_time
+                  ? userStats.total_time.toString().length >= 4
+                    ? (userStats.total_time / 100 / 60).toFixed(2)
+                    : (userStats.total_time / 60).toFixed(2)
+                  : 0}{' '}
+                minutes
               </Typography>
             </Stack>
           )}

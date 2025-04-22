@@ -88,8 +88,10 @@ export interface Leaderboard {
   group_name: string;
   total_laps: number;
   best_lap_number: number;
-  best_lap_time:  number;
+  best_lap_time: string | number;
   user_id: string;
   user_name: string;
+  cart_name?: string;
+  cart_variant?: string;
   cart_type: string | number;
 }

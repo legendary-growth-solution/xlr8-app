@@ -17,6 +17,8 @@ import InventoryLogsPage from 'src/pages/inventory-logs';
 import PasswordHashPage from 'src/pages/password-hash';
 import RegisterUserPage from 'src/pages/register-user';
 import { varAlpha } from 'src/theme/styles';
+import UserStatsPage from 'src/pages/user-stats';
+import UserHistoryPage from 'src/pages/user-history';
 
 // ----------------------------------------------------------------------
 
@@ -43,6 +45,7 @@ export const LiveLeaderboard = lazy(() => import('src/pages/live-leaderboard'));
 // export const CartMaintenanceLogsPage = lazy(() => import('src/pages/cart-maintenance-logs'));
 export const CartMaintenanceLogsPage = lazy(() => import('src/pages/maintenance-logs'));
 export const BillingsPage = lazy(() => import('src/pages/billings'));
+export const BookingsPage = lazy(() => import('src/pages/bookings'));
 // ----------------------------------------------------------------------
 
 const renderFallback = (
@@ -103,6 +106,8 @@ export function Router() {
 
         { path: 'users', element: <UserManagement /> },
         { path: 'users/create', element: <UserCreate /> },
+        { path: 'users/:userId/stats', element: <UserStatsPage /> },
+        { path: 'users/:userId/history', element: <UserHistoryPage /> },
 
         { path: 'active-session', element: <SessionActivePage /> },
         // { path: 'sessions', element: <SessionManagementPage /> },
@@ -113,6 +118,7 @@ export function Router() {
         { path: 'carts', element: <CartManagementPage /> },
         { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
         { path: 'timeslots', element: <TimeSlots /> },
+        { path: 'bookings', element: <BookingsPage /> },
         { path: 'leaderboard', element: <LiveLeaderboard /> },
         { path: 'carts/lap-logs', element: <CartLapLogsPage /> },
         { path: 'carts/maintenance-logs', element: <CartMaintenanceLogsPage /> },

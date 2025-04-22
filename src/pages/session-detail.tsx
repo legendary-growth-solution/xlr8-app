@@ -3,7 +3,7 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
-import { SessionPageSkeleton } from 'src/components/skeleton/SessionPageSkeleton';
+import { SessionDetailSkeleton } from 'src/components/skeleton/SessionDetailSkeleton';
 import Toast, { showToast } from 'src/components/toast';
 import { Session } from 'src/types/session';
 import { api } from 'src/api/api';
@@ -37,7 +37,7 @@ export default function SessionDetailPage() {
 
   useLayoutEffect(() => { getSession() }, [getSession]);
 
-  if (loading) return <SessionPageSkeleton />;
+  if (loading) return <SessionDetailSkeleton />;
 
   return (
     <>
@@ -89,9 +89,9 @@ export default function SessionDetailPage() {
                   {new Date(session?.start_time).toLocaleString()}
                 </Typography>
               </Stack>}
-            </Grid>
+              </Grid>
 
-            <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={6}>
               {session?.end_time && <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
                   End Time
@@ -104,7 +104,7 @@ export default function SessionDetailPage() {
           </Grid>
         </Card>
 
-        {!session?.active && !!session?.session_id && <LiveLeaderboard session_id={session?.session_id} />}
+        {!session?.active && !!session?.session_id && <LiveLeaderboard session_id={session?.session_id} isSessionActive={session?.active} />}
       </Box>
       <ConfirmDialog
         open={reviewConfirmation}

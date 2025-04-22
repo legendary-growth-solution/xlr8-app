@@ -103,3 +103,37 @@ export function fToNow(date: DatePickerFormat) {
 
   return isValid ? dayjs(date).toNow(true) : 'Invalid time value';
 }
+
+// ----------------------------------------------------------------------
+
+/**
+ * Format milliseconds to MM:SS.ms format
+ * @param time Time in milliseconds
+ */
+export function formatTime(time: number): string {
+  if (!time) return '-';
+  
+  const minutes = Math.floor(time / 60);
+  const seconds = minutes ? Math.floor(time % 60) : (time % 60).toFixed(2);
+  
+  if (!minutes && time >= 60) {
+    return time.toFixed(2);
+  }
+  
+  return `${minutes ? `${minutes}:` : ''}${minutes && Number(seconds) < 10 ? '0' : ''}${seconds}`;
+}
+
+// ----------------------------------------------------------------------
+
+/**
+ * Format seconds to human-readable time (minutes and seconds)
+ * @param seconds Time in seconds
+ */
+export function formatTimeFromSeconds(seconds: number): string {
+  if (!seconds) return '-';
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  
+  return `${minutes}m ${remainingSeconds}s`;
+}

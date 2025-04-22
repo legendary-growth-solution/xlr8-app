@@ -1,4 +1,4 @@
-import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from 'src/api/api';
@@ -44,13 +44,14 @@ import { Leaderboard } from 'src/types/session';
 
 interface Props {
   session_id?: string;
+  isSessionActive?: boolean;
 }
 
-const LiveLeaderboard = ({ session_id }: Props) => {
+const LiveLeaderboard = ({ session_id, isSessionActive }: Props) => {
   const theme = useTheme();
   const [leaderboard, setLeaderboard] = useState<Leaderboard[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const leaderboardRef = useRef<HTMLDivElement>(null);
@@ -61,13 +62,14 @@ const LiveLeaderboard = ({ session_id }: Props) => {
       api.session
         .getSessionLeaderboard(session_id ?? '')
         .then((res) => {
-          setLoading(false);
           setLeaderboard(
             res?.leaderboard?.map((item: Leaderboard, index: number) => ({
               ...item,
               rank: index + 1,
+              total_laps: item.total_laps,
             }))
-          )
+          );
+          setLoading(false);
         })
         .catch((err) => {
           setError(err?.response?.message);
@@ -100,14 +102,6 @@ const LiveLeaderboard = ({ session_id }: Props) => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
-        <CircularProgress size={60} />
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box p={3}>
@@ -128,7 +122,7 @@ const LiveLeaderboard = ({ session_id }: Props) => {
   return (
     <Box
       sx={{
-        // p: 2,
+        // p: 3,
         // minHeight: '100vh',
         bgcolor: 'background.default',
         position: 'relative',
@@ -184,7 +178,13 @@ const LiveLeaderboard = ({ session_id }: Props) => {
           Leaderboard
         </Typography>
 
-        <LeaderboardTable entries={leaderboard} />
+        {/* <SessionInfo name={sessionName} id={sessionId} /> */}
+
+        <LeaderboardTable
+          entries={leaderboard}
+          loading={loading}
+          isInactiveSession={!isSessionActive}
+        />
 
         <LeaderboardFooter />
       </Paper>

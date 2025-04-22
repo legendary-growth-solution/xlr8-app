@@ -1,6 +1,5 @@
 import {
   Box,
-  CircularProgress,
   Paper,
   Table,
   TableBody,
@@ -8,27 +7,35 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
   Chip,
-} from "@mui/material";
-import React, { useCallback, useEffect, useState } from "react";
+  Typography,
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
-import { api } from "src/api/api";
-import { formatLapTime } from "src/utils/timeFormatter";
+import { SessionLapTableSkeleton } from 'src/components/skeleton';
+import { api } from 'src/api/api';
+import { SessionBestChip, PersonalSessionBestChip } from 'src/components/lap-chip/LapChip';
 
 interface Lap {
-  duration: number;
-  user_name: string;
+  id: string;
+  lap_time: number;
   lap_number: number;
-  lap_id: string;
+  timestamp: string;
+  last_ts: string;
+  user_id: string;
+  user_name: string;
+  duration?: number;
 }
 
 interface GroupedLap {
   lap_number: number;
   users: {
     user_name: string;
-    duration: number;
+    user_id: string;
+    lap_time: number;
+    isSessionBest?: boolean;
+    isUserBest?: boolean;
   }[];
 }
 
@@ -52,123 +59,187 @@ const getRankColor = (rank: number, theme: any) => {
 const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
   const [groupedLapData, setGroupedLapData] = useState<GroupedLap[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [sessionBestTime, setSessionBestTime] = useState<number | null>(null);
   const theme = useTheme();
 
-  const getSessionLapData = useCallback(() => {
-    setLoading(true);
-    api.session.getSessionLaps(sessionId)
-      .then((response: any) => {
-        const laps = response.laps;
-        // Group laps by lap_number and sort users by duration
-        const groupedByLapNumber = laps.reduce((acc: { [key: number]: GroupedLap }, lap: Lap) => {
-          if (!acc[lap.lap_number]) {
-            acc[lap.lap_number] = {
-              lap_number: lap.lap_number,
-              users: [],
-            };
-          }
-          acc[lap.lap_number].users.push({
-            user_name: lap.user_name,
-            duration: lap.duration,
+  useEffect(() => {
+    if (sessionId) {
+      api.session
+        .getSessionLaps(sessionId)
+        .then((response: any) => {
+          const { laps } = response;
+
+          // Find the best lap time in the entire session
+          let bestTime = Number.MAX_VALUE;
+          laps.forEach((lap: Lap) => {
+            if (lap.duration && lap.duration < bestTime) {
+              bestTime = lap.duration;
+            }
           });
-          return acc;
-        }, {});
 
-        // Sort users within each lap by duration
-        (Object.values(groupedByLapNumber) as GroupedLap[]).forEach((group: GroupedLap) => {
-          group.users.sort((a, b) => a.duration - b.duration);
+          setSessionBestTime(bestTime !== Number.MAX_VALUE ? bestTime : null);
+
+          // Find best lap times for each user
+          const userBestLaps: Record<string, number> = {};
+          laps.forEach((lap: Lap) => {
+            if (lap.duration) {
+              if (!userBestLaps[lap.user_id] || lap.duration < userBestLaps[lap.user_id]) {
+                userBestLaps[lap.user_id] = lap.duration;
+              }
+            }
+          });
+
+          const grouped = Object.values(
+            laps.reduce((acc: any, lap: Lap) => {
+              if (!acc[lap.lap_number]) {
+                acc[lap.lap_number] = {
+                  lap_number: lap.lap_number,
+                  users: [],
+                };
+              }
+              acc[lap.lap_number].users.push({
+                user_name: lap.user_name,
+                user_id: lap.user_id,
+                lap_time: lap.duration,
+                isSessionBest: lap.duration === bestTime,
+                isUserBest: lap.duration === userBestLaps[lap.user_id],
+              });
+              return acc;
+            }, {})
+          ).map((lap: any) => ({
+            ...lap,
+            users: lap.users.sort((a: any, b: any) => a.lap_time - b.lap_time),
+          }));
+          setGroupedLapData(grouped as GroupedLap[]);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error fetching lap data:', error);
+          setLoading(false);
         });
-
-        // Convert to array and sort by lap number
-        const sortedGroups = (Object.values(groupedByLapNumber) as GroupedLap[])
-          .sort((a, b) => a.lap_number - b.lap_number);
-        setGroupedLapData(sortedGroups);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching lap data:", error);
-        setLoading(false);
-      });
+    }
   }, [sessionId]);
 
-  useEffect(() => {
-    getSessionLapData();
-  }, [getSessionLapData]);
-
   return (
-    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+    <Box sx={{ width: '100%', overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
-        </Box>
+        <SessionLapTableSkeleton />
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Lap</TableCell>
-                <TableCell>Racers</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {groupedLapData.map((lap) => (
-                <TableRow key={lap.lap_number}>
-                  <TableCell>
-                    <Typography variant="h6">
-                      {lap.lap_number}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {lap.users.map((user, index) => (
-                        <Box
-                          key={`${lap.lap_number}-${index}`}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 2,
-                            backgroundColor: getRankColor(index + 1, theme),
-                            p: 1,
-                            borderRadius: 1,
-                            width: '100%'
-                          }}
-                        >
-                          <RankCircle rank={index + 1} />
-                          <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            flex: 1,
-                            justifyContent: 'space-between'
-                          }}>
-                            <Chip
-                              label={user.user_name}
-                              variant="outlined"
-                              sx={{
-                                flex: 1,
-                                justifyContent: 'flex-start',
-                              }}
-                            />
-                            <Chip
-                              // label={`${user?.lap_time?.toFixed(2)}s`}
-                              label={formatLapTime(user?.duration)}
-                              color={index === 0 ? "warning" : "default"}
-                              sx={{
-                                minWidth: '100px',
-                                justifyContent: 'center',
-                                opacity: 0.7,
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                      ))}
-                    </Box>
-                  </TableCell>
+        <>
+          <TableContainer
+            component={Paper}
+            sx={{
+              maxHeight: 'calc(100vh - 200px)',
+            }}
+          >
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Lap Number</TableCell>
+                  <TableCell>Racers</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {groupedLapData.map((lap) => (
+                  <TableRow key={lap.lap_number}>
+                    <TableCell sx={{ fontSize: '32px' }}>{lap.lap_number}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {lap.users.map((user, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 2,
+                              backgroundColor: getRankColor(index + 1, theme),
+                              p: 1,
+                              borderRadius: 1,
+                              width: '100%',
+                            }}
+                          >
+                            <RankCircle rank={index + 1} />
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                flex: 1,
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                                <Chip
+                                  label={
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        width: '100%',
+                                      }}
+                                    >
+                                      <div>{user?.user_name}</div>
+                                      <Box sx={{ display: 'flex', ml: 0.5 }}>
+                                        {user.isSessionBest && <SessionBestChip />}
+                                        {user.isUserBest && !user.isSessionBest && (
+                                          <PersonalSessionBestChip />
+                                        )}
+                                      </Box>
+                                    </Box>
+                                  }
+                                  variant="outlined"
+                                  sx={{
+                                    flex: 1,
+                                    justifyContent: 'flex-start',
+                                  }}
+                                />
+                              </Box>
+                              <Chip
+                                label={`${user?.lap_time?.toFixed(2)}s`}
+                                color={index === 0 ? 'warning' : 'default'}
+                                sx={{
+                                  minWidth: '100px',
+                                  justifyContent: 'center',
+                                  opacity: 0.7,
+                                }}
+                              />
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Box
+            component={Paper}
+            sx={{
+              mt: 2,
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+            }}
+          >
+            <Typography variant="subtitle2" fontWeight="bold">
+              Abbreviations:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <SessionBestChip />
+                <Typography variant="body2">Session Best</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PersonalSessionBestChip />
+                <Typography variant="body2">Personal Session Best</Typography>
+              </Box>
+            </Box>
+          </Box>
+        </>
       )}
     </Box>
   );

@@ -5,9 +5,12 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { Leaderboard } from 'src/types/session';
 import { formatLapTime } from 'src/utils/timeFormatter';
 import { RankCircle } from './RankCircle';
+import { LeaderboardSkeleton } from '../skeleton';
 
 type LeaderboardTableProps = {
   entries: Leaderboard[];
+  loading?: boolean;
+  isInactiveSession?: boolean;
   // onUserClick?: (userId: string, groupId: string) => void;
 };
 
@@ -26,14 +29,20 @@ const getRankColor = (rank: number, theme: any, primary: boolean = false) => {
 
 export const LeaderboardTable = ({
   entries,
+  loading = false,
+  isInactiveSession = false,
   // onUserClick,
 }: LeaderboardTableProps) => {
   const theme = useTheme();
 
+  if (loading) {
+    return <LeaderboardSkeleton />;
+  }
+
   if (entries?.length === 0) {
     return (
       <Box display="flex" justifyContent="center" p={4}>
-        <Typography variant="h5" color="text.secondary">
+        <Typography variant="h5" color={isInactiveSession ? 'text.disabled' : 'text.secondary'}>
           No active racers found
         </Typography>
       </Box>
@@ -45,15 +54,7 @@ export const LeaderboardTable = ({
       <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
         <thead>
           <tr>
-            {[
-              'Rank',
-              'Name',
-              'Group',
-              'Cart',
-              'Total Laps',
-              'Best Lap',
-              'Best Lap Time',
-            ]
+            {['Rank', 'Name', 'Group', 'Cart', 'Total Laps', 'Best Lap', 'Best Lap Time']
               .filter(Boolean)
               .map((header) => (
                 <th
@@ -87,8 +88,9 @@ export const LeaderboardTable = ({
                   padding: '20px',
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                  color: theme.palette.text.primary,
                 }}
-              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {entry.user_name}
               </td>
@@ -97,8 +99,10 @@ export const LeaderboardTable = ({
                   padding: '20px',
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                  color: theme.palette.text.primary,
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
                 }}
-              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {entry.group_name}
               </td>
@@ -108,7 +112,7 @@ export const LeaderboardTable = ({
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
                 }}
-              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {`L${entry.cart_type}`}
               </td>
@@ -119,18 +123,18 @@ export const LeaderboardTable = ({
                   textAlign: 'center',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
                 }}
-              // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {entry.total_laps}
               </td>
-              <td style={{
-                padding: '20px',
-                fontSize: '1.5rem',
-                textAlign: 'center',
-                color: entry.best_lap_time
-                  ? theme.palette.success.main
-                  : theme.palette.text.secondary,
-              }}>
+              <td
+                style={{
+                  padding: '20px',
+                  fontSize: '1.5rem',
+                  textAlign: 'center',
+                  color: theme.palette.text.primary,
+                }}
+              >
                 {entry.best_lap_number}
               </td>
               <td
@@ -143,33 +147,18 @@ export const LeaderboardTable = ({
                     : theme.palette.text.secondary,
                 }}
               >
-                {entry.best_lap_time ? (formatLapTime(entry.best_lap_time)) : '-'}
+                {entry.best_lap_time ? formatLapTime(Number(entry.best_lap_time)) : '-'}
               </td>
-              {/* <td
+              <td
                 style={{
                   padding: '20px',
                   fontSize: '1.5rem',
                   textAlign: 'center',
-                  color: entry.endTime ? theme.palette.info.main : theme.palette.text.secondary,
+                  color: theme.palette.text.primary,
                 }}
               >
-                {getTimeRemaining(entry)}
+                {entry?.cart_variant ? `Level ${entry?.cart_variant}` : ''}
               </td>
-              <td style={{ padding: '20px', fontSize: '1.5rem', textAlign: 'center' }}>
-                <Chip
-                  label={entry.raceStatus.replace('_', ' ')}
-                  style={{
-                    backgroundColor: {
-                      not_started: theme.palette.grey[500],
-                      in_progress: theme.palette.info.main,
-                      completed: theme.palette.success.main,
-                      cancelled: theme.palette.error.main,
-                    }[entry.raceStatus],
-                    padding: '10px !important',
-                    color: theme.palette.common.white,
-                  }}
-                />
-              </td> */}
             </tr>
           ))}
         </tbody>
