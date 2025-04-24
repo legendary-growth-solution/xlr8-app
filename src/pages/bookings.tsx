@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  LinearProgress,
   Stack,
   Table,
   TableBody,
@@ -33,10 +32,11 @@ import { bookingApi } from 'src/services/api/booking.api';
 import { Booking } from 'src/types/booking';
 import { Iconify } from 'src/components/iconify';
 import Toast, { showToast } from 'src/components/toast';
-import { fDateTime, fDate } from 'src/utils/format-time';
+import { fDateTime } from 'src/utils/format-time';
 import { Scrollbar } from 'src/components/scrollbar';
 import ConversionAnimation from 'src/components/animations/ConversionAnimation';
-
+import { Plan } from 'src/types/session';
+import { DraftSessionDialog } from 'src/components/booking';
 
 const TABLE_HEAD = [
   { id: 'date', label: 'Date', width: 150 },
@@ -72,6 +72,9 @@ export default function BookingsPage() {
   const conversionComplete = useBoolean(false);
   const [conversionError, setConversionError] = useState<string | null>(null);
   const [animationState, setAnimationState] = useState<'initial' | 'processing' | 'complete'>('initial');
+  
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [draftSessionDialog, setDraftSessionDialog] = useState(false);
 
   const getBookings = useCallback(async () => {
     try {
@@ -92,6 +95,35 @@ export default function BookingsPage() {
 
   useEffect(() => {
     getBookings();
+    
+    const fetchPlans = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000'}/plans`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setPlans(data.plans || []);
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+        showToast.error('Failed to fetch plans');
+      }
+    };
+    
+    fetchPlans();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+        event.preventDefault();
+        setDraftSessionDialog(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [getBookings]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -254,13 +286,26 @@ export default function BookingsPage() {
       <Container maxWidth={false}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
           <Typography variant="h4">Bookings</Typography>
-          <Button
-            variant="contained"
-            startIcon={<Iconify icon="eva:plus-fill" />}
-            onClick={() => navigate('/timeslots')}
-          >
-            Manage Time Slots
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setDraftSessionDialog(true)}
+              startIcon={<Iconify icon="eva:plus-fill" />}
+            >
+              Create Booking
+              <Typography variant="caption" sx={{ ml: 1, opacity: 0.72 }}>
+              (⌘B/Ctrl+B)
+            </Typography>
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Iconify icon="eva:calendar-fill" />}
+              onClick={() => navigate('/timeslots')}
+            >
+              Manage Time Slots
+            </Button>
+          </Stack>
         </Stack>
 
         <Card>
@@ -470,6 +515,13 @@ export default function BookingsPage() {
           </DialogActions>
         )}
       </Dialog>
+
+      <DraftSessionDialog
+        open={draftSessionDialog}
+        onClose={() => setDraftSessionDialog(false)}
+        onSubmitSuccess={getBookings}
+        plans={plans}
+      />
 
       <Toast />
     </>

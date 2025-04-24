@@ -6,3 +6,4 @@ export * from './SessionPageSkeleton';
 export * from './LeaderboardSkeleton';
 export * from './UserHistorySkeleton';
 export * from './UserStatsSkeleton';
+export { default as UserSearchSkeleton } from './UserSearchSkeleton';

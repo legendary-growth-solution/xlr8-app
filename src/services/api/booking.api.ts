@@ -36,4 +36,9 @@ export const bookingApi = {
     const response = await apiClient.post(API_ENDPOINTS.BOOKINGS.CONVERT(id));
     return response.data;
   },
+  
+  create: async (data: Partial<Booking>): Promise<Booking> => {
+    const response = await apiClient.post(API_ENDPOINTS.BOOKINGS.LIST, data);
+    return response.data;
+  },
 }; 
