@@ -77,3 +77,13 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
 
   return inputData;
 }
+export function formatTime(rawValue: string | number): string {
+  const cleaned = rawValue.toString().replace(/\D/g, '');
+
+  if (cleaned.length <= 2) {
+    return `${parseInt(cleaned, 10)}.00`;
+  }
+  const intPart = cleaned.slice(0, -2);
+  const decimalPart = cleaned.slice(-2);
+  return `${parseInt(intPart, 10)}.${decimalPart}`;
+}

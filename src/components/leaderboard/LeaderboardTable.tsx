@@ -89,8 +89,14 @@ export const LeaderboardTable = ({
                   fontSize: '1.5rem',
                   fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
                   color: theme.palette.text.primary,
+                  cursor: entry.user_id ? 'pointer' : 'default',
                 }}
                 // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+                onClick={() => {
+                  if (entry.user_id) {
+                    window.location.href = `/users/${entry.user_id}/stats`;
+                  }
+                }}
               >
                 {entry.user_name}
               </td>

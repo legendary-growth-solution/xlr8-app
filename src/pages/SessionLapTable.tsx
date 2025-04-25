@@ -9,13 +9,14 @@ import {
   TableRow,
   Chip,
   Typography,
-} from "@mui/material";
-import React, { useEffect, useState } from "react";
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { RankCircle } from 'src/components/leaderboard/RankCircle';
 import { SessionLapTableSkeleton } from 'src/components/skeleton';
-import { api } from "src/api/api";
+import { api } from 'src/api/api';
 import { SessionBestChip, PersonalSessionBestChip } from 'src/components/lap-chip/LapChip';
+import { formatTime } from 'src/sections/user/utils';
 
 interface Lap {
   id: string;
@@ -67,8 +68,8 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
       api.session
         .getSessionLaps(sessionId)
         .then((response: any) => {
-          const {laps} = response;
-          
+          const { laps } = response;
+
           // Find the best lap time in the entire session
           let bestTime = Number.MAX_VALUE;
           laps.forEach((lap: Lap) => {
@@ -76,9 +77,9 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
               bestTime = lap.duration;
             }
           });
-          
+
           setSessionBestTime(bestTime !== Number.MAX_VALUE ? bestTime : null);
-          
+
           // Find best lap times for each user
           const userBestLaps: Record<string, number> = {};
           laps.forEach((lap: Lap) => {
@@ -88,7 +89,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
               }
             }
           });
-          
+
           const grouped = Object.values(
             laps.reduce((acc: any, lap: Lap) => {
               if (!acc[lap.lap_number]) {
@@ -108,13 +109,13 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
             }, {})
           ).map((lap: any) => ({
             ...lap,
-            users: lap.users.sort((a: any, b: any) => a.lap_time - b.lap_time)
+            users: lap.users.sort((a: any, b: any) => a.lap_time - b.lap_time),
           }));
           setGroupedLapData(grouped as GroupedLap[]);
           setLoading(false);
         })
         .catch((error) => {
-          console.error("Error fetching lap data:", error);
+          console.error('Error fetching lap data:', error);
           setLoading(false);
         });
     }
@@ -126,9 +127,9 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
         <SessionLapTableSkeleton />
       ) : (
         <>
-          <TableContainer 
+          <TableContainer
             component={Paper}
-            sx={{ 
+            sx={{
               maxHeight: 'calc(100vh - 200px)',
             }}
           >
@@ -141,7 +142,14 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
               </TableHead>
               <TableBody>
                 {groupedLapData.map((lap) => (
-                  <TableRow key={lap.lap_number}>
+                  <TableRow
+                    key={lap.lap_number}
+                    sx={{
+                      '&:nth-of-type(even)': {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }}
+                  >
                     <TableCell sx={{ fontSize: '32px' }}>{lap.lap_number}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -155,30 +163,36 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                               backgroundColor: getRankColor(index + 1, theme),
                               p: 1,
                               borderRadius: 1,
-                              width: '100%'
+                              width: '100%',
                             }}
                           >
                             <RankCircle rank={index + 1} />
-                            <Box sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 1,
-                              flex: 1,
-                              justifyContent: 'space-between'
-                            }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                flex: 1,
+                                justifyContent: 'space-between',
+                              }}
+                            >
                               <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
                                 <Chip
                                   label={
-                                    <Box sx={{ 
-                                      display: 'flex', 
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
-                                      width: '100%'
-                                    }}>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        width: '100%',
+                                      }}
+                                    >
                                       <div>{user?.user_name}</div>
                                       <Box sx={{ display: 'flex', ml: 0.5 }}>
                                         {user.isSessionBest && <SessionBestChip />}
-                                        {user.isUserBest && !user.isSessionBest && <PersonalSessionBestChip />}
+                                        {user.isUserBest && !user.isSessionBest && (
+                                          <PersonalSessionBestChip />
+                                        )}
                                       </Box>
                                     </Box>
                                   }
@@ -190,8 +204,8 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                                 />
                               </Box>
                               <Chip
-                                label={`${user?.lap_time?.toFixed(2)}s`}
-                                color={index === 0 ? "warning" : "default"}
+                                label={`${formatTime(user?.lap_time)}s`}
+                                color={index === 0 ? 'warning' : 'default'}
                                 sx={{
                                   minWidth: '100px',
                                   justifyContent: 'center',
@@ -208,15 +222,15 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
               </TableBody>
             </Table>
           </TableContainer>
-          
-          <Box 
-            component={Paper} 
-            sx={{ 
-              mt: 2, 
-              p: 2, 
+
+          <Box
+            component={Paper}
+            sx={{
+              mt: 2,
+              p: 2,
               display: 'flex',
               flexDirection: 'column',
-              gap: 1
+              gap: 1,
             }}
           >
             <Typography variant="subtitle2" fontWeight="bold">
