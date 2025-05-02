@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { Alert, Box, Paper, Typography, Button } from '@mui/material';
+import { Alert, Box, Button, Paper, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
-import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
-import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
-import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from 'src/api/api';
+import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
+import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
+import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
+import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
 import { Leaderboard } from 'src/types/session';
 
 // const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
@@ -180,9 +180,9 @@ const LiveLeaderboard = ({ session_id, isSessionActive }: Props) => {
 
         {/* <SessionInfo name={sessionName} id={sessionId} /> */}
 
-        <LeaderboardTable 
-          entries={leaderboard} 
-          loading={loading} 
+        <LeaderboardTable
+          entries={leaderboard}
+          loading={loading}
           isInactiveSession={!isSessionActive}
         />
 

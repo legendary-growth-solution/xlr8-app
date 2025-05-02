@@ -54,7 +54,7 @@ export const LeaderboardTable = ({
       <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
         <thead>
           <tr>
-            {['Rank', 'Name', 'Group', 'Total Laps', 'Best Lap', 'Best Lap Time', 'Cart Type']
+            {['Rank', 'Name', 'Group', 'Cart', 'Total Laps', 'Best Lap', 'Best Lap Time']
               .filter(Boolean)
               .map((header) => (
                 <th
@@ -116,9 +116,20 @@ export const LeaderboardTable = ({
                 style={{
                   padding: '20px',
                   fontSize: '1.5rem',
-                  textAlign: 'center',
-                  color: 'inherit',
+                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
                 }}
+                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
+              >
+                {`L${entry.cart_type}`}
+              </td>
+              <td
+                style={{
+                  padding: '20px',
+                  fontSize: '1.5rem',
+                  textAlign: 'center',
+                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
+                }}
+                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
               >
                 {entry.total_laps}
               </td>

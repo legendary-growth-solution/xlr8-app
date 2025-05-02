@@ -93,4 +93,5 @@ export interface Leaderboard {
   user_name: string;
   cart_name?: string;
   cart_variant?: string;
+  cart_type: string | number;
 }

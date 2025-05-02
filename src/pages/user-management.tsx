@@ -1,13 +1,27 @@
 import { LoadingButton } from '@mui/lab';
-import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { Iconify } from 'src/components/iconify';
 import DataTable from 'src/components/table/DataTable';
+import { showToast } from 'src/components/toast';
 import { userApi } from 'src/services/api/user.api';
 import { User } from 'src/types/user';
+import { formatLapTime } from 'src/utils/timeFormatter';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -20,8 +34,11 @@ export default function UserManagementPage() {
   const [editLoading, setEditLoading] = useState(false);
   const [editData, setEditData] = useState<Partial<User>>({});
   const [openEdit, setOpenEdit] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -54,14 +71,24 @@ export default function UserManagementPage() {
       label: 'Email',
       minWidth: 200,
       noWrap: true,
-      sx: { whiteSpace: 'nowrap' },
+      sx: { whiteSpace: 'nowrap', cursor: 'pointer' },
+      format: (value: string) => value,
+      onClick: (value: string) => {
+        navigator.clipboard.writeText(value);
+        showToast.success('Email copied to clipboard');
+      },
     },
     {
       id: 'phone',
       label: 'Phone',
       minWidth: 130,
       noWrap: true,
-      sx: { whiteSpace: 'nowrap' },
+      sx: { whiteSpace: 'nowrap', cursor: 'pointer' },
+      format: (value: string) => value,
+      onClick: (value: string) => {
+        navigator.clipboard.writeText(value);
+        showToast.success('Phone number copied to clipboard');
+      },
     },
     // {
     //   id: 'dob',
@@ -157,6 +184,22 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleOpenView = async (user: User) => {
+    showToast.error('Feature under development!');
+    // return;
+    setSelectedUser(user);
+    setOpenView(true);
+    setStatsLoading(true);
+    try {
+      const response = await userApi.getStats(user.user_id);
+      setUserStats(response);
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   const handleOpenEdit = (user: User) => {
     setSelectedUser(user);
     setEditData({
@@ -183,39 +226,39 @@ export default function UserManagementPage() {
   };
 
   const searchTimeout = useRef<NodeJS.Timeout>();
-  const currentSearch = useRef('');  // Add this to track current search value
+  const currentSearch = useRef(''); // Add this to track current search value
 
   const handleSearch = (value: string) => {
-    currentSearch.current = value;  // Update the ref immediately
-    setSearchQuery(value);  // Update state for input field
+    currentSearch.current = value; // Update the ref immediately
+    setSearchQuery(value); // Update state for input field
 
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
 
     searchTimeout.current = setTimeout(() => {
-      fetchUsers(true);  // This will now use the current search value
+      fetchUsers(true); // This will now use the current search value
     }, 500);
   };
 
-// Clean up effect
-useEffect(() => {
-  fetchUsers();
-  return () => {
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+  // Clean up effect
+  useEffect(() => {
+    fetchUsers();
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-// Pagination effect - only trigger if not from search
-useEffect(() => {
-  if (users.length > 0) {
-    fetchUsers(false);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [page, rowsPerPage]);
+  // Pagination effect - only trigger if not from search
+  useEffect(() => {
+    if (users.length > 0) {
+      fetchUsers(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
 
   return (
     <>
@@ -243,7 +286,9 @@ useEffect(() => {
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               InputProps={{
-                startAdornment: <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />,
+                startAdornment: (
+                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', mr: 1 }} />
+                ),
               }}
             />
 
@@ -280,11 +325,7 @@ useEffect(() => {
                   >
                     History
                   </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleOpenEdit(row)}
-                  >
+                  <Button variant="outlined" size="small" onClick={() => handleOpenEdit(row)}>
                     Edit
                   </Button>
                   <Button
@@ -310,20 +351,20 @@ useEffect(() => {
               fullWidth
               label="Name"
               value={editData.name || ''}
-              onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => setEditData((prev) => ({ ...prev, name: e.target.value }))}
             />
             <TextField
               fullWidth
               label="Email"
               type="email"
               value={editData.email || ''}
-              onChange={(e) => setEditData(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => setEditData((prev) => ({ ...prev, email: e.target.value }))}
             />
             <TextField
               fullWidth
               label="Phone"
               value={editData.phone || ''}
-              onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
+              onChange={(e) => setEditData((prev) => ({ ...prev, phone: e.target.value }))}
             />
             {/* <TextField
               fullWidth
@@ -342,6 +383,54 @@ useEffect(() => {
           <LoadingButton loading={editLoading} onClick={handleEditUser} variant="contained">
             Save Changes
           </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openView} onClose={() => setOpenView(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>User Details</DialogTitle>
+        <DialogContent>
+          {statsLoading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Stack spacing={2} mt={2}>
+              <Typography variant="subtitle1">
+                <strong>Name:</strong> {selectedUser?.name}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Email:</strong> {selectedUser?.email}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Phone:</strong> {selectedUser?.phone}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                User Stats
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Best Time:</strong> {formatLapTime(userStats?.best_time)}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Total Laps:</strong> {userStats?.total_laps || 0}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Total Sessions:</strong> {userStats?.total_sessions || 0}
+              </Typography>
+              <Typography variant="subtitle1">
+                <strong>Total Time:</strong>{' '}
+                {userStats?.total_time
+                  ? userStats.total_time.toString().length >= 4
+                    ? (userStats.total_time / 100 / 60).toFixed(2)
+                    : (userStats.total_time / 60).toFixed(2)
+                  : 0}{' '}
+                minutes
+              </Typography>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenView(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 

@@ -82,6 +82,11 @@ export const userApi = {
     return response.data;
   },
 
+  getStats: async (id: string): Promise<any> => {
+    const response = await apiClient.get(API_ENDPOINTS.USERS.STATS(id));
+    return response.data;
+  },
+
   create: async (data: Partial<User>): Promise<User> => {
     const response = await apiClient.post(API_ENDPOINTS.USERS.CREATE, data);
     return response.data;
@@ -96,12 +101,10 @@ export const userApi = {
     await apiClient.delete(API_ENDPOINTS.USERS.DELETE(id));
   },
 
-  getStats: async (id: string): Promise<UserStats> => {
-    const response = await apiClient.get(API_ENDPOINTS.USERS.STATS(id));
-    return response.data;
-  },
-
-  getSessionHistory: async (id: string, params: { page: number, limit: number } = { page: 1, limit: 10 }): Promise<UserSessionHistory> => {
+  getSessionHistory: async (
+    id: string,
+    params: { page: number; limit: number } = { page: 1, limit: 10 }
+  ): Promise<UserSessionHistory> => {
     const searchParams = new URLSearchParams({
       page: params.page.toString(),
       pageSize: params.limit.toString(),
@@ -111,7 +114,9 @@ export const userApi = {
   },
 
   startRace: async (userId: string, groupId: string, groupUserId?: string): Promise<any> => {
-    const response = await apiClient.post(API_ENDPOINTS.SESSIONS.GROUPS.START_RACE(groupId, userId, groupUserId));
+    const response = await apiClient.post(
+      API_ENDPOINTS.SESSIONS.GROUPS.START_RACE(groupId, userId, groupUserId)
+    );
     return response.data;
   },
 
