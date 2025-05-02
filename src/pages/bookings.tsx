@@ -37,6 +37,8 @@ import { Scrollbar } from 'src/components/scrollbar';
 import ConversionAnimation from 'src/components/animations/ConversionAnimation';
 import { Plan } from 'src/types/session';
 import { DraftSessionDialog } from 'src/components/booking';
+import { apiEndpoints } from 'src/api/apiEndpoints';
+import { api } from 'src/api/api';
 
 const TABLE_HEAD = [
   { id: 'date', label: 'Date', width: 150 },
@@ -75,6 +77,7 @@ export default function BookingsPage() {
   
   const [plans, setPlans] = useState<Plan[]>([]);
   const [draftSessionDialog, setDraftSessionDialog] = useState(false);
+  const [isConversionAllowed, setIsConversionAllowed] = useState(false);
 
   const getBookings = useCallback(async () => {
     try {
@@ -93,16 +96,28 @@ export default function BookingsPage() {
     }
   }, [page, rowsPerPage]);
 
+  const checkActiveSession = async () => {
+    try {
+      const data = await api.session.getActiveSession();
+      setIsConversionAllowed(!data.isActive);
+      return data.isActive;
+    } catch (error) {
+      console.error('Error checking active session:', error);
+      setIsConversionAllowed(true);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    getBookings();
-    
+    const fetchData = async () => {
+      await getBookings();
+      await checkActiveSession();
+    };
+    fetchData();
+
     const fetchPlans = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000'}/plans`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await api.plan.getPlans();
         setPlans(data.plans || []);
       } catch (error) {
         console.error('Error fetching plans:', error);
@@ -154,6 +169,12 @@ export default function BookingsPage() {
   const handleConvertBooking = async () => {
     if (!selectedBooking) return;
     
+    const isActive = await checkActiveSession();
+    if (isActive) {
+      showToast.error('Conversion is not allowed while a session is active');
+      return;
+    }
+
     try {
       resetConversionStates();
       convertLoading.onTrue();
@@ -268,7 +289,7 @@ export default function BookingsPage() {
               color="primary"
               size="small"
               onClick={() => openConvertDialog(booking)}
-              disabled={!isPending}
+              disabled={!isPending || !isConversionAllowed}
             >
               Convert
             </Button>
