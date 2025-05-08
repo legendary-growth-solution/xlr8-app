@@ -16,6 +16,7 @@ import { RankCircle } from 'src/components/leaderboard/RankCircle';
 import { SessionLapTableSkeleton } from 'src/components/skeleton';
 import { api } from 'src/api/api';
 import { SessionBestChip, PersonalSessionBestChip } from 'src/components/lap-chip/LapChip';
+import { formatTime } from 'src/sections/user/utils';
 
 interface Lap {
   id: string;
@@ -141,7 +142,14 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
               </TableHead>
               <TableBody>
                 {groupedLapData.map((lap) => (
-                  <TableRow key={lap.lap_number}>
+                  <TableRow
+                    key={lap.lap_number}
+                    sx={{
+                      '&:nth-of-type(even)': {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }}
+                  >
                     <TableCell sx={{ fontSize: '32px' }}>{lap.lap_number}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -196,7 +204,7 @@ const SessionLapTable: React.FC<EditableTableProps> = ({ sessionId }) => {
                                 />
                               </Box>
                               <Chip
-                                label={`${user?.lap_time?.toFixed(2)}s`}
+                                label={`${formatTime(user?.lap_time)}s`}
                                 color={index === 0 ? 'warning' : 'default'}
                                 sx={{
                                   minWidth: '100px',

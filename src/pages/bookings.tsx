@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  LinearProgress,
   Stack,
   Table,
   TableBody,
@@ -33,10 +32,13 @@ import { bookingApi } from 'src/services/api/booking.api';
 import { Booking } from 'src/types/booking';
 import { Iconify } from 'src/components/iconify';
 import Toast, { showToast } from 'src/components/toast';
-import { fDateTime, fDate } from 'src/utils/format-time';
+import { fDateTime } from 'src/utils/format-time';
 import { Scrollbar } from 'src/components/scrollbar';
 import ConversionAnimation from 'src/components/animations/ConversionAnimation';
-
+import { Plan } from 'src/types/session';
+import { DraftSessionDialog } from 'src/components/booking';
+import { apiEndpoints } from 'src/api/apiEndpoints';
+import { api } from 'src/api/api';
 
 const TABLE_HEAD = [
   { id: 'date', label: 'Date', width: 150 },
@@ -72,6 +74,10 @@ export default function BookingsPage() {
   const conversionComplete = useBoolean(false);
   const [conversionError, setConversionError] = useState<string | null>(null);
   const [animationState, setAnimationState] = useState<'initial' | 'processing' | 'complete'>('initial');
+  
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [draftSessionDialog, setDraftSessionDialog] = useState(false);
+  const [isConversionAllowed, setIsConversionAllowed] = useState(false);
 
   const getBookings = useCallback(async () => {
     try {
@@ -90,8 +96,49 @@ export default function BookingsPage() {
     }
   }, [page, rowsPerPage]);
 
+  const checkActiveSession = async () => {
+    try {
+      const data = await api.session.getActiveSession();
+      setIsConversionAllowed(!data.isActive);
+      return data.isActive;
+    } catch (error) {
+      console.error('Error checking active session:', error);
+      setIsConversionAllowed(true);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    getBookings();
+    const fetchData = async () => {
+      await getBookings();
+      await checkActiveSession();
+    };
+    fetchData();
+
+    const fetchPlans = async () => {
+      try {
+        const data = await api.plan.getPlans();
+        setPlans(data.plans || []);
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+        showToast.error('Failed to fetch plans');
+      }
+    };
+    
+    fetchPlans();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+        event.preventDefault();
+        setDraftSessionDialog(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [getBookings]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -122,6 +169,12 @@ export default function BookingsPage() {
   const handleConvertBooking = async () => {
     if (!selectedBooking) return;
     
+    const isActive = await checkActiveSession();
+    if (isActive) {
+      showToast.error('Conversion is not allowed while a session is active');
+      return;
+    }
+
     try {
       resetConversionStates();
       convertLoading.onTrue();
@@ -236,7 +289,7 @@ export default function BookingsPage() {
               color="primary"
               size="small"
               onClick={() => openConvertDialog(booking)}
-              disabled={!isPending}
+              disabled={!isPending || !isConversionAllowed}
             >
               Convert
             </Button>
@@ -254,13 +307,26 @@ export default function BookingsPage() {
       <Container maxWidth={false}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
           <Typography variant="h4">Bookings</Typography>
-          <Button
-            variant="contained"
-            startIcon={<Iconify icon="eva:plus-fill" />}
-            onClick={() => navigate('/timeslots')}
-          >
-            Manage Time Slots
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setDraftSessionDialog(true)}
+              startIcon={<Iconify icon="eva:plus-fill" />}
+            >
+              Create Booking
+              <Typography variant="caption" sx={{ ml: 1, opacity: 0.72 }}>
+              (⌘B/Ctrl+B)
+            </Typography>
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Iconify icon="eva:calendar-fill" />}
+              onClick={() => navigate('/timeslots')}
+            >
+              Manage Time Slots
+            </Button>
+          </Stack>
         </Stack>
 
         <Card>
@@ -470,6 +536,13 @@ export default function BookingsPage() {
           </DialogActions>
         )}
       </Dialog>
+
+      <DraftSessionDialog
+        open={draftSessionDialog}
+        onClose={() => setDraftSessionDialog(false)}
+        onSubmitSuccess={getBookings}
+        plans={plans}
+      />
 
       <Toast />
     </>
