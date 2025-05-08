@@ -45,6 +45,7 @@ const TABLE_HEAD = [
   { id: 'time_slot', label: 'Time Slot', width: 150 },
   { id: 'users', label: 'Users', width: 250 },
   { id: 'status', label: 'Status', width: 100 },
+  { id: 'notes', label: 'Notes', width: 200 },
   { id: 'created_at', label: 'Created At', width: 150 },
   { id: 'actions', label: 'Actions', width: 100 },
 ];
@@ -233,7 +234,7 @@ export default function BookingsPage() {
   };
 
   const renderBookingRow = (booking: Booking) => {
-    const { booking_id, date, time_slot, users, status, created_at } = booking;
+    const { booking_id, date, time_slot, users, status, created_at, notes } = booking;
     const isPending = !booking.is_completed;
 
     return (
@@ -242,7 +243,7 @@ export default function BookingsPage() {
           {date}
         </TableCell>
         
-        <TableCell>{time_slot}</TableCell>
+        <TableCell>{time_slot || 'Immediate'}</TableCell>
         
         <TableCell>
           <Stack spacing={1}>
@@ -279,6 +280,29 @@ export default function BookingsPage() {
               ? 'Confirmed'
               : 'Pending'}
           </Typography>
+        </TableCell>
+        
+        <TableCell>
+          {notes ? (
+            <Typography 
+              variant="body2" 
+              noWrap
+              sx={{ 
+                maxWidth: 180,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                '&:hover': {
+                  overflow: 'visible',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                }
+              }}
+            >
+              {notes}
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary">-</Typography>
+          )}
         </TableCell>
         
         <TableCell>{fDateTime(created_at)}</TableCell>
@@ -494,11 +518,16 @@ export default function BookingsPage() {
                       <strong>Date:</strong> {selectedBooking.date || 'N/A'}
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Time Slot:</strong> {selectedBooking.time_slot}
+                      <strong>Time Slot:</strong> {selectedBooking.time_slot || 'Immediate'}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Users:</strong> {selectedBooking.users.length}
                     </Typography>
+                    {selectedBooking.notes && (
+                      <Typography variant="body2">
+                        <strong>Notes:</strong> {selectedBooking.notes}
+                      </Typography>
+                    )}
                   </Stack>
                 )}
               </Box>

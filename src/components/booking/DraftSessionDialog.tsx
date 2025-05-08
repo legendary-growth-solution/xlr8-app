@@ -196,10 +196,6 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
       errors.date = 'Date is required';
     }
     
-    if (!timeSlot) {
-      errors.timeSlot = 'Time slot is required';
-    }
-    
     if (users.length === 0) {
       errors.users = 'At least one user is required';
     }
@@ -288,7 +284,7 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
                 </FormControl>
 
                 <FormControl fullWidth error={!!formErrors.timeSlot}>
-                  <InputLabel id="time-slot-label">Time Slot</InputLabel>
+                  <InputLabel id="time-slot-label">Time Slot (Optional)</InputLabel>
                   <Select
                     labelId="time-slot-label"
                     value={timeSlot}
@@ -296,7 +292,7 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
                       setTimeSlot(e.target.value);
                       setFormErrors((prev) => ({ ...prev, timeSlot: undefined }));
                     }}
-                    label="Time Slot"
+                    label="Time Slot (Optional)"
                     disabled={loadingTimeSlots || !date}
                   >
                     {loadingTimeSlots ? (
