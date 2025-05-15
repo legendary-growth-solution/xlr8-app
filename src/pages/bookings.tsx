@@ -25,6 +25,7 @@ import {
   alpha,
   Divider,
   Skeleton,
+  Chip,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useBoolean } from 'src/hooks/use-boolean';
@@ -44,6 +45,7 @@ const TABLE_HEAD = [
   { id: 'date', label: 'Date', width: 150 },
   { id: 'time_slot', label: 'Time Slot', width: 150 },
   { id: 'users', label: 'Users', width: 250 },
+  { id: 'discount', label: 'Discount', width: 100 },
   { id: 'status', label: 'Status', width: 100 },
   { id: 'notes', label: 'Notes', width: 200 },
   { id: 'created_at', label: 'Created At', width: 150 },
@@ -234,7 +236,7 @@ export default function BookingsPage() {
   };
 
   const renderBookingRow = (booking: Booking) => {
-    const { booking_id, date, time_slot, users, status, created_at, notes } = booking;
+    const { booking_id, date, time_slot, users, status, created_at, notes, discount_code } = booking;
     const isPending = !booking.is_completed;
 
     return (
@@ -256,6 +258,14 @@ export default function BookingsPage() {
               {users.length} user{users.length !== 1 ? 's' : ''}
             </Typography>
           </Stack>
+        </TableCell>
+        
+        <TableCell>
+          {discount_code ? (
+            <Chip label={discount_code} color="primary" size="small" />
+          ) : (
+            <Typography variant="body2" color="text.secondary">-</Typography>
+          )}
         </TableCell>
         
         <TableCell>
@@ -523,6 +533,11 @@ export default function BookingsPage() {
                     <Typography variant="body2">
                       <strong>Users:</strong> {selectedBooking.users.length}
                     </Typography>
+                    {selectedBooking.discount_code && (
+                      <Typography variant="body2">
+                        <strong>Discount:</strong> {selectedBooking.discount_code}
+                      </Typography>
+                    )}
                     {selectedBooking.notes && (
                       <Typography variant="body2">
                         <strong>Notes:</strong> {selectedBooking.notes}

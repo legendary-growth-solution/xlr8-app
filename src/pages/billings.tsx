@@ -46,6 +46,7 @@ export default function BillingsPage() {
     try {
       const response = await billingApi.getAllInvoices();
       setBillings(response.data as any);
+      console.log(response.data, "response.data");
     } catch (error) {
       console.error('Failed to fetch billings', error);
     }
@@ -101,10 +102,10 @@ export default function BillingsPage() {
                       <TableCell>{billing.invoice_number}</TableCell>
                       <TableCell>{new Date(billing.created_at).toLocaleString()}</TableCell>
                       {/* <TableCell sx={{ textTransform: 'capitalize' }}>{billing.status}</TableCell> */}
-                      <TableCell>₹{billing.billing_data.total_amount}</TableCell>
-                      <TableCell>₹{billing.billing_data.total_discount}</TableCell>
-                      <TableCell>₹{billing.billing_data.total_tax}</TableCell>
-                      <TableCell>₹{billing.billing_data.grand_total}</TableCell>
+                      <TableCell>₹{billing.billing_data?.total_amount}</TableCell>
+                      <TableCell>₹{billing.billing_data?.total_discount}</TableCell>
+                      <TableCell>₹{billing.billing_data?.total_tax}</TableCell>
+                      <TableCell>₹{billing.billing_data?.grand_total}</TableCell>
                     </TableRow>
                   ))}
               </TableBody>

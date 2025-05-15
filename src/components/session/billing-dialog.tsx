@@ -43,6 +43,7 @@ interface BillingDialogProps {
   hasBillingData?: boolean;
   fetchBillingData: () => void;
   localGroupUsers?: any;
+  sessionId: string;
 }
 
 const GST_REGEX = /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/;
@@ -60,7 +61,8 @@ export function BillingDialog({
   loading,
   hasBillingData,
   fetchBillingData,
-  localGroupUsers
+  localGroupUsers,
+  sessionId
 }: BillingDialogProps) {
   const [plans, setPlans] = useState<any>([]);
   const [loadingPlans, setLoadingPlans] = useState<boolean>(false);
@@ -102,7 +104,7 @@ export function BillingDialog({
     try {
       setValidatingCode(true);
       setCodeError('');
-      const response = await billingApi.validateDiscountCode(groupId, billingData.discountCode);
+      const response = await billingApi.validateDiscountCode(billingData.discountCode);
 
       if (!response.data.valid) {
         setCodeError(response.data.message || 'Invalid or expired discount code');
@@ -303,7 +305,7 @@ export function BillingDialog({
   const handleDeleteConfirm = async () => {
     setDeleting(true);
     try {
-      await billingApi.deleteBill(groupId);
+      await billingApi.deleteBill(sessionId, groupId);
       showToast.success('Bill deleted successfully');
       onClose();
     } catch (error) {

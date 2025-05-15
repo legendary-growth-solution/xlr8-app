@@ -93,6 +93,7 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
   
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [notes, setNotes] = useState<string>('');
+  const [discountCode, setDiscountCode] = useState<string>('');
   
   useEffect(() => {
     if (open) {
@@ -102,6 +103,8 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
       setSearchTerm('');
       setSearchResults([]);
       setFormErrors({});
+      setNotes('');
+      setDiscountCode('');
     }
   }, [open]);
   
@@ -232,6 +235,7 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
         status: 'pending',
         source: 'admin',
         notes,
+        discount_code: discountCode || undefined,
       };
       await bookingApi.create(bookingData);
       showToast.success('Draft session created successfully');
@@ -239,7 +243,7 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
       onClose();
     } catch (error) {
       console.error('Error creating booking:', error);
-      showToast.error('Failed to create booking');
+      showToast.error( error?.response?.data?.error || 'Failed to create booking');
     } finally {
       setSubmitting(false);
     }
@@ -504,6 +508,16 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
                     onChange={(e) => setNotes(e.target.value)}
                     multiline
                     rows={4}
+                  />
+                </FormControl>
+
+                <FormControl fullWidth>
+                  <TextField
+                    label="Discount Code"
+                    variant="outlined"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value)}
+                    placeholder="Enter discount code (optional)"
                   />
                 </FormControl>
               </Stack>

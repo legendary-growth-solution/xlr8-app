@@ -79,12 +79,12 @@ export const API_ENDPOINTS = {
   billing: {
     plans: '/plans',
     discountCodes: '/discounts',
-    validateDiscountCode: (groupId: string) => `/api/billing/groups/${groupId}/validate-code`,
-    generateBill: (groupId: string) => `/api/billing/groups/${groupId}/generate`,
-    getBillingData: (groupId: string) => `/api/billing/groups/${groupId}/data`,
-    allInvoices: createEndpoint('/api/billing/all-invoices'),
+    validateDiscountCode: () => `/discounts/validate-code`,
+    generateBill: (sessionId: string, groupId: string) => `/billing/sessions/${sessionId}/groups/${groupId}/generate`,
+    getBillingData: (sessionId: string, groupId: string) => `/billing/sessions/${sessionId}/groups/${groupId}/data`,
+    allInvoices: createEndpoint('/billing/all-invoices'),
     // allInvoices: createEndpoint('/billings'),
-    deleteBill: (groupId: string) => `/api/billing/groups/${groupId}/delete-bill`,
+    deleteBill: (sessionId: string, groupId: string) => `/billing/sessions/${sessionId}/groups/${groupId}/delete-bill`,
   },
   INVENTORY: {
     ITEMS: {

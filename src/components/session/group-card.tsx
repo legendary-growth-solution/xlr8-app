@@ -2,10 +2,13 @@ import { useState, useCallback, useEffect } from 'react';
 import { Card, Box, Stack, Typography, Button } from '@mui/material';
 import { Cart, Group, NewUser, Plan, UpdatingUser, User, UserRaceStatus } from 'src/types/session';
 import { Iconify } from 'src/components/iconify';
+import { billingApi } from 'src/services/api/billing.api';
+import { showToast } from '../toast';
 import { GroupUserList } from './group-user-list';
 import { ConfirmDialog } from '../dialog/confirm-dialog';
 import { DeleteButton } from '../delete-button';
 import { ManageUsersDialog } from './manage-users-dialog';
+import { BillingDialog } from './billing-dialog';
 
 interface GroupCardProps {
   group: Group;
@@ -20,6 +23,15 @@ interface GroupCardProps {
   handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus) => void;
   sessionId: string;
   users: User[];
+}
+
+interface BillingData {
+  gstNumber?: string;
+  remarks?: string;
+  discountCode?: string;
+  discountAmount: number;
+  totalAmount: number;
+  subtotal?: number;
 }
 
 export function GroupCard({
@@ -40,6 +52,15 @@ export function GroupCard({
   const [showManageUsers, setShowManageUsers] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [localGroup, setLocalGroup] = useState(group);
+  const [openBilling, setOpenBilling] = useState(false);
+  const [billingData, setBillingData] = useState<BillingData>({
+    discountAmount: 0,
+    totalAmount: 0,
+  });
+  const [isGeneratingBill, setIsGeneratingBill] = useState(false);
+  const [billGenError, setBillGenError] = useState<string | null>(null);
+  const [loadingBilling, setLoadingBilling] = useState(false);
+  const [hasBillingData, setHasBillingData] = useState(false);
 
   useEffect(() => {
     setLocalGroup((prev) => {
@@ -116,6 +137,81 @@ export function GroupCard({
     [handleAddUsers]
   );
 
+  const getBillingData = async () => {
+    try {
+      setLoadingBilling(true);
+      const response = await billingApi.getBillingData(sessionId, group.group_id);
+      if (response.data && Object.keys(response.data).length > 0) {
+        if ((response?.data as any)?.has_discount) {
+          setBillingData((prev) => ({
+            ...prev,
+            discountCode: (response?.data as any)?.discount_code?.toUpperCase(),
+          }));
+        }
+        else {
+          setBillingData(response.data as any);
+          setHasBillingData(true);
+        }
+      } else {
+        setHasBillingData(false);
+      }
+      setLoadingBilling(false);
+    } catch (error) {
+      console.error('Error fetching billing data:', error);
+      setLoadingBilling(false);
+    }
+  };
+
+  const handleGenerateBill = async () => {
+    try {
+      setBillingData((prev) => ({
+        ...prev,
+        totalAmount: 0,
+        totalUsers: localGroup.users.length,
+      }));
+      setOpenBilling(true);
+    } catch (error) {
+      console.error('Error generating bill:', error);
+    }
+  };
+
+  const handleDownloadBill = async () => {
+    try {
+      setIsGeneratingBill(true);
+      setBillGenError(null);
+
+      const usersWithDurations = localGroup.users.map((user) => ({
+        user_id: user.user_id,
+        time_in_minutes: user.time_in_minutes || user.time_allotted,
+      }));
+
+      const response = await billingApi.generateInvoice(sessionId, group.group_id, {
+        billingData: {
+          gstNumber: billingData.gstNumber,
+          remarks: billingData.remarks,
+          discountCode: billingData.discountCode,
+        },
+        users: usersWithDurations,
+      });
+      
+      if (response.data) {
+        setBillGenError(null);
+        showToast.success('Bill generated successfully');
+        setOpenBilling(false);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setBillGenError(
+          error.response.data.error || 'Error generating bill. Check coupon/details & try again.'
+        );
+      } else {
+        setBillGenError('An error occurred while generating the bill');
+      }
+    } finally {
+      setIsGeneratingBill(false);
+    }
+  };
+
   return (
     <Box sx={{ position: 'relative', height: '100%' }}>
       <Card
@@ -191,6 +287,16 @@ export function GroupCard({
             >
               Manage Group Users
             </Button>
+
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<Iconify icon="solar:bill-list-bold" />}
+              onClick={handleGenerateBill}
+              disabled={localGroup.users.length === 0 || isDeleting}
+            >
+              {hasBillingData ? 'View' : 'Generate'} Bill
+            </Button>
           </Stack>
         </Box>
       </Card>
@@ -221,6 +327,23 @@ export function GroupCard({
         handleRemoveUser={handleLocalRemoveUser}
         plans={plans}
         sessionUsers={users as any}
+      />
+
+      <BillingDialog
+        open={openBilling}
+        onClose={() => setOpenBilling(false)}
+        groupName={localGroup.name}
+        groupId={localGroup.group_id}
+        billingData={billingData}
+        onBillingDataChange={(data) => setBillingData((prev) => ({ ...prev, ...data }))}
+        onDownload={handleDownloadBill}
+        isGenerating={isGeneratingBill}
+        billGenError={billGenError}
+        loading={loadingBilling}
+        hasBillingData={hasBillingData}
+        fetchBillingData={getBillingData}
+        localGroupUsers={localGroup.users}
+        sessionId={sessionId}
       />
     </Box>
   );

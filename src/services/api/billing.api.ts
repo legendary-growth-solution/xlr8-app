@@ -18,21 +18,21 @@ export const billingApi = {
   deleteDiscountCode: (codeId: string) => 
     apiClient.delete(`${API_ENDPOINTS.billing.discountCodes}/${codeId}`),
 
-  validateDiscountCode: (groupId: string, code: string) => 
+  validateDiscountCode: (code: string) => 
     apiClient.post<{ 
       valid: boolean;
       discount_amount?: number;
       message?: string;
-    }>(API_ENDPOINTS.billing.validateDiscountCode(groupId), { code }),
+    }>(API_ENDPOINTS.billing.validateDiscountCode(), { code }),
 
-  getBillingData: (groupId: string) => 
-    apiClient.get<{ data: any }>(API_ENDPOINTS.billing.getBillingData(groupId)),
+  getBillingData: (sessionId: string, groupId: string) => 
+    apiClient.get<{ data: any }>(API_ENDPOINTS.billing.getBillingData(sessionId, groupId)),
 
   getAllInvoices: () => 
     apiClient.get<{ data: any }>(API_ENDPOINTS.billing.allInvoices),
 
-  generateBill: (groupId: string, billingDetails: BillingDetails) => 
-    apiClient.post<{ url: string }>(API_ENDPOINTS.billing.generateBill(groupId), billingDetails),
+  generateBill: (sessionId: string, groupId: string, billingDetails: BillingDetails) => 
+    apiClient.post<{ url: string }>(API_ENDPOINTS.billing.generateBill(sessionId, groupId), billingDetails),
 
   createPlan: (data: Omit<any, 'id'>) => 
     apiClient.post<{ data: any }>(API_ENDPOINTS.billing.plans, data),
@@ -43,9 +43,9 @@ export const billingApi = {
   deletePlan: (planId: string) => 
     apiClient.delete(`${API_ENDPOINTS.billing.plans}/${planId}`),
 
-  generateInvoice: (groupId: string, billingDetails: any) => 
+  generateInvoice: (sessionId: string, groupId: string, billingDetails: any) => 
     apiClient.post(
-      API_ENDPOINTS.billing.generateBill(groupId), 
+      API_ENDPOINTS.billing.generateBill(sessionId, groupId), 
       billingDetails,
       {
         responseType: 'blob',
@@ -55,6 +55,6 @@ export const billingApi = {
       }
     ),
 
-  deleteBill: (groupId: string) => 
-    apiClient.delete(API_ENDPOINTS.billing.deleteBill(groupId)),
+  deleteBill: (sessionId: string, groupId: string) => 
+    apiClient.delete(API_ENDPOINTS.billing.deleteBill(sessionId, groupId)),
 }; 

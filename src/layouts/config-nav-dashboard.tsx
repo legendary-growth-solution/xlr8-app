@@ -74,11 +74,11 @@ const navConfig = [
     path: '/bookings',
     icon: <Iconify icon="solar:calendar-bold-duotone" />,
   },
-  // {
-  //   title: 'Billings',
-  //   path: '/billings',
-  //   icon: <Iconify icon="solar:bill-list-bold-duotone" />,
-  // },
+  {
+    title: 'Billings',
+    path: '/billings',
+    icon: <Iconify icon="solar:bill-list-bold-duotone" />,
+  },
   {
     title: 'Inventory',
     path: '/inventory',
