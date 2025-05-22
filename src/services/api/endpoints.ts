@@ -40,6 +40,12 @@ export const API_ENDPOINTS = {
         groupUserId
           ? createEndpoint(`/api/groups/user/${groupUserId}/race/lap`)
           : createEndpoint(`/api/groups/${id}/race/${userId}/lap`),
+      DISQUALIFY_USER: (sessionId: string, groupId: string, userId: string) =>
+        createEndpoint(`/sessions/${sessionId}/groups/${groupId}/users/${userId}/disqualify`),
+      ADD_PENALTY: (sessionId: string, groupId: string, userId: string) =>
+        createEndpoint(`/sessions/${sessionId}/groups/${groupId}/users/${userId}/penalty`),
+      RESET_RACE_STATUS: (sessionId: string, groupId: string, userId: string) =>
+        createEndpoint(`/sessions/${sessionId}/groups/${groupId}/users/${userId}/reset-race-status`),
     },
   },
   BOOKINGS: {

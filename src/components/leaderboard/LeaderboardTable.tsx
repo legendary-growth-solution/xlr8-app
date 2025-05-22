@@ -1,17 +1,17 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Tooltip } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { Leaderboard } from 'src/types/session';
 import { formatLapTime } from 'src/utils/timeFormatter';
 import { RankCircle } from './RankCircle';
 import { LeaderboardSkeleton } from '../skeleton';
+import { Iconify } from '../iconify';
 
 type LeaderboardTableProps = {
   entries: Leaderboard[];
   loading?: boolean;
   isInactiveSession?: boolean;
-  // onUserClick?: (userId: string, groupId: string) => void;
 };
 
 const getRankColor = (rank: number, theme: any, primary: boolean = false) => {
@@ -31,7 +31,6 @@ export const LeaderboardTable = ({
   entries,
   loading = false,
   isInactiveSession = false,
-  // onUserClick,
 }: LeaderboardTableProps) => {
   const theme = useTheme();
 
@@ -73,100 +72,159 @@ export const LeaderboardTable = ({
           </tr>
         </thead>
         <tbody>
-          {entries?.map((entry) => (
-            <tr
-              key={entry.rank}
-              style={{
-                backgroundColor: getRankColor(entry.rank, theme),
-              }}
-            >
-              <td style={{ padding: '20px', textAlign: 'center' }}>
-                <RankCircle rank={entry.rank} />
-              </td>
-              <td
+          {entries?.map((entry) => {
+            const isDisqualified = entry.is_disqualified;
+            const hasPenalty = !isDisqualified && entry.penalty_seconds !== undefined && entry.penalty_seconds > 0;
+            
+            return (
+              <tr
+                key={entry.rank}
                 style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
-                  color: theme.palette.text.primary,
-                  cursor: entry.user_id ? 'pointer' : 'default',
-                }}
-                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
-                onClick={() => {
-                  if (entry.user_id) {
-                    window.location.href = `/users/${entry.user_id}/stats`;
-                  }
+                  backgroundColor: isDisqualified 
+                    ? alpha(theme.palette.error.main, 0.05)
+                    : getRankColor(entry.rank, theme),
+                  opacity: isDisqualified ? 0.85 : 1,
+                  position: 'relative',
                 }}
               >
-                {entry.user_name}
-              </td>
-              <td
-                style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
-                  color: theme.palette.text.primary,
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {entry.group_name}
-              </td>
-              <td
-                style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
-                }}
-                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
-              >
-                {`L${entry.cart_type}`}
-              </td>
-              <td
-                style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  textAlign: 'center',
-                  fontWeight: entry.rank <= 3 ? 'bold' : 'normal',
-                }}
-                // onClick={() => onUserClick?.(entry.user_id || '', entry.groupId || '')}
-              >
-                {entry.total_laps}
-              </td>
-              <td
-                style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  textAlign: 'center',
-                  color: theme.palette.text.primary,
-                }}
-              >
-                {entry.best_lap_number}
-              </td>
-              <td
-                style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  textAlign: 'center',
-                  color: entry.best_lap_time
-                    ? theme.palette.success.main
-                    : theme.palette.text.secondary,
-                }}
-              >
-                {entry.best_lap_time ? formatLapTime(Number(entry.best_lap_time)) : '-'}
-              </td>
-              <td
-                style={{
-                  padding: '20px',
-                  fontSize: '1.5rem',
-                  textAlign: 'center',
-                  color: theme.palette.text.primary,
-                }}
-              >
-                {entry?.cart_variant ? `Level ${entry?.cart_variant}` : ''}
-              </td>
-            </tr>
-          ))}
+                <td style={{ padding: '20px', textAlign: 'center' }}>
+                  <RankCircle rank={entry.rank} />
+                </td>
+                <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    fontWeight: !isDisqualified && entry.rank <= 3 ? 'bold' : 'normal',
+                    color: isDisqualified 
+                      ? theme.palette.error.main 
+                      : theme.palette.text.primary,
+                    cursor: entry.user_id ? 'pointer' : 'default',
+                    textDecoration: isDisqualified ? 'line-through' : 'none',
+                  }}
+                  onClick={() => {
+                    if (entry.user_id) {
+                      window.location.href = `/users/${entry.user_id}/stats`;
+                    }
+                  }}
+                >
+                  {entry.user_name}
+                  {isDisqualified && (
+                    <Tooltip title={entry.disqualification_reason || "No reason provided"}>
+                      <Box component="span" sx={{ display: 'inline-flex', ml: 1, color: 'error.main' }}>
+                        <Iconify icon="mdi:flag" width={24} />
+                      </Box>
+                    </Tooltip>
+                  )}
+                </td>
+                <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    fontWeight: !isDisqualified && entry.rank <= 3 ? 'bold' : 'normal',
+                    color: theme.palette.text.primary,
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    opacity: isDisqualified ? 0.6 : 1,
+                  }}
+                >
+                  {entry.group_name}
+                </td>
+                <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    fontWeight: !isDisqualified && entry.rank <= 3 ? 'bold' : 'normal',
+                    opacity: isDisqualified ? 0.6 : 1,
+                    textAlign: 'center',
+                  }}
+                >
+                  {`L${entry.cart_type}`}
+                </td>
+                <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    textAlign: 'center',
+                    fontWeight: !isDisqualified && entry.rank <= 3 ? 'bold' : 'normal',
+                    opacity: isDisqualified ? 0.6 : 1,
+                  }}
+                >
+                  {isDisqualified ? "–" : entry.total_laps}
+                </td>
+                <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    textAlign: 'center',
+                    color: theme.palette.text.primary,
+                    opacity: isDisqualified ? 0.6 : 1,
+                  }}
+                >
+                  {isDisqualified ? "–" : entry.best_lap_number}
+                </td>
+                <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    textAlign: 'center',
+                    color: isDisqualified 
+                      ? theme.palette.error.main
+                      : entry.best_lap_time
+                        ? hasPenalty
+                          ? theme.palette.warning.main
+                          : theme.palette.success.main
+                        : theme.palette.text.secondary,
+                    opacity: isDisqualified ? 0.6 : 1,
+                  }}
+                >
+                  {isDisqualified ? (
+                    "NA"
+                  ) : hasPenalty && entry.original_best_lap_time ? (
+                    <Tooltip title={`Original lap time: ${formatLapTime(Number(entry.original_best_lap_time))}`}>
+                      <span>
+                        {formatLapTime(Number(entry.best_lap_time))}
+                        <Typography 
+                          component="span" 
+                          sx={{ 
+                            fontSize: '1rem', 
+                            ml: 1, 
+                            color: 'warning.main',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          (+{entry.penalty_seconds}s)
+                        </Typography>
+                      </span>
+                    </Tooltip>
+                  ) : entry.best_lap_time ? (
+                    formatLapTime(Number(entry.best_lap_time))
+                  ) : (
+                    '-'
+                  )}
+                </td>
+                {/* <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    textAlign: 'center',
+                    color: isDisqualified
+                      ? theme.palette.error.main
+                      : hasPenalty
+                        ? theme.palette.warning.main
+                        : theme.palette.success.main,
+                  }}
+                >
+                  {isDisqualified ? (
+                    "DQ"
+                  ) : hasPenalty ? (
+                    "PENALTY"
+                  ) : (
+                    "OK"
+                  )}
+                </td> */}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </Box>

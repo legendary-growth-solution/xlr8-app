@@ -20,7 +20,7 @@ interface GroupCardProps {
   handleDeleteGroup: (group_id: string) => void;
   handleAddUsers: (group_id: string, data: NewUser[]) => void;
   handleUpdateUser: (group_id: string, user_id: string, data: UpdatingUser) => void;
-  handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus) => void;
+  handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus, updates?: any) => void;
   sessionId: string;
   users: User[];
 }

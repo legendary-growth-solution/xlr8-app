@@ -7,23 +7,32 @@ import {
   ListItemText,
   Box,
   Typography,
-  Alert,
-  Snackbar,
   Skeleton,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
 } from '@mui/material';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Iconify } from 'src/components/iconify';
 import { LoadingButton } from '@mui/lab';
 import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { User, UserRaceStatus, Cart } from 'src/types/session';
+import axios from 'axios';
+import { API_ENDPOINTS } from 'src/services/api/endpoints';
+import { showToast } from '../toast';
+import { DisqualifyDialog } from './disqualify-dialog';
+import { PenaltyDialog } from './penalty-dialog';
 
 interface CartControlsProps {
   user: User;
   group_id: string;
   carts: Cart[];
   handleAssignCart: (group_id: string, user_id: string, cart_id: string) => void;
-  handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus) => void;
+  handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus, updates?: any) => void;
 }
 
 const normalizeRaceEndTime = (timeString: string): string =>
@@ -53,6 +62,14 @@ export function CartControls({
   const [isStartingRace, setIsStartingRace] = useState<boolean>(false);
   const isOptimisticUser = (user as any)._isOptimistic;
 
+  const [openDisqualifyDialog, setOpenDisqualifyDialog] = useState(false);
+  const [disqualifyReason, setDisqualifyReason] = useState('');
+  const [isDisqualifying, setIsDisqualifying] = useState(false);
+  const [openPenaltyDialog, setOpenPenaltyDialog] = useState(false);
+  const [penaltySeconds, setPenaltySeconds] = useState<number | string>('');
+  const [isApplyingPenalty, setIsApplyingPenalty] = useState(false);
+  const [raceActionsAnchorEl, setRaceActionsAnchorEl] = useState<null | HTMLElement>(null);
+ 
   const raceCompleted = useMemo(() => {
     if (!user?.race_end_time) return false;
     if (user?.race_end_time === '') return false;
@@ -75,6 +92,7 @@ export function CartControls({
     }
     return false;
   }, [user?.time_in_minutes, user?.total_active_seconds, user?.race_active]);
+  
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     return `${mins.toString().padStart(2, '0')}:${Math.ceil(seconds % 60).toString().padStart(2, '0')}`;
@@ -108,6 +126,136 @@ export function CartControls({
     setTimeout(() => {
       setIsAssigning(false);
     }, 1000);
+  };
+
+  const handleOpenRaceActionsMenu = (event: React.MouseEvent<HTMLElement>) => {
+    if (isOptimisticUser || !user.cart_id) return;
+    setRaceActionsAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseRaceActionsMenu = () => {
+    setRaceActionsAnchorEl(null);
+  };
+
+  const handleOpenDisqualifyDialog = () => {
+    setOpenDisqualifyDialog(true);
+    handleCloseRaceActionsMenu();
+  };
+
+  const handleDisqualify = async () => {
+    if (!user.user_id || !group_id) return;
+    
+    setIsDisqualifying(true);
+    try {
+      const response = await axios.post(API_ENDPOINTS.SESSIONS.GROUPS.DISQUALIFY_USER(user.session_id || 'current', group_id, user.user_id), {
+        reason: disqualifyReason || 'No reason provided'
+      });
+      
+      showToast.error('⚠️ Racer has been DISQUALIFIED');
+      
+      handleManageUserRace(group_id, user?.user_id, 'update', {
+        is_disqualified: true,
+        disqualification_reason: disqualifyReason || 'No reason provided',
+        race_active: false
+      });
+      
+      const userElement = document.querySelector(`[data-user-id="${user.user_id}"]`);
+      if (userElement) {
+        userElement.classList.add('disqualify-animation');
+        
+        const flashOverlay = document.createElement('div');
+        flashOverlay.style.position = 'absolute';
+        flashOverlay.style.top = '0';
+        flashOverlay.style.left = '0';
+        flashOverlay.style.right = '0';
+        flashOverlay.style.bottom = '0';
+        flashOverlay.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+        flashOverlay.style.borderRadius = '4px';
+        flashOverlay.style.zIndex = '-1';
+        flashOverlay.style.animation = 'flash-fade 2s ease-out';
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+          @keyframes flash-fade {
+            0% { opacity: 0; }
+            10% { opacity: 0.8; }
+            30% { opacity: 0.6; }
+            70% { opacity: 0.4; }
+            100% { opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        (userElement as HTMLElement).style.position = 'relative';
+        userElement.appendChild(flashOverlay);
+        
+        setTimeout(() => {
+          userElement.classList.remove('disqualify-animation');
+          userElement.removeChild(flashOverlay);
+          document.head.removeChild(style);
+        }, 2000);
+      }
+    } catch (err: any) {
+      console.error('Error disqualifying user:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to disqualify user. Please try again.';
+      showToast.error(errorMessage);
+    } finally {
+      setIsDisqualifying(false);
+      setOpenDisqualifyDialog(false);
+      setDisqualifyReason('');
+    }
+  };
+
+  const handleOpenPenaltyDialog = () => {
+    setOpenPenaltyDialog(true);
+    handleCloseRaceActionsMenu();
+  };
+
+  const handleApplyPenalty = async () => {
+    if (!user.user_id || !group_id) return;
+    
+    const penalty = Number(penaltySeconds);
+    if (Number.isNaN(penalty) || penalty < 0) {
+      showToast.error('Please enter a valid positive number for the penalty.');
+      return;
+    }
+    
+    setIsApplyingPenalty(true);
+    try {
+      const response = await axios.post(API_ENDPOINTS.SESSIONS.GROUPS.ADD_PENALTY(user.session_id || 'current', group_id, user.user_id), {
+        penalty_seconds: Math.abs(penalty)
+      });
+      
+      showToast.success(`${penalty}s penalty applied successfully`);
+      
+      handleManageUserRace(group_id, user?.user_id, 'update', {
+        penalty_seconds: Math.abs(penalty)
+      });
+      
+      const userElement = document.querySelector(`[data-user-id="${user.user_id}"]`);
+      if (userElement) {
+        userElement.classList.add('penalty-animation');
+        setTimeout(() => {
+          userElement.classList.remove('penalty-animation');
+        }, 1500);
+      }
+    } catch (err: any) {
+      console.error('Error applying penalty:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to apply penalty. Please try again.';
+      showToast.error(errorMessage);
+    } finally {
+      setIsApplyingPenalty(false);
+      setOpenPenaltyDialog(false);
+      setPenaltySeconds('');
+    }
+  };
+
+  const handleOpenStopConfirm = () => {
+    setConfirmStop(true);
+  };
+
+  const handleCloseStopConfirm = () => {
+    setConfirmStop(false);
   };
 
   const renderCartMenuItem = (cart: Cart) => {
@@ -152,14 +300,6 @@ export function CartControls({
     );
   };
 
-  const handleOpenStopConfirm = () => {
-    setConfirmStop(true);
-  };
-
-  const handleCloseStopConfirm = () => {
-    setConfirmStop(false);
-  };
-
   useEffect(() => {
     if (user?.total_active_seconds !== undefined && user?.time_in_minutes !== undefined) {
       setTimeLeft(user.time_in_minutes * 60 - user.total_active_seconds);
@@ -201,7 +341,6 @@ export function CartControls({
     } else if (!isRaceActive && user?.total_remaining_seconds !== undefined) {
       setTimeLeft(user.total_remaining_seconds);
     } else if (isPaused && user?.time_in_minutes && user?.total_active_seconds !== undefined) {
-      // If paused, calculate remaining time from time_in_minutes and total_active_seconds
       const totalAllottedSeconds = user.time_in_minutes * 60;
       const remainingSeconds = Math.max(0, totalAllottedSeconds - user.total_active_seconds);
       setTimeLeft(remainingSeconds);
@@ -229,6 +368,36 @@ export function CartControls({
   }, [carts, user?.cart_id, optimisticCartId]);
 
   const showAsAssigned = !!user?.cart_id || !!optimisticCartId;
+  const isDisqualified = user?.is_disqualified;
+  const hasPenalty = user?.penalty_seconds && user.penalty_seconds > 0;
+
+  const raceHasStarted = useMemo(() => 
+    user.race_start_times?.length > 0 || 
+    raceCompleted || 
+    (user.total_active_seconds !== undefined && user.total_active_seconds > 0) ||
+    user.race_active
+  , [user.race_start_times, user.total_active_seconds, raceCompleted, user.race_active]);
+
+  const isRaceComplete = useMemo(() => 
+    raceCompleted || 
+    formatTime(timeLeft || 0) === '00:00' ||
+    (user.time_in_minutes && user.total_active_seconds !== undefined && 
+     user.total_active_seconds >= user.time_in_minutes * 60)
+  , [raceCompleted, user.total_active_seconds, user.time_in_minutes, timeLeft]);
+
+  useEffect(() => {
+    if (error) {
+      showToast.error(error);
+      setError(null);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (isRaceActive) {
+      setIsRaceStarted(true);
+    }
+  }, [isRaceActive]);
+
   return (
     <>
       <Stack direction="row" spacing={1} alignItems="center">
@@ -236,22 +405,34 @@ export function CartControls({
           <Box
             onClick={handleOpenCartMenu}
             sx={{
-              pointerEvents: user?.race_active || raceCompleted || isOptimisticUser ? 'none' : 'auto',
+              pointerEvents: user?.race_active || raceCompleted || isOptimisticUser || isDisqualified ? 'none' : 'auto',
               display: 'flex',
               alignItems: 'center',
-              bgcolor: user?.race_active || raceCompleted || isOptimisticUser ? 'grey.200' : 'success.lighter',
+              bgcolor: isDisqualified 
+                ? 'error.lighter'
+                : user?.race_active || raceCompleted || isOptimisticUser 
+                  ? 'grey.200' 
+                  : 'success.lighter',
               borderRadius: '8px',
               height: '32px',
               minWidth: 'fit-content !important',
               padding: '0 8px',
               width: '52px',
               border: '1px solid',
-              borderColor: user?.race_active || raceCompleted || isOptimisticUser ? 'grey.300' : 'success.light',
+              borderColor: isDisqualified
+                ? 'error.light'
+                : user?.race_active || raceCompleted || isOptimisticUser 
+                  ? 'grey.300' 
+                  : 'success.light',
               position: 'relative',
               transition: 'all 0.2s',
-              cursor: user?.race_active || raceCompleted || isOptimisticUser ? 'default' : 'pointer',
+              cursor: user?.race_active || raceCompleted || isOptimisticUser || isDisqualified ? 'default' : 'pointer',
               '&:hover': {
-                borderColor: user?.race_active || raceCompleted || isOptimisticUser ? 'grey.300' : 'success.main',
+                borderColor: isDisqualified
+                  ? 'error.light'
+                  : user?.race_active || raceCompleted || isOptimisticUser 
+                    ? 'grey.300' 
+                    : 'success.main',
               },
             }}
           >
@@ -260,17 +441,20 @@ export function CartControls({
               alignItems="center"
               sx={{
                 width: '100%',
-                cursor: user?.race_active || raceCompleted || isOptimisticUser ? 'default' : 'pointer',
+                cursor: user?.race_active || raceCompleted || isOptimisticUser || isDisqualified ? 'default' : 'pointer',
               }}
-              onClick={user?.race_active || raceCompleted || isOptimisticUser ? undefined : handleOpenCartMenu}
+              onClick={user?.race_active || raceCompleted || isOptimisticUser || isDisqualified ? undefined : handleOpenCartMenu}
             >
               <Typography
                 variant="caption"
                 sx={{
                   fontWeight: 700,
-                  color: isAssigning ? 'text.disabled' : 'success.dark',
+                  color: isDisqualified 
+                    ? 'error.dark'
+                    : isAssigning ? 'text.disabled' : 'success.dark',
                   lineHeight: 1,
                   fontSize: '0.75rem',
+                  textDecoration: isDisqualified ? 'line-through' : 'none',
                 }}
               >
                 {currentCart?.name || '...'}
@@ -278,10 +462,13 @@ export function CartControls({
               <Typography
                 variant="caption"
                 sx={{
-                  color: isAssigning ? 'text.disabled' : 'success.dark',
+                  color: isDisqualified 
+                    ? 'error.dark'
+                    : isAssigning ? 'text.disabled' : 'success.dark',
                   opacity: isAssigning ? 0.7 : 0.9,
                   fontSize: '0.65rem',
                   lineHeight: 1,
+                  textDecoration: isDisqualified ? 'line-through' : 'none',
                 }}
               >
                 #{currentCart?.rfid_number || '...'}
@@ -292,24 +479,29 @@ export function CartControls({
                 position: 'absolute',
                 right: -6,
                 top: -6,
-                bgcolor: isAssigning ? 'action.disabled' : 'success.main',
+                bgcolor: isDisqualified
+                  ? 'error.main'
+                  : isAssigning ? 'action.disabled' : 'success.main',
                 borderRadius: '50%',
                 width: 16,
                 height: 16,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: isAssigning || user?.race_active || raceCompleted || isOptimisticUser ? 'default' : 'pointer',
+                cursor: isAssigning || user?.race_active || raceCompleted || isOptimisticUser || isDisqualified ? 'default' : 'pointer',
                 border: '1px solid',
-                borderColor: isAssigning ? 'action.disabled' : 'success.light',
+                borderColor: isDisqualified
+                  ? 'error.light'
+                  : isAssigning ? 'action.disabled' : 'success.light',
                 '&:hover': {
-                  bgcolor:
-                    isAssigning || user?.race_active || raceCompleted || isOptimisticUser
+                  bgcolor: isDisqualified
+                    ? 'error.main'
+                    : isAssigning || user?.race_active || raceCompleted || isOptimisticUser
                       ? 'action.disabled'
                       : 'success.dark',
                 },
               }}
-              onClick={user?.race_active || raceCompleted || isOptimisticUser ? undefined : handleOpenCartMenu}
+              onClick={user?.race_active || raceCompleted || isOptimisticUser || isDisqualified ? undefined : handleOpenCartMenu}
             >
               {isAssigning ? (
                 <LoadingButton
@@ -327,9 +519,9 @@ export function CartControls({
                 />
               ) : (
                 <Iconify
-                  icon="eva:more-vertical-fill"
+                  icon={isDisqualified ? "mdi:flag" : "eva:more-vertical-fill"}
                   width={12}
-                  sx={{ color: 'success.lighter' }}
+                  sx={{ color: isDisqualified ? 'error.lighter' : 'success.lighter' }}
                 />
               )}
             </Box>
@@ -338,7 +530,7 @@ export function CartControls({
           <IconButton
             size="small"
             onClick={handleOpenCartMenu}
-            disabled={user?.race_active || isAssigning || isOptimisticUser}
+            disabled={user?.race_active || isAssigning || isOptimisticUser || isDisqualified}
             sx={{
               color: 'primary.main',
               '&:hover': { bgcolor: 'primary.lighter' },
@@ -375,11 +567,32 @@ export function CartControls({
                 bgcolor: 'background.neutral',
               }}
             />
-          ) :( !user?.race_end_time || user?.race_end_time === '') && !isPaused  ? (
+          ) : isDisqualified ? (
+            <Tooltip title={`Disqualified: ${user.disqualification_reason || 'No reason provided'}`}>
+              <Box
+                sx={{
+                  bgcolor: 'error.lighter',
+                  borderRadius: 1,
+                  px: 1,
+                  minWidth: 55,
+                  color: 'error.dark',
+                  textAlign: 'center',
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 32,
+                }}
+              >
+                <Typography sx={{ fontSize: '0.9rem', fontWeight: 'bold' }}>DQ</Typography>
+              </Box>
+            </Tooltip>
+          ) : (user.race_end_time === '' || user.race_end_time === undefined) && !isPaused ? (
             <IconButton
               size="small"
               onClick={() => {
                 setIsStartingRace(true);
+                setIsRaceStarted(true);
                 Promise.resolve(handleManageUserRace(group_id, user?.user_id, 'start')).finally(
                   () => setIsStartingRace(false)
                 );
@@ -440,34 +653,6 @@ export function CartControls({
                   ? 'END'
                   : formatTime(timeLeft || 0)}
               </Typography>
-
-              {/* {!raceCompleted && user?.race_end_time && user?.race_end_time !== '' && (
-                <Tooltip title="Stop timer">
-                  <IconButton
-                    className="stop-button"
-                    size="small"
-                    onClick={handleOpenStopConfirm}
-                    sx={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      opacity: 0,
-                      transition: 'opacity 0.2s',
-                      pointerEvents: 'none',
-                      bgcolor: 'error.main',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'error.dark',
-                      },
-                      width: 24,
-                      height: 24,
-                    }}
-                  >
-                    <Iconify icon="mdi:stop" width={16} />
-                  </IconButton>
-                </Tooltip>
-              )} */}
 
               {user?.race_active &&
                 user?.race_end_time &&
@@ -535,7 +720,107 @@ export function CartControls({
             </Box>
           )}
         </Box>
+
+        {showAsAssigned && !isOptimisticUser && !(raceCompleted && isDisqualified) && (
+          <Tooltip title={
+            !raceHasStarted
+              ? "Race must be started first"
+              : isDisqualified 
+                ? `Disqualified: ${user.disqualification_reason || 'No reason provided'}`
+                : hasPenalty 
+                  ? `${user.penalty_seconds}s penalty applied` 
+                  : "Race Actions"
+          }>
+            <span>
+              <IconButton
+                size="small"
+                onClick={handleOpenRaceActionsMenu}
+                disabled={isOptimisticUser || !raceHasStarted}
+                sx={{
+                  color: hasPenalty 
+                    ? 'warning.main' 
+                    : isDisqualified 
+                      ? 'error.main' 
+                      : !raceHasStarted
+                        ? 'text.disabled'
+                        : 'text.secondary',
+                  '&:hover': { 
+                    bgcolor: hasPenalty 
+                      ? 'warning.lighter' 
+                      : isDisqualified 
+                        ? 'error.lighter' 
+                        : 'action.hover' 
+                  },
+                }}
+              >
+                <Box>
+                  <Iconify 
+                    icon={
+                      isDisqualified
+                        ? "mdi:flag"
+                        : hasPenalty
+                          ? "mdi:timer-alert"
+                          : "mdi:dots-vertical"
+                    } 
+                    width={20} 
+                  />
+                </Box>
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
       </Stack>
+
+      <Menu
+        anchorEl={raceActionsAnchorEl}
+        open={Boolean(raceActionsAnchorEl)}
+        onClose={handleCloseRaceActionsMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem 
+          onClick={handleOpenDisqualifyDialog}
+          disabled={isDisqualified}
+          sx={{
+            color: 'error.main',
+            '&.Mui-disabled': {
+              opacity: 0.5,
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Iconify icon="mdi:flag" width={20} sx={{ color: 'error.main' }} />
+          </ListItemIcon>
+          <ListItemText primary={isDisqualified ? "Already Disqualified" : "Disqualify Racer"} />
+        </MenuItem>
+
+        <MenuItem 
+          onClick={handleOpenPenaltyDialog}
+          disabled={isDisqualified || !isRaceComplete}
+          sx={{
+            color: hasPenalty ? 'warning.main' : 'text.primary',
+            '&.Mui-disabled': {
+              opacity: 0.5,
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Iconify 
+              icon={hasPenalty ? "mdi:timer-alert" : "mdi:timer-plus"} 
+              width={20} 
+              sx={{ color: hasPenalty ? 'warning.main' : 'text.primary' }} 
+            />
+          </ListItemIcon>
+          <ListItemText 
+            primary={hasPenalty ? `Update Penalty (${user.penalty_seconds}s)` : "Add Time Penalty"} 
+          />
+          {!isRaceComplete && !isDisqualified && (
+            <Typography variant="caption" sx={{ color: 'text.disabled', ml: 1 }}>
+              (Race must end)
+            </Typography>
+          )}
+        </MenuItem>
+      </Menu>
 
       <Menu
         anchorEl={anchorEl}
@@ -575,16 +860,26 @@ export function CartControls({
         )}
       </Menu>
 
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        onClose={handleCloseError}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
-          {error}
-        </Alert>
-      </Snackbar>
+      <DisqualifyDialog
+        open={openDisqualifyDialog}
+        onClose={() => setOpenDisqualifyDialog(false)}
+        user={user}
+        isDisqualifying={isDisqualifying}
+        disqualifyReason={disqualifyReason}
+        setDisqualifyReason={setDisqualifyReason}
+        handleDisqualify={handleDisqualify}
+      />
+
+      <PenaltyDialog
+        open={openPenaltyDialog}
+        onClose={() => setOpenPenaltyDialog(false)}
+        user={user}
+        hasPenalty={hasPenalty || false}
+        penaltySeconds={penaltySeconds}
+        setPenaltySeconds={setPenaltySeconds}
+        isApplyingPenalty={isApplyingPenalty}
+        handleApplyPenalty={handleApplyPenalty}
+      />
 
       <ConfirmDialog
         open={confirmStop}

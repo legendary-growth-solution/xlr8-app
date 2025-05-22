@@ -19,10 +19,11 @@ export const LeaderboardSkeleton = ({
             {[
               'Rank',
               'Name',
+              'Group',
+              'Cart',
+              'Total Laps',
               'Best Lap',
               'Best Lap Time',
-              'Total Laps',
-              'Cart Type',
             ]
               .filter(Boolean)
               .map((header) => (

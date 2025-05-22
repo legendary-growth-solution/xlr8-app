@@ -26,6 +26,12 @@ export interface User {
   race_pause_times: string[];
   total_remaining_seconds?: number;
   time_in_minutes?: number;
+  is_disqualified?: boolean;
+  disqualification_reason?: string;
+  disqualified_at?: string;
+  penalty_seconds?: number;
+  penalty_applied_at?: string;
+  session_id?: string;
 }
 
 export interface Cart {
@@ -81,7 +87,7 @@ export interface UpdatingUser {
   time_in_minutes?: number;
 }
 
-export type UserRaceStatus = 'pause' | 'end' | 'start';
+export type UserRaceStatus = 'pause' | 'end' | 'start' | 'update';
 
 export interface Leaderboard {
   rank: number;
@@ -94,4 +100,8 @@ export interface Leaderboard {
   cart_name?: string;
   cart_variant?: string;
   cart_type: string | number;
+  is_disqualified?: boolean;
+  disqualification_reason?: string;
+  penalty_seconds?: number;
+  original_best_lap_time?: string | number;
 }

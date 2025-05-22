@@ -418,7 +418,7 @@ export default function SessionActivePage() {
   );
 
   const handleManageUserRace = useCallback(
-    (group_id: string, user_id: string, status: UserRaceStatus) => {
+    (group_id: string, user_id: string, status: UserRaceStatus, updates?: any) => {
       if (!session?.session_id) return Promise.reject(new Error('No active session'));
 
       return new Promise((resolve, reject) => {
@@ -490,38 +490,32 @@ export default function SessionActivePage() {
               });
             break;
 
-          // case 'end':
-          //   api.session.group.users.race
-          //     .end(session?.session_id, group_id, user_id)
-          //     .then((res) => {
-          //       setSession((prevSession) => {
-          //         if (!prevSession) return prevSession;
+          case 'update':
+            // Handle local update without API call
+            if (updates) {
+              setSession((prevSession) => {
+                if (!prevSession) return prevSession;
 
-          //         const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
+                const updatedSession = JSON.parse(JSON.stringify(prevSession)) as Session;
 
-          //         updatedSession.groups.forEach((group) => {
-          //           if (group.group_id === group_id) {
-          //             group.users.forEach((user) => {
-          //               if (user.user_id === user_id) {
-          //                 user.race_active = false;
-          //                 user.total_remaining_seconds = 0;
-          //               }
-          //             });
-          //           }
-          //         });
+                updatedSession.groups.forEach((group) => {
+                  if (group.group_id === group_id) {
+                    group.users.forEach((user) => {
+                      if (user.user_id === user_id) {
+                        // Apply all updates to the user object
+                        Object.assign(user, updates);
+                      }
+                    });
+                  }
+                });
 
-          //         return updatedSession;
-          //       });
-
-          //       showToast.success('Race ended successfully');
-          //       resolve(res);
-          //     })
-          //     .catch((err) => {
-          //       console.log(err);
-          //       showToast.error(err?.response?.data?.error || 'Failed to end race');
-          //       reject(err);
-          //     });
-          //   break;
+                return updatedSession;
+              });
+              resolve({ success: true });
+            } else {
+              reject(new Error('No updates provided'));
+            }
+            break;
 
           default:
             reject(new Error('Invalid status'));
