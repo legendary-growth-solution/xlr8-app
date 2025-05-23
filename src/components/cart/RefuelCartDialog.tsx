@@ -116,7 +116,7 @@ export default function RefuelCartDialog({ open, onClose, cart, onRefuel }: Refu
               onChange={(e) => setCost(e.target.value)}
               inputProps={{ min: 0, step: "0.01" }}
               sx={{ mb: 2 }}
-              required
+              // required
             />
           )}
           
