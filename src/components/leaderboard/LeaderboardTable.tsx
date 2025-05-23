@@ -138,7 +138,7 @@ export const LeaderboardTable = ({
                     textAlign: 'center',
                   }}
                 >
-                  {`L${entry.cart_type}`}
+                  {`${entry.cart_name}`}
                 </td>
                 <td
                   style={{

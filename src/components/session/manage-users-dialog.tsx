@@ -411,7 +411,7 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
     sessionUsers.some((u) => u.user_id === userId && !isUserInGroup(userId));
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         Manage Users in &quot;{group.name}&quot;
         <IconButton
