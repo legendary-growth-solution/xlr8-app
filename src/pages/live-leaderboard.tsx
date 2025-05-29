@@ -8,46 +8,13 @@ import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
 import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
 import { Leaderboard } from 'src/types/session';
 
-// const SessionInfo = ({ name, id }: { name: string | null; id: string | null }) => (
-//   <Box sx={{ mb: 4, textAlign: 'center', position: 'relative' }}>
-//     <Typography
-//       variant="h4"
-//       sx={{
-//         fontWeight: 'bold',
-//         color: 'text.primary',
-//         mb: { xs: 1, sm: 0 }
-//       }}
-//     >
-//       {name || 'Unnamed Session'}
-//     </Typography>
-//     {id && (
-//       <Typography
-//         variant="caption"
-//         sx={{
-//           color: 'text.secondary',
-//           bgcolor: 'background.paper',
-//           px: 1,
-//           py: 0.5,
-//           borderRadius: 1,
-//           border: '1px solid',
-//           borderColor: 'divider',
-//           position: { xs: 'relative' },
-//           display: 'inline-block',
-//           top: { sm:'8px', xs: 'auto' },
-//         }}
-//       >
-//         #{id.toUpperCase()}
-//       </Typography>
-//     )}
-//   </Box>
-// );
-
 interface Props {
   session_id?: string;
   isSessionActive?: boolean;
+  entries?: Array<any>;
 }
 
-const LiveLeaderboard = ({ session_id, isSessionActive }: Props) => {
+const LiveLeaderboard = ({ session_id, isSessionActive, entries }: Props) => {
   const theme = useTheme();
   const [leaderboard, setLeaderboard] = useState<Leaderboard[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +66,14 @@ const LiveLeaderboard = ({ session_id, isSessionActive }: Props) => {
   };
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
+    if (!entries) fetchLeaderboard();
+  }, [fetchLeaderboard, entries]);
+
+  useEffect(()=>{
+    if (entries) {
+      setLoading(false)
+    }
+  },[entries]);
 
   if (error) {
     return (
@@ -181,7 +154,7 @@ const LiveLeaderboard = ({ session_id, isSessionActive }: Props) => {
         {/* <SessionInfo name={sessionName} id={sessionId} /> */}
 
         <LeaderboardTable
-          entries={leaderboard}
+          entries={entries ?? leaderboard}
           loading={loading}
           isInactiveSession={!isSessionActive}
         />

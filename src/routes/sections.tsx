@@ -46,6 +46,7 @@ export const LiveLeaderboard = lazy(() => import('src/pages/live-leaderboard'));
 export const CartMaintenanceLogsPage = lazy(() => import('src/pages/maintenance-logs'));
 export const BillingsPage = lazy(() => import('src/pages/billings'));
 export const BookingsPage = lazy(() => import('src/pages/bookings'));
+export const Leaderboard = lazy(() => import('src/pages/leaderboard'));
 // ----------------------------------------------------------------------
 
 const renderFallback = (
@@ -119,7 +120,8 @@ export function Router() {
         { path: 'carts/fuel-logs', element: <CartFuelLogsPage /> },
         { path: 'timeslots', element: <TimeSlots /> },
         { path: 'bookings', element: <BookingsPage /> },
-        { path: 'leaderboard', element: <LiveLeaderboard /> },
+        { path: 'leaderboard', element: <Leaderboard /> },
+        { path: 'live-leaderboard', element: <LiveLeaderboard /> },
         { path: 'carts/lap-logs', element: <CartLapLogsPage /> },
         { path: 'carts/maintenance-logs', element: <CartMaintenanceLogsPage /> },
         { path: 'password-hash', element: <PasswordHashPage /> },
