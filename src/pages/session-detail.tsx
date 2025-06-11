@@ -32,7 +32,15 @@ export default function SessionDetailPage() {
     }
   }, [id]);
   const handleReviewLink = () => {
-    showToast.error('Feature under development!');
+    if (id) {
+      api.review.sendReviewLink(id)
+        .then((res) => {
+          console.log(res)
+        })
+      .catch((err) => {
+        console.log(err)
+        })
+    }
   };
 
   useLayoutEffect(() => { getSession() }, [getSession]);

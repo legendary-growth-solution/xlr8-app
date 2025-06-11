@@ -54,8 +54,8 @@ export default function Page() {
     setInvoicesLoading(true);
     
     try {
-      const ridesRes = await apiClient.get('/ride-stats');
-      setRidesData(ridesRes.data);
+      // const ridesRes = await apiClient.get('/ride-stats');
+      // setRidesData(ridesRes.data);
     } catch (error) {
       console.error('Failed to fetch rides data:', error);
     } finally {

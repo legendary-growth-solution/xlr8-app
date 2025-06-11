@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Card, Grid, Stack, Typography } from '@mui/material';
+import { Badge, Box, Button, Card, Grid, Stack, Typography, Checkbox, FormControlLabel } from '@mui/material';
 import { useCallback, useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +41,7 @@ export default function SessionActivePage() {
   const [carts, setCarts] = useState<Cart[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isSessionEnding, setIsSessionEnding] = useState<boolean>(false);
+  const [sendReview, setSendReview] = useState<boolean>(false);
   const navigate = useNavigate();
 
 
@@ -123,7 +124,7 @@ export default function SessionActivePage() {
     if (session?.session_id) {
       setIsSessionEnding(true);
       api.session
-        .endSession(session?.session_id)
+        .endSession(session?.session_id, { send_review: sendReview })
         .then((res) => {
           // refreshSession();
           navigate(`/sessions/${session?.session_id}`);
@@ -135,7 +136,7 @@ export default function SessionActivePage() {
           setIsSessionEnding(false);
         });
     }
-  }, [session?.session_id, navigate]);
+  }, [session?.session_id, navigate, sendReview]);
 
   const handleAssignCart = useCallback(
     (group_id: string, user_id: string, cart_id: string) => {
@@ -706,7 +707,20 @@ export default function SessionActivePage() {
       <ConfirmDialog
         open={openEndSession}
         title="End Session"
-        content="Are you sure you want to end this session? This action cannot be undone."
+        content={
+          <Stack spacing={2}>
+            <Typography>Are you sure you want to end this session? This action cannot be undone.</Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={sendReview}
+                  onChange={(e) => setSendReview(e.target.checked)}
+                />
+              }
+              label="Send review communication to all participants"
+            />
+          </Stack>
+        }
         confirmText="End Session"
         confirmColor="error"
         loading={isSessionEnding}

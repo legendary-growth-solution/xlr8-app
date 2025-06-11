@@ -7,11 +7,12 @@ import {
   Button,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import { ReactNode } from 'react';
 
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  content: string;
+  content: ReactNode;
   confirmText?: string;
   cancelText?: string;
   confirmColor?: 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
@@ -35,7 +36,11 @@ export function ConfirmDialog({
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText>{content}</DialogContentText>
+        {typeof content === 'string' ? (
+          <DialogContentText>{content}</DialogContentText>
+        ) : (
+          content
+        )}
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
         <Button onClick={onClose}>{cancelText}</Button>

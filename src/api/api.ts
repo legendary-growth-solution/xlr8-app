@@ -5,8 +5,8 @@ export const api = {
   session: {
     getActiveSession: () => axios.get(apiEndpoints.session.activeSession).then((res) => res.data),
     createSession: () => axios.post(apiEndpoints.session.startSession).then((res) => res.data),
-    endSession: (sessionId: string) =>
-      axios.post(apiEndpoints.session.endSession(sessionId)).then((res) => res.data),
+    endSession: (sessionId: string, data?: any) =>
+      axios.post(apiEndpoints.session.endSession(sessionId), data).then((res) => res.data),
     get: (sessionId: string) =>
       axios.get(apiEndpoints.session.sessionById(sessionId)).then((res) => res.data),
     getCompletedSessions: () => axios.get(apiEndpoints.session.completedSessions).then((res) => res.data),
@@ -122,5 +122,9 @@ export const api = {
       axios.post(apiEndpoints.billingData.billingData, data).then((res) => res?.data),
     get: (billing_id: string) =>
       axios.get(apiEndpoints.billingData.billingDataById(billing_id)).then((res) => res?.data),
+  },
+  review: {
+    sendReviewLink: (sessionId: string) =>
+      axios.post(apiEndpoints.review.sendReviewLink(sessionId)).then((res) => res?.data),
   },
 };

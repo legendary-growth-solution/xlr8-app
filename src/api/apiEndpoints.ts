@@ -55,4 +55,7 @@ export const apiEndpoints = {
     billingData: `${BASE_URL}/billing`,
     billingDataById: (billing_id: string) => `${BASE_URL}/billing/${billing_id}`,
   },
+  review: {
+    sendReviewLink: (sessionId: string) => `${BASE_URL}/send-review-link/${sessionId}`,
+  },
 };
