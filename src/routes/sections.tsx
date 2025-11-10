@@ -47,6 +47,7 @@ export const CartMaintenanceLogsPage = lazy(() => import('src/pages/maintenance-
 export const BillingsPage = lazy(() => import('src/pages/billings'));
 export const BookingsPage = lazy(() => import('src/pages/bookings'));
 export const Leaderboard = lazy(() => import('src/pages/leaderboard'));
+export const BannerManagementPage = lazy(() => import('src/pages/banner-management'));
 // ----------------------------------------------------------------------
 
 const renderFallback = (
@@ -130,6 +131,7 @@ export function Router() {
         { path: 'billings', element: <BillingsPage /> },
         { path: 'inventory/items', element: <InventoryItemsPage /> },
         { path: 'inventory/logs', element: <InventoryLogsPage /> },
+        { path: 'banners', element: <BannerManagementPage /> },
         { path: '/logout', element: <LogoutRoute /> },
       ],
     },

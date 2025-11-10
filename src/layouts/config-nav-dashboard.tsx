@@ -95,6 +95,11 @@ const navConfig = [
     ],
   },
   {
+    title: 'Banner Management',
+    path: '/banners',
+    icon: <Iconify icon="solar:gallery-bold-duotone" />,
+  },
+  {
     title: 'Logout',
     path: '/logout',
     icon: <Iconify icon="solar:logout-2-bold-duotone" />,

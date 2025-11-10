@@ -103,4 +103,11 @@ export const API_ENDPOINTS = {
     },
     LOGS: createEndpoint('/inventory/logs'),
   },
+  BANNERS: {
+    LIST: createEndpoint('/banners'),
+    CREATE: createEndpoint('/banners'),
+    DETAIL: (id: string) => createEndpoint(`/banners/${id}`),
+    UPDATE: (id: string) => createEndpoint(`/banners/${id}`),
+    DELETE: (id: string) => createEndpoint(`/banners/${id}`),
+  },
 } as const;
