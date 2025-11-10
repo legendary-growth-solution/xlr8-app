@@ -42,6 +42,7 @@ import { userApi } from 'src/services/api/user.api';
 import { Plan } from 'src/types/session';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
+import { HighlightedText } from 'src/components/common/HighlightedText';
 import SearchUserSkeleton from 'src/components/skeleton/SearchUserSkeleton';
 import AddUserDialog from './AddUserDialog';
 
@@ -397,8 +398,19 @@ const DraftSessionDialog = ({ open, onClose, onSubmitSuccess, plans }: DraftSess
                             }
                           >
                             <ListItemText
-                              primary={user.name}
-                              secondary={`${user.phone}${user.email ? ` • ${user.email}` : ''}`}
+                              primary={
+                                <HighlightedText
+                                  text={user.highlight_result?.name?.value || user.name}
+                                  variant="body2"
+                                />
+                              }
+                              secondary={
+                                <HighlightedText
+                                  text={`${user.highlight_result?.phone?.value || user.phone}${user.email ? ` • ${user.highlight_result?.email?.value || user.email}` : ''}`}
+                                  variant="caption"
+                                  color="text.secondary"
+                                />
+                              }
                             />
                           </ListItem>
                         );

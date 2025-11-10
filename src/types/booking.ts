@@ -27,6 +27,7 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   source?: string;
   discount_code?: string;
+  total?: number;
 }
 
 export interface BookingConvertResponse {

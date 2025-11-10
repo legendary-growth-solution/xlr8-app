@@ -22,6 +22,7 @@ import { showToast } from 'src/components/toast';
 import { userApi } from 'src/services/api/user.api';
 import { User } from 'src/types/user';
 import { formatLapTime } from 'src/utils/timeFormatter';
+import { HighlightedText } from 'src/components/common/HighlightedText';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -57,7 +58,12 @@ export default function UserManagementPage() {
       minWidth: 170,
       noWrap: true,
       sx: { whiteSpace: 'nowrap' },
-      format: (value: string) => value.charAt(0).toUpperCase() + value.slice(1),
+      format: (value: string, row: User) => (
+        <HighlightedText
+          text={row.highlight_result?.name?.value || value.charAt(0).toUpperCase() + value.slice(1)}
+          variant="body2"
+        />
+      ),
     },
     // {
     //   id: 'sessions',
@@ -72,7 +78,12 @@ export default function UserManagementPage() {
       minWidth: 200,
       noWrap: true,
       sx: { whiteSpace: 'nowrap', cursor: 'pointer' },
-      format: (value: string) => value,
+      format: (value: string, row: User) => (
+        <HighlightedText
+          text={row.highlight_result?.email?.value || value}
+          variant="body2"
+        />
+      ),
       onClick: (value: string) => {
         navigator.clipboard.writeText(value);
         showToast.success('Email copied to clipboard');
@@ -84,7 +95,12 @@ export default function UserManagementPage() {
       minWidth: 130,
       noWrap: true,
       sx: { whiteSpace: 'nowrap', cursor: 'pointer' },
-      format: (value: string) => value,
+      format: (value: string, row: User) => (
+        <HighlightedText
+          text={row.highlight_result?.phone?.value || value}
+          variant="body2"
+        />
+      ),
       onClick: (value: string) => {
         navigator.clipboard.writeText(value);
         showToast.success('Phone number copied to clipboard');

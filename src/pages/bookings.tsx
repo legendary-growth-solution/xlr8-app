@@ -26,6 +26,7 @@ import {
   Divider,
   Skeleton,
   Chip,
+  Checkbox,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useBoolean } from 'src/hooks/use-boolean';
@@ -40,11 +41,15 @@ import { Plan } from 'src/types/session';
 import { DraftSessionDialog } from 'src/components/booking';
 import { apiEndpoints } from 'src/api/apiEndpoints';
 import { api } from 'src/api/api';
+import { TimeSlot } from 'src/types/bookings';
+import { getTimeSlots } from 'src/services/api/timeslots';
 
 const TABLE_HEAD = [
+  { id: 'select', label: '', width: 50 },
   { id: 'date', label: 'Date', width: 150 },
   { id: 'time_slot', label: 'Time Slot', width: 150 },
   { id: 'users', label: 'Users', width: 250 },
+  { id: 'total', label: 'Total', width: 120 },
   { id: 'discount', label: 'Discount', width: 100 },
   { id: 'status', label: 'Status', width: 100 },
   { id: 'notes', label: 'Notes', width: 200 },
@@ -81,6 +86,11 @@ export default function BookingsPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [draftSessionDialog, setDraftSessionDialog] = useState(false);
   const [isConversionAllowed, setIsConversionAllowed] = useState(false);
+  const [allTimeSlots, setAllTimeSlots] = useState<TimeSlot[]>([]);
+  const [deleteBookingId, setDeleteBookingId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+  const [bulkCreateLoading, setBulkCreateLoading] = useState(false);
 
   const getBookings = useCallback(async () => {
     try {
@@ -127,8 +137,18 @@ export default function BookingsPage() {
         showToast.error('Failed to fetch plans');
       }
     };
-    
+
+    const fetchTimeSlots = async () => {
+      try {
+        const timeSlots = await getTimeSlots();
+        setAllTimeSlots(timeSlots);
+      } catch (error) {
+        console.error('Error fetching time slots:', error);
+      }
+    };
+
     fetchPlans();
+    fetchTimeSlots();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
@@ -235,17 +255,114 @@ export default function BookingsPage() {
     convertDialog.onTrue();
   };
 
+  const handleDeleteBooking = async () => {
+    if (!deleteBookingId) return;
+
+    const bookingToDelete = bookings.find(b => b.booking_id === deleteBookingId);
+    if (!bookingToDelete) return;
+
+    setBookings(prev => prev.filter(b => b.booking_id !== deleteBookingId));
+    setTotalCount(prev => prev - 1);
+    setDeleteBookingId(null);
+    setDeleteLoading(true);
+
+    try {
+      await bookingApi.delete(deleteBookingId);
+      showToast.success('Booking deleted successfully');
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      showToast.error('Failed to delete booking');
+      setBookings(prev => [...prev, bookingToDelete].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
+      setTotalCount(prev => prev + 1);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleBulkCreateSessions = async () => {
+    if (selectedBookings.length === 0) return;
+
+    const isActive = await checkActiveSession();
+    if (isActive) {
+      showToast.error('Cannot create sessions while another session is active');
+      return;
+    }
+
+    try {
+      setBulkCreateLoading(true);
+
+      const response = await bookingApi.bulkConvert(selectedBookings);
+
+      if (response.success) {
+        showToast.success(`${selectedBookings.length} group${selectedBookings.length > 1 ? 's' : ''} created in new session successfully`);
+        setSelectedBookings([]);
+        getBookings();
+
+        setTimeout(() => {
+          navigate('/active-session');
+        }, 1500);
+      } else {
+        throw new Error(response.message || 'Failed to create session');
+      }
+
+    } catch (error) {
+      console.error('Error creating sessions:', error);
+      showToast.error(error?.response?.data?.message || error?.response?.data?.error || 'Failed to create session');
+    } finally {
+      setBulkCreateLoading(false);
+    }
+  };
+
+  const handleSelectBooking = (bookingId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBookings(prev => [...prev, bookingId]);
+    } else {
+      setSelectedBookings(prev => prev.filter(id => id !== bookingId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const pendingBookings = bookings.filter(booking => !booking.is_completed);
+      setSelectedBookings(pendingBookings.map(booking => booking.booking_id));
+    } else {
+      setSelectedBookings([]);
+    }
+  };
+
+  const getTimeSlotDisplay = (timeSlotId: string | null | undefined): string => {
+    if (!timeSlotId || !allTimeSlots.length) {
+      return 'Immediate';
+    }
+
+    const timeSlot = allTimeSlots.find(slot => slot.id === timeSlotId);
+    if (!timeSlot) {
+      return 'Immediate';
+    }
+
+    return `${timeSlot.start_time} - ${timeSlot.end_time}`;
+  };
+
   const renderBookingRow = (booking: Booking) => {
-    const { booking_id, date, time_slot, users, status, created_at, notes, discount_code } = booking;
+    const { booking_id, date, time_slot, users, status, created_at, notes, discount_code, total } = booking;
     const isPending = !booking.is_completed;
 
     return (
       <TableRow key={booking_id} hover>
+        <TableCell padding="checkbox">
+          <Checkbox
+            checked={selectedBookings.includes(booking_id)}
+            onChange={(e) => handleSelectBooking(booking_id, e.target.checked)}
+            disabled={!isPending || !isConversionAllowed}
+          />
+        </TableCell>
         <TableCell>
           {date}
         </TableCell>
-        
-        <TableCell>{time_slot || 'Immediate'}</TableCell>
+
+        <TableCell>{getTimeSlotDisplay(time_slot)}</TableCell>
         
         <TableCell>
           <Stack spacing={1}>
@@ -259,7 +376,13 @@ export default function BookingsPage() {
             </Typography>
           </Stack>
         </TableCell>
-        
+
+        <TableCell>
+          <Typography variant="body2" fontWeight="medium">
+            {total !== undefined && total !== null ? `₹${total.toFixed(2)}` : '-'}
+          </Typography>
+        </TableCell>
+
         <TableCell>
           {discount_code ? (
             <Chip label={discount_code} color="primary" size="small" />
@@ -318,6 +441,7 @@ export default function BookingsPage() {
         <TableCell>{fDateTime(created_at)}</TableCell>
         
         <TableCell align="center">
+          <Stack direction="row" spacing={1} justifyContent="center">
             <Button
               variant="contained"
               color="primary"
@@ -327,6 +451,15 @@ export default function BookingsPage() {
             >
               Convert
             </Button>
+            <IconButton
+              color="error"
+              size="small"
+              onClick={() => setDeleteBookingId(booking_id)}
+              disabled={booking.is_completed}
+            >
+              <Iconify icon="eva:trash-2-outline" />
+            </IconButton>
+          </Stack>
         </TableCell>
       </TableRow>
     );
@@ -342,6 +475,17 @@ export default function BookingsPage() {
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
           <Typography variant="h4">Bookings</Typography>
           <Stack direction="row" spacing={2}>
+            {selectedBookings.length > 0 && (
+              <LoadingButton
+                variant="contained"
+                color="success"
+                onClick={handleBulkCreateSessions}
+                loading={bulkCreateLoading}
+                startIcon={<Iconify icon="eva:play-circle-fill" />}
+              >
+                Create Session ({selectedBookings.length} groups)
+              </LoadingButton>
+            )}
             <Button
               variant="contained"
               color="primary"
@@ -371,7 +515,22 @@ export default function BookingsPage() {
                   <TableRow>
                     {TABLE_HEAD.map((column) => (
                       <TableCell key={column.id} width={column.width || 'auto'}>
-                        {column.label}
+                        {column.id === 'select' ? (
+                          <Checkbox
+                            indeterminate={
+                              selectedBookings.length > 0 &&
+                              selectedBookings.length < bookings.filter(b => !b.is_completed).length
+                            }
+                            checked={
+                              bookings.filter(b => !b.is_completed).length > 0 &&
+                              selectedBookings.length === bookings.filter(b => !b.is_completed).length
+                            }
+                            onChange={(e) => handleSelectAll(e.target.checked)}
+                            disabled={!isConversionAllowed}
+                          />
+                        ) : (
+                          column.label
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -382,13 +541,17 @@ export default function BookingsPage() {
                        <TableRow>
                          {TABLE_HEAD.map((column) => (
                            <TableCell key={column.id} sx={{ py: 3, textAlign: 'center' }}>
-                             <Skeleton variant="text" width={column.width - 100 || 'auto'} />
+                             {column.id === 'select' ? (
+                               <Skeleton variant="rectangular" width={24} height={24} />
+                             ) : (
+                               <Skeleton variant="text" width={column.width - (column.id === 'total' ? 50 : 100) || 'auto'} />
+                             )}
                            </TableCell>
                          ))}
                        </TableRow>
                   ) : bookings.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} sx={{ py: 3, textAlign: 'center' }}>
+                      <TableCell colSpan={10} sx={{ py: 3, textAlign: 'center' }}>
                         <Typography variant="body2">No bookings found</Typography>
                       </TableCell>
                     </TableRow>
@@ -528,11 +691,16 @@ export default function BookingsPage() {
                       <strong>Date:</strong> {selectedBooking.date || 'N/A'}
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Time Slot:</strong> {selectedBooking.time_slot || 'Immediate'}
+                      <strong>Time Slot:</strong> {getTimeSlotDisplay(selectedBooking.time_slot)}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Users:</strong> {selectedBooking.users.length}
                     </Typography>
+                    {selectedBooking.total !== undefined && selectedBooking.total !== null && (
+                      <Typography variant="body2">
+                        <strong>Total:</strong> ₹{selectedBooking.total.toFixed(2)}
+                      </Typography>
+                    )}
                     {selectedBooking.discount_code && (
                       <Typography variant="body2">
                         <strong>Discount:</strong> {selectedBooking.discount_code}
@@ -579,6 +747,33 @@ export default function BookingsPage() {
             </LoadingButton>
           </DialogActions>
         )}
+      </Dialog>
+
+      <Dialog
+        open={!!deleteBookingId}
+        onClose={() => setDeleteBookingId(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Delete Booking</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this booking? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteBookingId(null)} color="inherit">
+            Cancel
+          </Button>
+          <LoadingButton
+            onClick={handleDeleteBooking}
+            color="error"
+            variant="contained"
+            loading={deleteLoading}
+          >
+            Delete
+          </LoadingButton>
+        </DialogActions>
       </Dialog>
 
       <DraftSessionDialog

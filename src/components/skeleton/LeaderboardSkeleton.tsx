@@ -24,6 +24,7 @@ export const LeaderboardSkeleton = ({
               'Total Laps',
               'Best Lap',
               'Best Lap Time',
+              'Average Lap Time',
             ]
               .filter(Boolean)
               .map((header) => (
@@ -50,7 +51,7 @@ export const LeaderboardSkeleton = ({
                 backgroundColor: alpha(theme.palette.text.primary, 0.05),
               }}
             >
-              {[...Array(6)].map((_, cellIndex) => (
+              {[...Array(8)].map((_, cellIndex) => (
                 <td key={cellIndex} style={{ padding: '20px', textAlign: cellIndex === 0 ? 'center' : 'center' }}>
                   <Skeleton 
                     variant={cellIndex === 0 ? "circular" : "text"} 

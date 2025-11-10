@@ -95,6 +95,7 @@ export interface Leaderboard {
   total_laps: number;
   best_lap_number: number;
   best_lap_time: string | number;
+  average_lap_time?: number;
   user_id: string;
   user_name: string;
   cart_name?: string;

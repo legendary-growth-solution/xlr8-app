@@ -30,6 +30,7 @@ import { userApi } from 'src/services/api/user.api';
 import { User } from 'src/types/user';
 import { Scrollbar } from 'src/components/scrollbar';
 import { UserTableSkeleton } from 'src/components/skeleton';
+import { HighlightedText } from 'src/components/common/HighlightedText';
 
 interface ManageUsersDialogProps {
   open: boolean;
@@ -186,28 +187,44 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
     }
   };
 
-  /**
-   * Filter & sort users:
-   * 1. Group users come first
-   * 2. Then the rest
-   * 3. Then filter by searchTerm
-   */
   const filteredUsers = React.useMemo(() => {
     const inGroup = new Set(group.users.map((u) => u.user_id));
     const inOtherGroups = new Set(
       sessionUsers.filter((u) => !inGroup.has(u.user_id)).map((u) => u.user_id)
     );
+    const isNewlySelected = new Set(Object.keys(selectedUsers));
 
-    return [...allUsers].sort((a, b) => {
+    const groupUsersAsUsers = group.users.map(groupUser => {
+      const existingUser = allUsers.find(u => u.user_id === groupUser.user_id);
+      return existingUser || {
+        user_id: groupUser.user_id,
+        name: groupUser.user_name,
+        email: '',
+        phone: '',
+        race_active: groupUser.race_active
+      };
+    });
+
+    const allUsersWithGroupUsers = [
+      ...groupUsersAsUsers,
+      ...allUsers.filter(user => !inGroup.has(user.user_id))
+    ];
+
+    return allUsersWithGroupUsers.sort((a, b) => {
       if (inGroup.has(a.user_id) !== inGroup.has(b.user_id)) {
         return inGroup.has(a.user_id) ? -1 : 1;
+      }
+      if (!inGroup.has(a.user_id) && !inGroup.has(b.user_id)) {
+        if (isNewlySelected.has(a.user_id) !== isNewlySelected.has(b.user_id)) {
+          return isNewlySelected.has(a.user_id) ? -1 : 1;
+        }
       }
       if (inOtherGroups.has(a.user_id) !== inOtherGroups.has(b.user_id)) {
         return inOtherGroups.has(a.user_id) ? 1 : -1;
       }
       return a.name.localeCompare(b.name);
     });
-  }, [allUsers, group.users, sessionUsers]);
+  }, [allUsers, group.users, sessionUsers, selectedUsers]);
 
   /**
    * Checks if a user is already in the group
@@ -478,17 +495,30 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
                         }}
                       >
                         <TableCell>
-                          {!inGroup && (
-                            <Checkbox
-                              checked={selected}
-                              onChange={() => handleToggleUserSelection(user)}
-                              disabled={isUserInOtherGroup(user.user_id) || user.race_active}
-                            />
-                          )}
+                          <Checkbox
+                            checked={inGroup || selected}
+                            onChange={() => !inGroup && handleToggleUserSelection(user)}
+                            disabled={inGroup || isUserInOtherGroup(user.user_id) || user.race_active}
+                          />
                         </TableCell>
-                        <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.phone}</TableCell>
+                        <TableCell>
+                          <HighlightedText
+                            text={user.highlight_result?.name?.value || user.name}
+                            variant="body2"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HighlightedText
+                            text={user.highlight_result?.email?.value || user.email}
+                            variant="body2"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HighlightedText
+                            text={user.highlight_result?.phone?.value || user.phone}
+                            variant="body2"
+                          />
+                        </TableCell>
                         <TableCell>
                           {/* If user is already in group, show plan dropdown for editing if editingUserId matches */}
                           {inGroup ? (

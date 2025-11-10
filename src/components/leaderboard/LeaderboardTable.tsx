@@ -53,7 +53,7 @@ export const LeaderboardTable = ({
       <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
         <thead>
           <tr>
-            {['Rank', 'Name', 'Group', 'Cart', 'Total Laps', 'Best Lap', 'Best Lap Time']
+            {['Rank', 'Name', 'Group', 'Cart', 'Total Laps', 'Best Lap', 'Best Lap Time', 'Average Lap Time']
               .filter(Boolean)
               .map((header) => (
                 <th
@@ -198,6 +198,27 @@ export const LeaderboardTable = ({
                     </Tooltip>
                   ) : entry.best_lap_time ? (
                     formatLapTime(Number(entry.best_lap_time))
+                  ) : (
+                    '-'
+                  )}
+                </td>
+                <td
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    textAlign: 'center',
+                    color: isDisqualified
+                      ? theme.palette.error.main
+                      : entry.average_lap_time
+                        ? theme.palette.info.main
+                        : theme.palette.text.secondary,
+                    opacity: isDisqualified ? 0.6 : 1,
+                  }}
+                >
+                  {isDisqualified ? (
+                    "NA"
+                  ) : entry.average_lap_time ? (
+                    formatLapTime(Number(entry.average_lap_time))
                   ) : (
                     '-'
                   )}
