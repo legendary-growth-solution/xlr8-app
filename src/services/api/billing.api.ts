@@ -1,10 +1,11 @@
-import { BillingDetails, DiscountCode } from 'src/types/billing';
+import type { DiscountCode, BillingDetails } from 'src/types/billing';
+
 import { apiClient } from './api-client';
 import { API_ENDPOINTS } from './endpoints';
 
 export const billingApi = {
   getPlans: () => 
-    apiClient.get<{ data: any }>(API_ENDPOINTS.billing.plans),
+    apiClient.get<{ plans: any[] }>(API_ENDPOINTS.billing.plans),
 
   getDiscountCodes: () => 
     apiClient.get(API_ENDPOINTS.billing.discountCodes),
@@ -22,6 +23,7 @@ export const billingApi = {
     apiClient.post<{ 
       valid: boolean;
       discount_amount?: number;
+      discount_type?: 'absolute' | 'percentage' | 'percent';
       message?: string;
     }>(API_ENDPOINTS.billing.validateDiscountCode(), { code }),
 

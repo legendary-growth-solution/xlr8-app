@@ -25,6 +25,7 @@ interface BillingData {
   remarks?: string;
   discountCode?: string;
   discountAmount: number;
+  discountType?: 'absolute' | 'percentage' | 'percent';
   totalAmount: number;
   subtotal?: number;
 }
@@ -113,10 +114,48 @@ export function BillingDialog({
       }
 
       showToast.success(response.data.message || 'Discount code applied successfully');
+      
+      const discountValue = response.data.discount_amount || 0;
+      const discountType = response.data.discount_type || 'absolute';
+      
+      if (!localGroupUsers?.length || !plans.length) {
+        onBillingDataChange({
+          discountAmount: discountValue,
+          discountType,
+          discountCode: billingData.discountCode?.toUpperCase(),
+          gstNumber: ''
+        });
+        setStep('details');
+        return;
+      }
+
+      const total = localGroupUsers.reduce((acc: number, user: any) => {
+        const userPlan = plans.find(
+          (p: any) => p.plan_id === user.plan_id
+        );
+        if (userPlan) {
+          return acc + (userPlan.amount || 0);
+        }
+        console.warn('Plan not found for user:', user.user_id, 'plan_id:', user.plan_id);
+        return acc;
+      }, 0);
+
+      let calculatedDiscount = 0;
+      if (discountType === 'percentage' || discountType === 'percent') {
+        calculatedDiscount = (total * discountValue) / 100;
+      } else {
+        calculatedDiscount = discountValue;
+      }
+
+      const finalAmount = Math.max(0, total - calculatedDiscount);
+
       onBillingDataChange({
-        discountAmount: response.data.discount_amount || 0,
+        discountAmount: calculatedDiscount,
+        discountType,
         discountCode: billingData.discountCode?.toUpperCase(),
-        gstNumber: ''
+        gstNumber: '',
+        subtotal: total,
+        totalAmount: finalAmount
       });
       setStep('details');
     } catch (error) {
@@ -129,11 +168,32 @@ export function BillingDialog({
   };
 
   const handleSkipCoupon = () => {
+    setCodeError('');
+    
+    if (!localGroupUsers?.length || !plans.length) {
+      setStep('details');
+      return;
+    }
+
+    const total = localGroupUsers.reduce((acc: number, user: any) => {
+      const userPlan = plans.find(
+        (p: any) => p.plan_id === user.plan_id
+      );
+      if (userPlan) {
+        return acc + (userPlan.amount || 0);
+      }
+      console.warn('Plan not found for user:', user.user_id, 'plan_id:', user.plan_id);
+      return acc;
+    }, 0);
+
     onBillingDataChange({
       discountCode: '',
       discountAmount: 0,
-      gstNumber: billingData?.gstNumber || ''
+      gstNumber: billingData?.gstNumber || '',
+      subtotal: total,
+      totalAmount: total
     });
+    
     setStep('details');
   };
 
@@ -142,12 +202,14 @@ export function BillingDialog({
     if (!localGroupUsers?.length || loadingPlans || !plans.length) return 0;
 
     const total = localGroupUsers.reduce((acc: number, user: any) => {
-      const userPlan = plans.find((p: any) => p.id === user.plan_id);
+      const userPlan = plans.find(
+        (p: any) => p.plan_id === user.plan_id
+      );
       if (!userPlan) {
-        console.warn(`Plan not found for user ${user.id}`);
+        console.warn(`Plan not found for user ${user.id || user.user_id}`);
         return acc;
       }
-      return acc + (userPlan.cost || 0);
+      return acc + (userPlan.amount || 0);
     }, 0);
 
     const finalAmount = total - (billingData.discountAmount || 0);
@@ -159,8 +221,7 @@ export function BillingDialog({
 
     return total;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plans, billingData.discountAmount, localGroupUsers]);
+  }, [plans, billingData.discountAmount, localGroupUsers, onBillingDataChange, loadingPlans]);
 
   useEffect(() => {
     if (!hasBillingData && plans.length > 0) {
@@ -171,8 +232,15 @@ export function BillingDialog({
   useEffect(() => {
     if (fetchBillingData && open) fetchBillingData();
     if (open) setStep('coupon');
+    setCodeError('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useEffect(() => {
+    if (step !== 'coupon') {
+      setCodeError('');
+    }
+  }, [step]);
 
   const renderCouponStep = () => (
     <Stack spacing={3} sx={{ mt: 2 }}>
@@ -199,7 +267,9 @@ export function BillingDialog({
     billingApi
       .getPlans()
       .then((response) => {
-        setPlans(response.data);
+        const parsedResponse = response.data as { plans?: any[]; data?: any };
+        const fetchedPlans = parsedResponse.plans ?? parsedResponse.data ?? response.data;
+        setPlans(Array.isArray(fetchedPlans) ? fetchedPlans : []);
       })
       .catch((error) => {
         setPlanError(error?.response?.data?.message || 'Error fetching plans');

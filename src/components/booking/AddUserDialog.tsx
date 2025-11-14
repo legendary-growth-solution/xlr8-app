@@ -44,6 +44,26 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
     name?: string;
     phone?: string;
   }>({});
+
+  const validatePhoneNumber = (phone: string) => {
+    if (phone.length < 4) {
+      return 'Phone number must be at least 4 digits';
+    }
+    if (phone.length > 15) {
+      return 'Phone number cannot exceed 15 digits';
+    }
+    return '';
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length <= 15) {
+      setNewUser({ ...newUser, phone: digitsOnly });
+      if (digitsOnly) {
+        setFormErrors((prev) => ({ ...prev, phone: undefined }));
+      }
+    }
+  };
   
   useEffect(() => {
     if (open) {
@@ -60,15 +80,20 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
   
   const handleAddUser = () => {
     const validationErrors: { name?: string; phone?: string } = {};
-    
+
     if (!newUser.name) {
       validationErrors.name = 'Name is required';
     }
-    
+
     if (!newUser.phone) {
       validationErrors.phone = 'Phone is required';
+    } else {
+      const phoneValidationError = validatePhoneNumber(newUser.phone);
+      if (phoneValidationError) {
+        validationErrors.phone = phoneValidationError;
+      }
     }
-    
+
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors);
       return;
@@ -124,11 +149,10 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
             <TextField
               label="Phone *"
               value={newUser.phone}
-              onChange={(e) => {
-                setNewUser({ ...newUser, phone: e.target.value });
-                if (e.target.value) {
-                  setFormErrors((prev) => ({ ...prev, phone: undefined }));
-                }
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              inputMode="numeric"
+              inputProps={{
+                maxLength: 15,
               }}
             />
             {formErrors.phone && <FormHelperText>{formErrors.phone}</FormHelperText>}

@@ -1,48 +1,53 @@
-import { useCallback, useEffect, useState } from 'react';
+import type { Plan } from 'src/types/session';
+import type { Booking } from 'src/types/booking';
+import type { TimeSlot } from 'src/types/bookings';
+
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+
+import { LoadingButton } from '@mui/lab';
 import {
-  Button,
-  Card,
-  Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  Typography,
   Box,
+  Card,
   Fade,
   Grow,
-  alpha,
-  Divider,
-  Skeleton,
   Chip,
+  Stack,
+  Table,
+  alpha,
+  Button,
+  Dialog,
+  Divider,
+  TableRow,
+  Skeleton,
   Checkbox,
+  Container,
+  TableBody,
+  TableCell,
+  TableHead,
+  IconButton,
+  Typography,
+  DialogTitle,
+  DialogActions,
+  DialogContent,
+  TableContainer,
+  TablePagination,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
+
 import { useBoolean } from 'src/hooks/use-boolean';
-import { bookingApi } from 'src/services/api/booking.api';
-import { Booking } from 'src/types/booking';
-import { Iconify } from 'src/components/iconify';
-import Toast, { showToast } from 'src/components/toast';
+
 import { fDateTime } from 'src/utils/format-time';
-import { Scrollbar } from 'src/components/scrollbar';
-import ConversionAnimation from 'src/components/animations/ConversionAnimation';
-import { Plan } from 'src/types/session';
-import { DraftSessionDialog } from 'src/components/booking';
-import { apiEndpoints } from 'src/api/apiEndpoints';
+
 import { api } from 'src/api/api';
-import { TimeSlot } from 'src/types/bookings';
+import { bookingApi } from 'src/services/api/booking.api';
 import { getTimeSlots } from 'src/services/api/timeslots';
+
+import { Iconify } from 'src/components/iconify';
+import { Scrollbar } from 'src/components/scrollbar';
+import Toast, { showToast } from 'src/components/toast';
+import ConversionAnimation from 'src/components/animations/ConversionAnimation';
+import { NewBookingDialog, BulkCreateSessionDialog } from 'src/components/booking';
 
 const TABLE_HEAD = [
   { id: 'select', label: '', width: 50 },
@@ -84,13 +89,14 @@ export default function BookingsPage() {
   const [animationState, setAnimationState] = useState<'initial' | 'processing' | 'complete'>('initial');
   
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [draftSessionDialog, setDraftSessionDialog] = useState(false);
+  const [newBookingDialog, setNewBookingDialog] = useState(false);
   const [isConversionAllowed, setIsConversionAllowed] = useState(false);
   const [allTimeSlots, setAllTimeSlots] = useState<TimeSlot[]>([]);
   const [deleteBookingId, setDeleteBookingId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const [bulkCreateLoading, setBulkCreateLoading] = useState(false);
+  const bulkCreateDialog = useBoolean(false);
 
   const getBookings = useCallback(async () => {
     try {
@@ -153,7 +159,7 @@ export default function BookingsPage() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
         event.preventDefault();
-        setDraftSessionDialog(true);
+        setNewBookingDialog(true);
       }
     };
 
@@ -298,6 +304,7 @@ export default function BookingsPage() {
       if (response.success) {
         showToast.success(`${selectedBookings.length} group${selectedBookings.length > 1 ? 's' : ''} created in new session successfully`);
         setSelectedBookings([]);
+        bulkCreateDialog.onFalse();
         getBookings();
 
         setTimeout(() => {
@@ -312,6 +319,7 @@ export default function BookingsPage() {
       showToast.error(error?.response?.data?.message || error?.response?.data?.error || 'Failed to create session');
     } finally {
       setBulkCreateLoading(false);
+      bulkCreateDialog.onFalse();
     }
   };
 
@@ -476,20 +484,19 @@ export default function BookingsPage() {
           <Typography variant="h4">Bookings</Typography>
           <Stack direction="row" spacing={2}>
             {selectedBookings.length > 0 && (
-              <LoadingButton
+              <Button
                 variant="contained"
                 color="success"
-                onClick={handleBulkCreateSessions}
-                loading={bulkCreateLoading}
+                onClick={bulkCreateDialog.onTrue}
                 startIcon={<Iconify icon="eva:play-circle-fill" />}
               >
                 Create Session ({selectedBookings.length} groups)
-              </LoadingButton>
+              </Button>
             )}
             <Button
               variant="contained"
               color="primary"
-              onClick={() => setDraftSessionDialog(true)}
+              onClick={() => setNewBookingDialog(true)}
               startIcon={<Iconify icon="eva:plus-fill" />}
             >
               Create Booking
@@ -776,11 +783,19 @@ export default function BookingsPage() {
         </DialogActions>
       </Dialog>
 
-      <DraftSessionDialog
-        open={draftSessionDialog}
-        onClose={() => setDraftSessionDialog(false)}
+      <NewBookingDialog
+        open={newBookingDialog}
+        onClose={() => setNewBookingDialog(false)}
         onSubmitSuccess={getBookings}
         plans={plans}
+      />
+
+      <BulkCreateSessionDialog
+        open={bulkCreateDialog.value}
+        onClose={bulkCreateDialog.onFalse}
+        selectedBookingsCount={selectedBookings.length}
+        onConfirm={handleBulkCreateSessions}
+        loading={bulkCreateLoading}
       />
 
       <Toast />

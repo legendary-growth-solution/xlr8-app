@@ -2,9 +2,7 @@ import { Box, Stack, Typography, Paper } from '@mui/material';
 import DataTable from '../table/DataTable';
 
 interface BillingUser {
-  user: {
-    name: string;
-  };
+  user_name: string;
   plan: {
     name: string;
     cost: number;
@@ -43,7 +41,7 @@ export function BillingDetailsTable({ billingData }: BillingDetailsTableProps) {
       minWidth: 200,
       format: (_: any, row: BillingUser) => (
         <Stack spacing={0.5}>
-          <Typography variant="body2">{row.user?.name || 'N/A'}</Typography>
+          <Typography variant="body2">{row.user_name || 'N/A'}</Typography>
           <Typography variant="caption" color="text.secondary">
             {row.plan?.name || 'N/A'} Plan ({row.time_in_minutes || 0} mins)
           </Typography>

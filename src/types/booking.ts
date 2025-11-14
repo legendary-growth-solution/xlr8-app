@@ -11,6 +11,7 @@ export interface BookingUser {
   plan_time?: number;
   is_new?: boolean;
   time_in_minutes?: number;
+  cart_type_requested?: string;
 }
 
 export interface Booking {
