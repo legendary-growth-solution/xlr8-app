@@ -548,10 +548,10 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
                               </Select>
                             ) : (
                               // Display read-only plan name
-                              <Typography variant="body2">
+                              <Typography variant="body2" noWrap>
                                 {
                                   plans.find((p) => p.plan_id === getUserPlanFromGroup(user.user_id))
-                                    ?.name
+                                    ?.title
                                 }
                               </Typography>
                             )
