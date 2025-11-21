@@ -1,6 +1,6 @@
 // export const BASE_URL = 'http://192.168.31.39:5000';
-// export const BASE_URL = 'http://127.0.0.1:5000'
-export const BASE_URL = process?.env?.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'https://axelrate-be.vercel.app';
+export const BASE_URL = 'http://127.0.0.1:5000'
+// export const BASE_URL = process?.env?.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'https://axelrate-be.vercel.app';
 
 export const createEndpoint = (path: string) => `${BASE_URL}${path}`;
 

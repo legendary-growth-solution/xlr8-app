@@ -210,6 +210,10 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
       ...allUsers.filter(user => !inGroup.has(user.user_id))
     ];
 
+    if (!inGroup.size && !inOtherGroups?.size) {
+      return allUsersWithGroupUsers
+    }
+
     return allUsersWithGroupUsers.sort((a, b) => {
       if (inGroup.has(a.user_id) !== inGroup.has(b.user_id)) {
         return inGroup.has(a.user_id) ? -1 : 1;
