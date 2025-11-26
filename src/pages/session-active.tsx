@@ -693,7 +693,7 @@ export default function SessionActivePage() {
           </>
         )}
         {!session?.active && !!session?.session_id && (
-          <LiveLeaderboard session_id={session?.session_id} />
+          <LiveLeaderboard session_id={session?.session_id} isSessionActive={session?.active} />
         )}
       </Box>
 

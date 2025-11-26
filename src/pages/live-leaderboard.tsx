@@ -1,12 +1,12 @@
-import { Alert, Box, Button, Paper, Typography } from '@mui/material';
+import { Alert, Box, CircularProgress, Paper, Stack, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from 'src/api/api';
 import { LeaderboardTable } from 'src/components/leaderboard/LeaderboardTable';
 import { ZoomControls } from 'src/components/leaderboard/ZoomControls';
 import { LeaderboardFooter } from 'src/components/leaderboard/footer-lb';
 import { LeaderboardHeader } from 'src/components/leaderboard/header-lb';
 import { Leaderboard } from 'src/types/session';
+import { useLeaderboardWebSocket } from 'src/hooks/useLeaderboardWebSocket';
 
 interface Props {
   session_id?: string;
@@ -23,33 +23,21 @@ const LiveLeaderboard = ({ session_id, isSessionActive, entries }: Props) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const leaderboardRef = useRef<HTMLDivElement>(null);
 
-  const fetchLeaderboard = useCallback(() => {
-    try {
-      setLoading(true);
-      api.session
-        .getSessionLeaderboard(session_id ?? '')
-        .then((res) => {
-          setLeaderboard(
-            res?.leaderboard?.map((item: Leaderboard, index: number) => ({
-              ...item,
-              rank: index + 1,
-              total_laps: item.total_laps,
-            }))
-          );
+  const handleLeaderboardUpdate = useCallback((updatedLeaderboard: Leaderboard[]) => {
+    setLeaderboard(updatedLeaderboard);
           setLoading(false);
-        })
-        .catch((err) => {
-          setError(err?.response?.message);
-          setLoading(false);
-        });
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(`Failed to load leaderboard: ${err.message}`);
-      } else {
-        setError('An unexpected error occurred while loading the leaderboard');
-      }
-    }
-  }, [session_id]);
+  }, []);
+
+  const handleWebSocketError = useCallback((errorMessage: string) => {
+    setError(errorMessage);
+  }, []);
+
+  const { isConnected, isProcessing } = useLeaderboardWebSocket({
+    sessionId: session_id || '',
+    onLeaderboardUpdate: handleLeaderboardUpdate,
+    onError: handleWebSocketError,
+    enabled: !isSessionActive && !!session_id && !entries,
+  });
 
   const handleZoomChange = (_: Event, newValue: number | number[]) => {
     setZoom(newValue as number);
@@ -66,26 +54,16 @@ const LiveLeaderboard = ({ session_id, isSessionActive, entries }: Props) => {
   };
 
   useEffect(() => {
-    if (!entries) fetchLeaderboard();
-  }, [fetchLeaderboard, entries]);
-
-  useEffect(()=>{
     if (entries) {
-      setLoading(false)
+      setLeaderboard(entries);
+      setLoading(false);
     }
-  },[entries]);
+  }, [entries]);
 
   if (error) {
     return (
       <Box p={3}>
-        <Alert
-          severity="error"
-          action={
-            <Button color="inherit" size="small" onClick={fetchLeaderboard}>
-              Retry
-            </Button>
-          }
-        >
+        <Alert severity="error">
           {error}
         </Alert>
       </Box>
@@ -95,12 +73,44 @@ const LiveLeaderboard = ({ session_id, isSessionActive, entries }: Props) => {
   return (
     <Box
       sx={{
-        // p: 3,
-        // minHeight: '100vh',
         bgcolor: 'background.default',
         position: 'relative',
       }}
     >
+      {!isSessionActive && !entries && (
+        <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {isProcessing && (
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ 
+                bgcolor: alpha(theme.palette.warning.main, 0.1),
+                px: 2,
+                py: 1,
+                borderRadius: 2,
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+              }}>
+                <CircularProgress size={16} color="warning" />
+                <Typography variant="body2" color="warning.main">
+                  Generating Leaderboard...
+                </Typography>
+              </Stack>
+            )}
+            {isConnected && !isProcessing && (
+              <Box sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: theme.palette.success.main,
+                animation: 'pulse 2s infinite',
+                '@keyframes pulse': {
+                  '0%, 100%': { opacity: 1 },
+                  '50%': { opacity: 0.5 },
+                },
+              }} />
+            )}
+          </Stack>
+        </Box>
+      )}
+
       <ZoomControls
         zoom={zoom}
         isFullscreen={isFullscreen}
@@ -151,13 +161,23 @@ const LiveLeaderboard = ({ session_id, isSessionActive, entries }: Props) => {
           Leaderboard
         </Typography>
 
-        {/* <SessionInfo name={sessionName} id={sessionId} /> */}
-
+        {isProcessing && leaderboard.length === 0 ? (
+          <Box sx={{ py: 8, textAlign: 'center' }}>
+            <CircularProgress size={48} />
+            <Typography variant="h6" sx={{ mt: 3, color: 'text.secondary' }}>
+              Processing leaderboard data...
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1, color: 'text.disabled' }}>
+              This may take a few moments
+            </Typography>
+          </Box>
+        ) : (
         <LeaderboardTable
           entries={entries ?? leaderboard}
           loading={loading}
           isInactiveSession={!isSessionActive}
         />
+        )}
 
         <LeaderboardFooter />
       </Paper>

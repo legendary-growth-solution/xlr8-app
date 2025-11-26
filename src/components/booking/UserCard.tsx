@@ -83,7 +83,7 @@ export function UserCard({
                   flex: { xs: 1, sm: 'none' }
                 }}
               >
-                {user.name ? 'Switch' : 'Search and Add'}
+                {user.name ? 'Switch' : 'Search or Add'}
               </Button>
               {!user.is_new && (
                 <Button
@@ -105,7 +105,7 @@ export function UserCard({
             </Stack>
           </Stack>
           
-          <Grid container spacing={1.5} alignItems="center">
+          <Grid container spacing={0} alignItems="center">
             <Grid item xs={12} sm={9}>
               <Stack spacing={0.25} sx={{ height: 40, justifyContent: 'center' }}>
                 <Typography variant="body2" fontWeight="500">
