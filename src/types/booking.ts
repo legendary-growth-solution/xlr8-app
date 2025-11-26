@@ -19,6 +19,7 @@ export interface Booking {
   date: string;
   time_slot: string;
   race_time: string;
+  race_time_display?: string;
   race_day: string;
   users: BookingUser[];
   is_completed: boolean;

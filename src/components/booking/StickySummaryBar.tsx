@@ -1,11 +1,13 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Chip, Stack, Typography } from '@mui/material';
 
 interface StickySummaryBarProps {
   peopleCount: number;
   total: number;
+  hasDiscount?: boolean;
+  originalTotal?: number;
 }
 
-export function StickySummaryBar({ peopleCount, total }: StickySummaryBarProps) {
+export function StickySummaryBar({ peopleCount, total, hasDiscount, originalTotal }: StickySummaryBarProps) {
   return (
     <Box
       sx={{
@@ -31,9 +33,25 @@ export function StickySummaryBar({ peopleCount, total }: StickySummaryBarProps) 
         <Typography variant="caption" color="text.secondary">
           Total Amount
         </Typography>
-        <Typography variant="h5" color="primary" fontWeight="bold">
-          ₹{total}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {hasDiscount && originalTotal && (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                textDecoration: 'line-through',
+                color: 'text.disabled',
+              }}
+            >
+              ₹{originalTotal}
+            </Typography>
+          )}
+          <Typography variant="h5" color="primary" fontWeight="bold">
+            ₹{total}
+          </Typography>
+          {hasDiscount && (
+            <Chip label="Discount" color="success" size="small" sx={{ height: 20 }} />
+          )}
+        </Box>
       </Stack>
     </Box>
   );

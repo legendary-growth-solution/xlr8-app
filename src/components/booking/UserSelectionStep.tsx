@@ -15,12 +15,17 @@ import {
   TextField,
   Typography,
   InputLabel,
+  IconButton,
   FormControl,
+  InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 
+import { billingApi } from 'src/services/api/billing.api';
 import { bookingApi } from 'src/services/api/booking.api';
 import { getTimeSlots } from 'src/services/api/timeslots';
 
+import { Iconify } from 'src/components/iconify';
 import { showToast } from 'src/components/toast';
 
 import { UserCard } from './UserCard';
@@ -48,6 +53,7 @@ interface UserSelectionStepProps {
   onSubmit: (bookingData: any) => Promise<void>;
   submitting: boolean;
   onValidityChange?: (valid: boolean) => void;
+  onDiscountChange?: (discount: { code: string; amount: number; type: 'absolute' | 'percentage' | 'percent' } | null) => void;
 }
 
 
@@ -62,13 +68,17 @@ export const UserSelectionStep = forwardRef<
   onSubmit,
   submitting,
   onValidityChange,
+  onDiscountChange,
 }, ref) => {
   const [users, setUsers] = useState<BookingUser[]>([]);
-  const [date, setDate] = useState<Dayjs | null>(dayjs());
+  const [date, setDate] = useState<Dayjs | null>(null);
   const [timeSlot, setTimeSlot] = useState('');
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [notes, setNotes] = useState('');
   const [discountCode, setDiscountCode] = useState('');
+  const [validatingCode, setValidatingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string>('');
+  const [codeValidated, setCodeValidated] = useState(false);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [userManageModalOpen, setUserManageModalOpen] = useState(false);
   const [selectedUserIndex, setSelectedUserIndex] = useState<number | null>(null);
@@ -116,6 +126,31 @@ export const UserSelectionStep = forwardRef<
   useEffect(() => {
     fetchTimeSlots();
   }, []);
+
+  useEffect(() => {
+    if (timeSlot === 'immediate') {
+      setDate(dayjs());
+    } else if (timeSlot) {
+      const selectedSlot = timeSlots.find((slot) => slot.id === timeSlot);
+      if (selectedSlot) {
+        const targetDay = selectedSlot.day.toLowerCase();
+        const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const targetDayIndex = daysOfWeek.indexOf(targetDay);
+        
+        if (targetDayIndex !== -1) {
+          const today = dayjs();
+          const currentDayIndex = today.day();
+          let daysToAdd = targetDayIndex - currentDayIndex;
+          
+          if (daysToAdd <= 0) {
+            daysToAdd += 7;
+          }
+          
+          setDate(today.add(daysToAdd, 'day'));
+        }
+      }
+    }
+  }, [timeSlot, timeSlots]);
 
 
   const fetchTimeSlots = async () => {
@@ -187,13 +222,73 @@ export const UserSelectionStep = forwardRef<
     [users]
   );
 
-  const validateForm = () => evaluateUserData(true);
+  const validateForm = () => {
+    if (!timeSlot) {
+      showToast.error('Please select a time slot');
+      return false;
+    }
+    if (!date) {
+      showToast.error('Date is required');
+      return false;
+    }
+    return evaluateUserData(true);
+  };
+
+  const handleValidateCode = async () => {
+    if (!discountCode) {
+      setCodeError('Please enter a discount code');
+      return;
+    }
+
+    try {
+      setValidatingCode(true);
+      setCodeError('');
+      setCodeValidated(false);
+      const response = await billingApi.validateDiscountCode(discountCode);
+
+      if (!response.data.valid) {
+        setCodeError(response.data.message || 'Invalid or expired discount code');
+        showToast.error(response.data.message || 'Invalid or expired discount code');
+        setCodeValidated(false);
+        if (onDiscountChange) {
+          onDiscountChange(null);
+        }
+        return;
+      }
+
+      setCodeValidated(true);
+      showToast.success(response.data.message || 'Discount code validated successfully');
+      const upperCode = discountCode.toUpperCase();
+      setDiscountCode(upperCode);
+      
+      if (onDiscountChange) {
+        onDiscountChange({
+          code: upperCode,
+          amount: response.data.discount_amount || 0,
+          type: response.data.discount_type || 'absolute',
+        });
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Error validating code';
+      setCodeError(errorMessage);
+      showToast.error(errorMessage);
+      setCodeValidated(false);
+      if (onDiscountChange) {
+        onDiscountChange(null);
+      }
+    } finally {
+      setValidatingCode(false);
+    }
+  };
 
   useEffect(() => {
     if (onValidityChange) {
-      onValidityChange(evaluateUserData(false));
+      const isUserDataValid = evaluateUserData(false);
+      const isDiscountValid = !discountCode || codeValidated;
+      const isTimeSlotValid = !!timeSlot && !!date;
+      onValidityChange(isUserDataValid && isDiscountValid && isTimeSlotValid);
     }
-  }, [evaluateUserData, onValidityChange]);
+  }, [evaluateUserData, onValidityChange, discountCode, codeValidated, timeSlot, date]);
 
   useEffect(() => {
     const trimmedPhones = users.map((user) => user.phone.trim()).filter((phone) => phone.length > 0);
@@ -205,13 +300,26 @@ export const UserSelectionStep = forwardRef<
     if (!validateForm()) {
       return;
     }
+
+    if (discountCode && !codeValidated) {
+      showToast.error('Please validate the discount code before proceeding');
+      setCodeError('Please validate the discount code');
+      return;
+    }
     
     try {
+      const isImmediate = timeSlot === 'immediate';
+      const selectedSlot = !isImmediate ? timeSlots.find((slot) => slot.id === timeSlot) : null;
+      
+      const raceTimeDisplay = selectedSlot 
+        ? `${selectedSlot.start_time} - ${selectedSlot.end_time}` 
+        : '';
+      
       const bookingData = {
         date: date?.format('DD-MM-YYYY'),
-        time_slot: timeSlot,
-        race_time: timeSlots.find((slot) => slot.id === timeSlot)?.start_time || '',
-        race_day: timeSlots.find((slot) => slot.id === timeSlot)?.day || '',
+        time_slot: isImmediate ? '' : timeSlot,
+        race_time_display: raceTimeDisplay,
+        race_day: selectedSlot?.day || date?.format('dddd') || '',
         users: users.map((user) => ({
           user_id: user.user_id,
           name: user.name,
@@ -345,24 +453,13 @@ export const UserSelectionStep = forwardRef<
 
 
         <Stack direction="row" spacing={2} sx={{ maxWidth: 800 }}>
-          <DatePicker
-            label="Date"
-            value={date}
-            onChange={setDate}
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                required: true,
-              }
-            }}
-          />
-          
           <FormControl fullWidth>
-            <InputLabel>Time Slot (Optional)</InputLabel>
+            <InputLabel>Time Slot *</InputLabel>
             <Select
               value={timeSlot}
-              label="Time Slot (Optional)"
+              label="Time Slot *"
               onChange={(e) => setTimeSlot(e.target.value)}
+              required
               MenuProps={{
                 PaperProps: {
                   style: {
@@ -379,8 +476,8 @@ export const UserSelectionStep = forwardRef<
                 },
               }}
             >
-              <MenuItem value="">
-                <em>No specific time slot</em>
+              <MenuItem value="immediate">
+                Immediate (Today)
               </MenuItem>
               {timeSlots.map((slot) => (
                 <MenuItem key={slot.id} value={slot.id}>
@@ -389,6 +486,19 @@ export const UserSelectionStep = forwardRef<
               ))}
             </Select>
           </FormControl>
+
+          <DatePicker
+            label="Race Date"
+            value={date}
+            onChange={() => {}}
+            disabled
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                required: true,
+              }
+            }}
+          />
         </Stack>
 
         <UserManageModal
@@ -453,12 +563,45 @@ export const UserSelectionStep = forwardRef<
           />
 
           <TextField
-            fullWidth
             sx={{ maxWidth: 400 }}
             label="Discount Code (Optional)"
             value={discountCode}
-            onChange={(e) => setDiscountCode(e.target.value)}
+            onChange={(e) => {
+              setDiscountCode(e.target.value);
+              setCodeError('');
+              setCodeValidated(false);
+              if (onDiscountChange) {
+                onDiscountChange(null);
+              }
+            }}
             placeholder="Enter discount code"
+            error={!!codeError}
+            helperText={codeError || (codeValidated ? 'Discount code validated successfully' : '')}
+            FormHelperTextProps={{
+              sx: {
+                color: codeValidated ? 'success.main' : 'error.main',
+              },
+            }}
+            InputProps={{
+              endAdornment: discountCode ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleValidateCode}
+                    disabled={validatingCode || !discountCode}
+                    edge="end"
+                    color={codeValidated ? 'success' : 'primary'}
+                  >
+                    {validatingCode ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <Iconify 
+                        icon={codeValidated ? 'eva:checkmark-circle-2-fill' : 'eva:checkmark-circle-2-outline'} 
+                      />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
+            }}
           />
         </Stack>
 

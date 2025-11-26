@@ -23,6 +23,7 @@ interface GroupCardProps {
   handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus, updates?: any) => void;
   sessionId: string;
   users: User[];
+  isSessionActive?: boolean;
 }
 
 interface BillingData {
@@ -47,6 +48,7 @@ export function GroupCard({
   handleUpdateUser,
   sessionId,
   users,
+  isSessionActive = true,
 }: GroupCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showManageUsers, setShowManageUsers] = useState(false);
@@ -232,12 +234,14 @@ export function GroupCard({
           filter: isDeleting ? 'grayscale(100%)' : 'none',
         }}
       >
+        {isSessionActive && (
         <DeleteButton
           className="delete-icon"
           onDelete={() => setShowDeleteDialog(true)}
           sx={{ opacity: 1 }}
           disabled={isDeleting}
         />
+        )}
 
         <Box
           sx={{
@@ -274,10 +278,12 @@ export function GroupCard({
               handleAssignCart={handleAssignCart}
               handleManageUserRace={handleManageUserRace}
               plans={plans}
+              disabled={!isSessionActive}
             />
           </Stack>
 
           <Stack direction={{ xs: 'column', sm: 'row', lg: 'column' }} spacing={2} marginTop={2}>
+            {isSessionActive && (
             <Button
               variant="contained"
               color="primary"
@@ -287,6 +293,7 @@ export function GroupCard({
             >
               Manage Group Users
             </Button>
+            )}
 
             <Button
               variant="contained"

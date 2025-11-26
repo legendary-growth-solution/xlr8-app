@@ -83,6 +83,7 @@ interface GroupUserListProps {
   handleAssignCart: (group_id: string, user_id: string, cart_id: string) => void;
   handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus, updates?: any) => void;
   plans?: Plan[];
+  disabled?: boolean;
 }
 
 export function GroupUserList({
@@ -92,6 +93,7 @@ export function GroupUserList({
   handleAssignCart,
   handleManageUserRace,
   plans = [],
+  disabled = false,
 }: GroupUserListProps) {
   if (users.length === 0) {
     return (
@@ -263,6 +265,7 @@ export function GroupUserList({
                 group_id={group.group_id}
                 carts={carts}
                 handleAssignCart={handleAssignCart}
+                disabled={disabled}
               />
             </Box>
           </UserRow>

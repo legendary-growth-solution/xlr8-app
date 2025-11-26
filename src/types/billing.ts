@@ -9,7 +9,7 @@ export interface Plan {
   name: string;
   defaultTime: number;
   cost: number;
-  isVisible: boolean;
+  is_disabled?: boolean;
   description?: string;
 }
 
