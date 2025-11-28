@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -40,23 +40,43 @@ export function PlanCartSelector({
   sameForAll,
   onSameForAllChange,
 }: PlanCartSelectorProps) {
-  const [masterPlan, setMasterPlan] = useState(plans[0]?.plan_id || '');
-  const [masterCartType, setMasterCartType] = useState('1');
+  const [masterCartType, setMasterCartType] = useState('2');
+  const [masterPlan, setMasterPlan] = useState('');
+
+  const getFilteredPlans = (cartLevel: string) => 
+    plans.filter(p => (p.level || 1) === Number(cartLevel));
+
+  const filteredMasterPlans = getFilteredPlans(masterCartType);
+
+  useEffect(() => {
+    if (plans.length > 0 && !masterPlan) {
+      const level2Plans = plans.filter(p => (p.level || 1) === 2);
+      if (level2Plans.length > 0) {
+        setMasterPlan(level2Plans[0].plan_id);
+      }
+    }
+  }, [plans, masterPlan]);
 
   const handleSameForAllChange = (checked: boolean) => {
     onSameForAllChange(checked);
     
     if (checked) {
+      const currentPlan = masterPlan || (filteredMasterPlans.length > 0 ? filteredMasterPlans[0].plan_id : '');
+      if (!masterPlan && currentPlan) {
+        setMasterPlan(currentPlan);
+      }
       const newSelections: PlanCartSelection[] = [{
-        planId: masterPlan,
+        planId: currentPlan,
         cartType: masterCartType,
         count: peopleCount,
       }];
       onChange(newSelections);
     } else {
+      const level2Plans = getFilteredPlans('2');
+      const defaultPlan = level2Plans.length > 0 ? level2Plans[0].plan_id : '';
       const newSelections: PlanCartSelection[] = Array.from({ length: peopleCount }, (_, index) => ({
-        planId: plans[0]?.plan_id || '',
-        cartType: '1',
+        planId: defaultPlan,
+        cartType: '2',
         count: 1,
       }));
       onChange(newSelections);
@@ -68,6 +88,19 @@ export function PlanCartSelector({
       setMasterPlan(value);
     } else {
       setMasterCartType(value);
+      const newFilteredPlans = getFilteredPlans(value);
+      const newPlan = newFilteredPlans.length > 0 ? newFilteredPlans[0].plan_id : '';
+      setMasterPlan(newPlan);
+      
+      if (sameForAll) {
+        const newSelections: PlanCartSelection[] = [{
+          planId: newPlan,
+          cartType: value,
+          count: peopleCount,
+        }];
+        onChange(newSelections);
+        return;
+      }
     }
 
     if (sameForAll) {
@@ -85,16 +118,15 @@ export function PlanCartSelector({
     if (field === 'plan') {
       newSelections[index] = { ...newSelections[index], planId: value };
     } else {
-      newSelections[index] = { ...newSelections[index], cartType: value };
+      const filteredPlans = getFilteredPlans(value);
+      const newPlan = filteredPlans.length > 0 ? filteredPlans[0].plan_id : '';
+      newSelections[index] = { ...newSelections[index], cartType: value, planId: newPlan };
     }
     onChange(newSelections);
   };
 
   const getCartTypeLabel = (value: string) =>
     CART_TYPES.find(type => type.value === value)?.label || 'Level 1';
-
-  const getCartTypeColor = (value: string) =>
-    CART_TYPES.find(type => type.value === value)?.color || 'success';
 
   const getPlanLabel = (planId: string) => {
     const plan = plans.find(p => p.plan_id === planId);
@@ -122,36 +154,44 @@ export function PlanCartSelector({
         {sameForAll ? (
           <Stack spacing={2}>
             <FormControl fullWidth>
-              <InputLabel>Plan</InputLabel>
-              <Select
-                value={masterPlan}
-                label="Plan"
-                onChange={(e) => handleMasterChange('plan', e.target.value)}
-              >
-                {plans.map((plan) => (
-                  <MenuItem key={plan.plan_id} value={plan.plan_id}>
-                    {plan.title} - ₹{plan.amount} ({plan.timeInMinutes} min)
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth>
               <InputLabel>Cart Type</InputLabel>
               <Select
                 value={masterCartType}
                 label="Cart Type"
                 onChange={(e) => handleMasterChange('cart', e.target.value)}
               >
-                {CART_TYPES.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Chip 
-                        label={type.label} 
-                        color={type.color} 
-                        size="small" 
-                      />
-                    </Box>
+                {CART_TYPES.map((type) => {
+                  const hasPlans = getFilteredPlans(type.value).length > 0;
+                  return (
+                    <MenuItem key={type.value} value={type.value} disabled={!hasPlans}>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Chip 
+                          label={type.label} 
+                          color={type.color} 
+                          size="small" 
+                        />
+                        {!hasPlans && (
+                          <Typography variant="caption" color="text.disabled" sx={{ ml: 1 }}>
+                            (No plans)
+                          </Typography>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Plan</InputLabel>
+              <Select
+                value={masterPlan}
+                label="Plan"
+                onChange={(e) => handleMasterChange('plan', e.target.value)}
+              >
+                {filteredMasterPlans.map((plan) => (
+                  <MenuItem key={plan.plan_id} value={plan.plan_id}>
+                    {plan.title} - ₹{plan.amount} ({plan.timeInMinutes} min)
                   </MenuItem>
                 ))}
               </Select>
@@ -172,51 +212,64 @@ export function PlanCartSelector({
               Configure individual selections:
             </Typography>
             
-            {Array.from({ length: peopleCount }, (_, index) => (
-              <Box key={index}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Person {index + 1}
-                </Typography>
-                <Stack direction="row" spacing={2}>
-                  <FormControl sx={{ flex: 2 }}>
-                    <InputLabel size="small">Plan</InputLabel>
-                    <Select
-                      size="small"
-                      value={selections[index]?.planId || plans[0]?.plan_id || ''}
-                      label="Plan"
-                      onChange={(e) => handleIndividualChange(index, 'plan', e.target.value)}
-                    >
-                      {plans.map((plan) => (
-                        <MenuItem key={plan.plan_id} value={plan.plan_id}>
-                          {plan.title} - ₹{plan.amount}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+            {Array.from({ length: peopleCount }, (_, index) => {
+              const currentCartType = selections[index]?.cartType || '2';
+              const filteredPlansForPerson = getFilteredPlans(currentCartType);
+              
+              return (
+                <Box key={index}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Person {index + 1}
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    <FormControl sx={{ flex: 1 }}>
+                      <InputLabel size="small">Cart Type</InputLabel>
+                      <Select
+                        size="small"
+                        value={currentCartType}
+                        label="Cart Type"
+                        onChange={(e) => handleIndividualChange(index, 'cart', e.target.value)}
+                      >
+                        {CART_TYPES.map((type) => {
+                          const hasPlans = getFilteredPlans(type.value).length > 0;
+                          return (
+                            <MenuItem key={type.value} value={type.value} disabled={!hasPlans}>
+                              <Chip 
+                                label={type.label} 
+                                color={type.color} 
+                                size="small" 
+                              />
+                              {!hasPlans && (
+                                <Typography variant="caption" color="text.disabled" sx={{ ml: 0.5, fontSize: '0.65rem' }}>
+                                  (No plans)
+                                </Typography>
+                              )}
+                            </MenuItem>
+                          );
+                        })}
+                      </Select>
+                    </FormControl>
 
-                  <FormControl sx={{ flex: 1 }}>
-                    <InputLabel size="small">Cart Type</InputLabel>
-                    <Select
-                      size="small"
-                      value={selections[index]?.cartType || '1'}
-                      label="Cart Type"
-                      onChange={(e) => handleIndividualChange(index, 'cart', e.target.value)}
-                    >
-                      {CART_TYPES.map((type) => (
-                        <MenuItem key={type.value} value={type.value}>
-                          <Chip 
-                            label={type.label} 
-                            color={type.color} 
-                            size="small" 
-                          />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Stack>
-                {index < peopleCount - 1 && <Divider sx={{ mt: 2 }} />}
-              </Box>
-            ))}
+                    <FormControl sx={{ flex: 2 }}>
+                      <InputLabel size="small">Plan</InputLabel>
+                      <Select
+                        size="small"
+                        value={selections[index]?.planId || (filteredPlansForPerson[0]?.plan_id || '')}
+                        label="Plan"
+                        onChange={(e) => handleIndividualChange(index, 'plan', e.target.value)}
+                      >
+                        {filteredPlansForPerson.map((plan) => (
+                          <MenuItem key={plan.plan_id} value={plan.plan_id}>
+                            {plan.title} - ₹{plan.amount}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Stack>
+                  {index < peopleCount - 1 && <Divider sx={{ mt: 2 }} />}
+                </Box>
+              );
+            })}
           </Stack>
         )}
       </CardContent>

@@ -1,30 +1,37 @@
+import type { Plan } from 'src/types/billing';
+
+import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
+
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
-  Button,
   Card,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
   Stack,
   Table,
+  Button,
+  Dialog,
+  Switch,
+  TableRow,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
-  TableRow,
   TextField,
-  Typography
+  IconButton,
+  Typography,
+  DialogTitle,
+  DialogActions,
+  DialogContent,
+  TableContainer,
+  CircularProgress
 } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { Iconify } from 'src/components/iconify';
+
 import { useBoolean } from 'src/hooks/use-boolean';
+
 import { billingApi } from 'src/services/api/billing.api';
-import { Plan } from 'src/types/billing';
+
+import { Iconify } from 'src/components/iconify';
+import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 
 interface PlanFormData {
   title: string;
@@ -46,7 +53,12 @@ export default function TimeManagementPage() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [formData, setFormData] = useState<PlanFormData>(defaultPlanData);
   const dialog = useBoolean();
+  const deleteDialog = useBoolean();
+  const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchPlans();
@@ -75,24 +87,26 @@ export default function TimeManagementPage() {
       amount: plan.amount,
       level: plan.level || 1,
     });
+    setDialogError(null);
     dialog.onTrue();
   };
 
   const handleAdd = () => {
     setSelectedPlan(null);
     setFormData(defaultPlanData);
+    setDialogError(null);
     dialog.onTrue();
   };
 
   const handleSubmit = async () => {
     if (!formData.title || !formData.timeInMinutes) {
-      setError('Name and Time are required fields');
+      setDialogError('Name and Time are required fields');
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      setSubmitting(true);
+      setDialogError(null);
       
       const planData = {
         title: formData.title,
@@ -109,27 +123,52 @@ export default function TimeManagementPage() {
       
       await fetchPlans();
       dialog.onFalse();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving plan:', err);
-      setError(selectedPlan ? 'Failed to update plan' : 'Failed to create plan');
+      const errorMessage = err?.response?.data?.error || (selectedPlan ? 'Failed to update plan' : 'Failed to create plan');
+      setDialogError(errorMessage);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const handleDelete = async (planId: string) => {
-    if (!window.confirm('Are you sure you want to delete this plan?')) return;
+  const handleDeleteClick = (plan: Plan) => {
+    setPlanToDelete(plan);
+    deleteDialog.onTrue();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!planToDelete) return;
     
     try {
-      setLoading(true);
+      setDeleting(true);
       setError(null);
-      await billingApi.deletePlan(planId);
+      await billingApi.deletePlan(planToDelete.plan_id);
       await fetchPlans();
+      deleteDialog.onFalse();
+      setPlanToDelete(null);
     } catch (err) {
       console.error('Error deleting plan:', err);
       setError('Failed to delete plan');
     } finally {
-      setLoading(false);
+      setDeleting(false);
+    }
+  };
+
+  const handleToggleStatus = async (planId: string, currentDisabled: boolean) => {
+    const optimisticPlans = plans.map(plan => 
+      plan.plan_id === planId 
+        ? { ...plan, is_disabled: !currentDisabled }
+        : plan
+    );
+    setPlans(optimisticPlans);
+
+    try {
+      await billingApi.updatePlan(planId, { is_disabled: !currentDisabled });
+    } catch (err) {
+      console.error('Error toggling plan status:', err);
+      setError('Failed to toggle plan status');
+      await fetchPlans();
     }
   };
 
@@ -170,6 +209,7 @@ export default function TimeManagementPage() {
                   <TableCell align="center">Level</TableCell>
                   <TableCell align="center">Time (mins)</TableCell>
                   <TableCell align="center">Cost (₹)</TableCell>
+                  <TableCell align="center">Enabled</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -181,10 +221,16 @@ export default function TimeManagementPage() {
                     <TableCell align="center">{plan.timeInMinutes}</TableCell>
                     <TableCell align="center">₹ {plan.amount}</TableCell>
                     <TableCell align="center">
+                      <Switch
+                        checked={!(plan.is_disabled ?? false)}
+                        onChange={() => handleToggleStatus(plan.plan_id, plan.is_disabled ?? false)}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
                       <IconButton onClick={() => handleEdit(plan)}>
                         <Iconify icon="eva:edit-fill" />
                       </IconButton>
-                      <IconButton onClick={() => handleDelete(plan.plan_id)} color="error">
+                      <IconButton onClick={() => handleDeleteClick(plan)} color="error">
                         <Iconify icon="eva:trash-2-outline" />
                       </IconButton>
                     </TableCell>
@@ -199,12 +245,18 @@ export default function TimeManagementPage() {
       <Dialog open={dialog.value} onClose={dialog.onFalse} fullWidth maxWidth="sm">
         <DialogTitle>{selectedPlan ? 'Edit Plan' : 'New Plan'}</DialogTitle>
         <DialogContent>
+          {dialogError && (
+            <Typography color="error" sx={{ mb: 2, mt: 1 }}>
+              {dialogError}
+            </Typography>
+          )}
           <Stack spacing={3} sx={{ mt: 2 }}>
             <TextField
               fullWidth
               label="Plan Name"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              error={dialogError?.includes('Name') || dialogError?.includes('title')}
             />
             <TextField
               fullWidth
@@ -219,6 +271,7 @@ export default function TimeManagementPage() {
               label="Time (minutes)"
               value={formData.timeInMinutes}
               onChange={(e) => setFormData({ ...formData, timeInMinutes: Number(e.target.value) })}
+              error={dialogError?.includes('Time') || dialogError?.includes('timeInMinutes')}
             />
             <TextField
               fullWidth
@@ -230,12 +283,28 @@ export default function TimeManagementPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={dialog.onFalse}>Cancel</Button>
-          <LoadingButton loading={loading} variant="contained" onClick={handleSubmit}>
+          <Button onClick={dialog.onFalse} disabled={submitting}>Cancel</Button>
+          <LoadingButton loading={submitting} variant="contained" onClick={handleSubmit}>
             {selectedPlan ? 'Update' : 'Create'}
           </LoadingButton>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialog.value}
+        title="Delete Plan"
+        content={
+          <>
+            Are you sure you want to delete the plan <strong>{planToDelete?.title}</strong>?
+            This action cannot be undone.
+          </>
+        }
+        confirmText="Delete"
+        confirmColor="error"
+        loading={deleting}
+        onClose={deleteDialog.onFalse}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 } 

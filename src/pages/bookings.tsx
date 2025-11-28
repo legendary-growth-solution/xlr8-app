@@ -19,6 +19,7 @@ import {
   Button,
   Dialog,
   Divider,
+  Tooltip,
   TableRow,
   Skeleton,
   Checkbox,
@@ -48,6 +49,7 @@ import { Scrollbar } from 'src/components/scrollbar';
 import Toast, { showToast } from 'src/components/toast';
 import ConversionAnimation from 'src/components/animations/ConversionAnimation';
 import { NewBookingDialog, BulkCreateSessionDialog } from 'src/components/booking';
+import { TruncatedText } from 'src/components/common/TruncatedText';
 
 const TABLE_HEAD = [
   { id: 'select', label: '', width: 50 },
@@ -333,8 +335,12 @@ export default function BookingsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const pendingBookings = bookings.filter(booking => !booking.is_completed);
-      setSelectedBookings(pendingBookings.map(booking => booking.booking_id));
+      const convertibleBookings = bookings.filter(booking => {
+        if (booking.is_completed) return false;
+        const { canConvert } = canConvertBooking(booking);
+        return canConvert;
+      });
+      setSelectedBookings(convertibleBookings.map(booking => booking.booking_id));
     } else {
       setSelectedBookings([]);
     }
@@ -353,9 +359,41 @@ export default function BookingsPage() {
     return `${timeSlot.start_time} - ${timeSlot.end_time}`;
   };
 
+  const canConvertBooking = (booking: Booking): { canConvert: boolean; message: string } => {
+    if (!booking.time_slot) {
+      return { canConvert: true, message: '' };
+    }
+
+    const timeSlot = allTimeSlots.find(slot => slot.id === booking.time_slot);
+    
+    if (!timeSlot) {
+      return { canConvert: false, message: 'Time slot information not found' };
+    }
+
+    const [day, month, year] = booking.date.split('-').map(Number);
+    const [hours, minutes] = timeSlot.start_time.split(':').map(Number);
+    const bookingDateTime = new Date(year, month - 1, day, hours, minutes);
+    const allowedTime = new Date(bookingDateTime.getTime() - 2 * 60 * 1000);
+    const now = new Date();
+
+    if (now < allowedTime) {
+      const totalMinutes = Math.ceil((allowedTime.getTime() - now.getTime()) / (1000 * 60));
+      const hoursUntil = Math.floor(totalMinutes / 60);
+      const minutesUntil = totalMinutes % 60;
+      const timeString = `${String(hoursUntil).padStart(2, '0')}:${String(minutesUntil).padStart(2, '0')}`;
+      return { 
+        canConvert: false, 
+        message: `Available in ${timeString}` 
+      };
+    }
+
+    return { canConvert: true, message: '' };
+  };
+
   const renderBookingRow = (booking: Booking) => {
-    const { booking_id, date, time_slot, users, status, created_at, notes, discount_code, total } = booking;
+    const { booking_id, date, time_slot, race_time_display, users, status, created_at, notes, discount_code, total } = booking;
     const isPending = !booking.is_completed;
+    const { canConvert, message } = canConvertBooking(booking);
 
     return (
       <TableRow key={booking_id} hover>
@@ -363,21 +401,30 @@ export default function BookingsPage() {
           <Checkbox
             checked={selectedBookings.includes(booking_id)}
             onChange={(e) => handleSelectBooking(booking_id, e.target.checked)}
-            disabled={!isPending || !isConversionAllowed}
+            disabled={!isPending || !isConversionAllowed || !canConvert}
           />
         </TableCell>
         <TableCell>
+          <Typography variant="body2" noWrap>
           {date}
+          </Typography>
         </TableCell>
 
-        <TableCell>{getTimeSlotDisplay(time_slot)}</TableCell>
+        <TableCell>
+          <Typography variant="body2" noWrap>
+            {race_time_display || getTimeSlotDisplay(time_slot)}
+          </Typography>
+        </TableCell>
         
         <TableCell>
-          <Stack spacing={1}>
+          <Stack spacing={0.5}>
             {users.map((user) => (
-              <Typography key={user.user_id} variant="body2" noWrap>
-                {user.name}
-              </Typography>
+              <TruncatedText 
+                key={user.user_id} 
+                text={user.name} 
+                maxLength={15}
+                variant="body2"
+              />
             ))}
             <Typography variant="caption" color="text.secondary">
               {users.length} user{users.length !== 1 ? 's' : ''}
@@ -425,40 +472,37 @@ export default function BookingsPage() {
         
         <TableCell>
           {notes ? (
-            <Typography 
+            <TruncatedText 
+              text={notes} 
+              maxLength={50}
               variant="body2" 
-              noWrap
-              sx={{ 
-                maxWidth: 180,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                '&:hover': {
-                  overflow: 'visible',
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word',
-                }
-              }}
-            >
-              {notes}
-            </Typography>
+            />
           ) : (
             <Typography variant="body2" color="text.secondary">-</Typography>
           )}
         </TableCell>
         
-        <TableCell>{fDateTime(created_at)}</TableCell>
+        <TableCell>
+          <Typography variant="body2" noWrap>
+            {fDateTime(created_at)}
+          </Typography>
+        </TableCell>
         
         <TableCell align="center">
           <Stack direction="row" spacing={1} justifyContent="center">
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={() => openConvertDialog(booking)}
-              disabled={!isPending || !isConversionAllowed}
-            >
-              Convert
-            </Button>
+            <Tooltip title={!canConvert ? message : ''} arrow>
+              <span>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={() => openConvertDialog(booking)}
+                  disabled={!isPending || !isConversionAllowed || !canConvert}
+                >
+                  Convert
+                </Button>
+              </span>
+            </Tooltip>
             <IconButton
               color="error"
               size="small"
@@ -472,6 +516,11 @@ export default function BookingsPage() {
       </TableRow>
     );
   };
+
+  const convertibleBookingsCount = bookings.filter(b => {
+    if (b.is_completed) return false;
+    return canConvertBooking(b).canConvert;
+  }).length;
 
   return (
     <>
@@ -526,11 +575,11 @@ export default function BookingsPage() {
                           <Checkbox
                             indeterminate={
                               selectedBookings.length > 0 &&
-                              selectedBookings.length < bookings.filter(b => !b.is_completed).length
+                              selectedBookings.length < convertibleBookingsCount
                             }
                             checked={
-                              bookings.filter(b => !b.is_completed).length > 0 &&
-                              selectedBookings.length === bookings.filter(b => !b.is_completed).length
+                              convertibleBookingsCount > 0 &&
+                              selectedBookings.length === convertibleBookingsCount
                             }
                             onChange={(e) => handleSelectAll(e.target.checked)}
                             disabled={!isConversionAllowed}
@@ -698,7 +747,7 @@ export default function BookingsPage() {
                       <strong>Date:</strong> {selectedBooking.date || 'N/A'}
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Time Slot:</strong> {getTimeSlotDisplay(selectedBooking.time_slot)}
+                      <strong>Time Slot:</strong> {selectedBooking.race_time_display || getTimeSlotDisplay(selectedBooking.time_slot)}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Users:</strong> {selectedBooking.users.length}

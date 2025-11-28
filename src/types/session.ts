@@ -58,11 +58,12 @@ export interface Cart {
 
 export interface Plan {
   amount: number;
-  created_at: string; // Could be a Date if parsed appropriately
-  name?: string; // to remove later
+  created_at: string;
+  name?: string;
   plan_id: string;
   timeInMinutes: number;
   title: string;
+  level?: number;
 }
 
 export interface BillingData {

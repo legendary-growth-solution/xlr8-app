@@ -1,6 +1,7 @@
 import { Box, Card, Grid, Skeleton, Stack, Paper } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { LeaderboardSkeleton } from './LeaderboardSkeleton';
+import { GroupSkeleton } from './GroupSkeleton';
 
 export function SessionDetailSkeleton() {
   const theme = useTheme();
@@ -57,7 +58,7 @@ export function SessionDetailSkeleton() {
 
           {/* Leaderboard title */}
           <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Skeleton variant="text" width={200} height={60} sx={{ mx: 'auto' }} />
+            <Skeleton variant="text" width={200} height={100} sx={{ mx: 'auto' }} />
           </Box>
 
           {/* Leaderboard content */}
@@ -68,6 +69,12 @@ export function SessionDetailSkeleton() {
             <Skeleton variant="text" width={150} height={24} />
           </Box>
         </Paper>
+      </Box>
+
+      {/* Groups & Billing section */}
+      <Box sx={{ mt: 5 }}>
+        <Skeleton variant="text" width={180} height={32} sx={{ mb: 3 }} />
+        <GroupSkeleton />
       </Box>
     </Box>
   );

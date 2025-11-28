@@ -23,7 +23,7 @@ import { UserSelectionStep } from './UserSelectionStep';
 import { PeopleCountSelector } from './PeopleCountSelector';
 import { calculateBookingTotal } from './bookingSummaryUtils';
 
-import type { PlanCartSelection } from './bookingSummaryUtils';
+import type { PlanCartSelection, DiscountInfo } from './bookingSummaryUtils';
 
 interface NewBookingDialogProps {
   open: boolean;
@@ -41,13 +41,14 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
   const [selections, setSelections] = useState<PlanCartSelection[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isUserStepValid, setIsUserStepValid] = useState(false);
+  const [discount, setDiscount] = useState<DiscountInfo | null>(null);
   const userStepRef = useRef<{ handleSubmit: () => Promise<void> } | null>(null);
 
   useEffect(() => {
     if (open && plans.length > 0) {
       const initialSelections: PlanCartSelection[] = [{
         planId: plans[0].plan_id,
-        cartType: '1',
+        cartType: '2',
         count: peopleCount,
       }];
       setSelections(initialSelections);
@@ -59,7 +60,7 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
       setSelections(prevSelections => {
         const masterSelection = prevSelections[0] || {
           planId: plans[0].plan_id,
-          cartType: '1',
+          cartType: '2',
           count: peopleCount,
         };
         return [{ ...masterSelection, count: peopleCount }];
@@ -70,7 +71,7 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
           { length: peopleCount },
           (_, index) => prevSelections[index] || {
             planId: plans[0]?.plan_id || '',
-            cartType: '1',
+            cartType: '2',
             count: 1,
           }
         );
@@ -92,6 +93,7 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
     setPeopleCount(2);
     setSameForAll(true);
     setSelections([]);
+    setDiscount(null);
     onClose();
   };
 
@@ -103,7 +105,7 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
     return true;
   };
 
-  const totalAmount = calculateBookingTotal({ peopleCount, selections, plans, sameForAll });
+  const { subtotal, total: totalAmount } = calculateBookingTotal({ peopleCount, selections, plans, sameForAll, discount: discount || undefined });
 
   const renderStepContent = () => {
     switch (activeStep) {
@@ -129,6 +131,7 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
               selections={selections}
               plans={plans}
               sameForAll={sameForAll}
+              discount={discount}
             />
           </Stack>
         );
@@ -147,6 +150,7 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
             submitting={submitting}
             ref={userStepRef}
             onValidityChange={setIsUserStepValid}
+            onDiscountChange={setDiscount}
           />
         );
       
@@ -235,6 +239,8 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
         <StickySummaryBar
           peopleCount={peopleCount}
           total={totalAmount}
+          hasDiscount={!!discount}
+          originalTotal={discount ? subtotal : undefined}
         />
       </DialogContent>
       

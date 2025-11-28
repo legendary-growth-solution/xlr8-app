@@ -18,13 +18,14 @@ import {
 
 import { calculateBookingTotal } from './bookingSummaryUtils';
 
-import type { PlanCartSelection } from './bookingSummaryUtils';
+import type { DiscountInfo, PlanCartSelection } from './bookingSummaryUtils';
 
 interface BookingSummaryProps {
   peopleCount: number;
   selections: PlanCartSelection[];
   plans: Plan[];
   sameForAll: boolean;
+  discount?: DiscountInfo | null;
 }
 
 const CART_TYPE_LABELS = {
@@ -39,7 +40,7 @@ const CART_TYPE_COLORS = {
   '3': 'error' as const,
 };
 
-export function BookingSummary({ peopleCount, selections, plans, sameForAll }: BookingSummaryProps) {
+export function BookingSummary({ peopleCount, selections, plans, sameForAll, discount }: BookingSummaryProps) {
 
   const getGroupedSelections = () => {
     if (sameForAll) {
@@ -61,7 +62,7 @@ export function BookingSummary({ peopleCount, selections, plans, sameForAll }: B
   };
 
   const groupedSelections = getGroupedSelections();
-  const total = calculateBookingTotal({ peopleCount, selections, plans, sameForAll });
+  const { subtotal, discountAmount, total } = calculateBookingTotal({ peopleCount, selections, plans, sameForAll, discount: discount || undefined });
 
   return (
     <Card>
@@ -146,9 +147,31 @@ export function BookingSummary({ peopleCount, selections, plans, sameForAll }: B
               <Typography variant="h6">
                 Total Amount
               </Typography>
-              <Typography variant="h4" color="primary" fontWeight="bold">
-                ₹{total}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {discount && discountAmount > 0 && (
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      textDecoration: 'line-through',
+                      color: 'text.disabled',
+                      fontWeight: 'normal'
+                    }}
+                  >
+                    ₹{subtotal}
+                  </Typography>
+                )}
+                <Typography variant="h4" color="primary" fontWeight="bold">
+                  ₹{total}
+                </Typography>
+                {discount && discountAmount > 0 && (
+                  <Chip 
+                    label={`${discount.code}`}
+                    color="success" 
+                    size="small"
+                    sx={{ height: 24 }}
+                  />
+                )}
+              </Box>
             </Stack>
           </Box>
         </Stack>

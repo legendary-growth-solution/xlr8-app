@@ -1,4 +1,5 @@
-import { Box, Stack, Typography, Paper } from '@mui/material';
+import { Box, Paper, Stack, Typography } from '@mui/material';
+
 import DataTable from '../table/DataTable';
 
 interface BillingUser {
@@ -12,10 +13,12 @@ interface BillingUser {
 
 interface BillingData {
   billing_data: {
+    base_amount?: number;
     total_amount: number;
     total_discount: number;
     total_cgst: number;
     total_sgst: number;
+    total_tax?: number;
     grand_total: number;
   };
   users: BillingUser[];
@@ -27,6 +30,7 @@ interface BillingDetailsTableProps {
 
 export function BillingDetailsTable({ billingData }: BillingDetailsTableProps) {
   const billing = billingData?.billing_data || {
+    base_amount: 0,
     total_amount: 0,
     total_discount: 0,
     total_cgst: 0,
@@ -62,8 +66,10 @@ export function BillingDetailsTable({ billingData }: BillingDetailsTableProps) {
     },
   ];
 
+  const baseAmount = billing.base_amount || (billing.grand_total - billing.total_cgst - billing.total_sgst);
+
   const summaryItems = [
-    { label: 'Amount', value: billing.total_amount },
+    { label: 'Amount', value: baseAmount },
     { label: 'Discount', value: billing.total_discount },
     { label: 'CGST (9%)', value: billing.total_cgst },
     { label: 'SGST (9%)', value: billing.total_sgst },

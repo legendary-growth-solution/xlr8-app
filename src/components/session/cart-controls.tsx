@@ -33,6 +33,7 @@ interface CartControlsProps {
   carts: Cart[];
   handleAssignCart: (group_id: string, user_id: string, cart_id: string) => void;
   handleManageUserRace: (group_id: string, user_id: string, status: UserRaceStatus, updates?: any) => void;
+  disabled?: boolean;
 }
 
 const normalizeRaceEndTime = (timeString: string): string =>
@@ -44,6 +45,7 @@ export function CartControls({
   carts,
   handleAssignCart,
   handleManageUserRace,
+  disabled = false,
 }: CartControlsProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(
@@ -99,7 +101,7 @@ export function CartControls({
   };
 
   const handleOpenCartMenu = (event: React.MouseEvent<HTMLElement>) => {
-    if (isOptimisticUser) return;
+    if (isOptimisticUser || disabled) return;
     setAnchorEl(event.currentTarget);
   };
 
@@ -597,7 +599,7 @@ export function CartControls({
                   () => setIsStartingRace(false)
                 );
               }}
-              disabled={!(user?.cart_id || optimisticCartId) || isStartingRace || isOptimisticUser}
+              disabled={!(user?.cart_id || optimisticCartId) || isStartingRace || isOptimisticUser || disabled}
               sx={{
                 color: 'success.main',
                 '&:hover': { bgcolor: 'success.lighter' },
@@ -657,7 +659,8 @@ export function CartControls({
               {user?.race_active &&
                 user?.race_end_time &&
                 user?.race_end_time !== '' &&
-                !raceCompleted && (
+                !raceCompleted &&
+                !disabled && (
                   <Tooltip title="Pause timer">
                     <IconButton
                       className="pause-button"
@@ -685,7 +688,7 @@ export function CartControls({
                   </Tooltip>
                 )}
 
-              {!user?.race_active && user?.race_end_time === '' && timeLeft > 0 && (
+              {!user?.race_active && user?.race_end_time === '' && timeLeft > 0 && !disabled && (
                 <>
                   <Tooltip title="Resume timer">
                     <IconButton
@@ -723,7 +726,9 @@ export function CartControls({
 
         {showAsAssigned && !isOptimisticUser && !(raceCompleted && isDisqualified) && (
           <Tooltip title={
-            !raceHasStarted
+            disabled
+              ? "Session has ended"
+              : !raceHasStarted
               ? "Race must be started first"
               : isDisqualified 
                 ? `Disqualified: ${user.disqualification_reason || 'No reason provided'}`
@@ -735,7 +740,7 @@ export function CartControls({
               <IconButton
                 size="small"
                 onClick={handleOpenRaceActionsMenu}
-                disabled={isOptimisticUser || !raceHasStarted}
+                disabled={isOptimisticUser || !raceHasStarted || disabled}
                 sx={{
                   color: hasPenalty 
                     ? 'warning.main' 
