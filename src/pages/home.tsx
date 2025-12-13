@@ -1,76 +1,123 @@
+import { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
+
 import {
   Box,
-  Button,
   Card,
+  Button,
   CardContent,
-  CircularProgress,
   Grid,
+  CircularProgress,
   Stack,
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { useNavigate } from 'react-router-dom';
-import { api } from 'src/api/api';
-import { showToast } from 'src/components/toast';
-import { CONFIG } from 'src/config-global';
-import { apiClient } from 'src/services/api/api-client';
 
-interface AnalyticsData {
-  today: number;
-  yesterday: number;
-  last7Days: number;
+import { api } from 'src/api/api';
+import { CONFIG } from 'src/config-global';
+import { showToast } from 'src/components/toast';
+import { CartStatsGraph } from 'src/components/booking/cart-stats-graph';
+import { RecentSessions } from 'src/components/booking/recent-sessions';
+import { StatsGraph } from 'src/components/booking/stats-graph';
+import { dashboardApi } from 'src/services/api/dashboard.api';
+
+interface DashboardStats {
+  today: { amount: number; rides: number };
+  yesterday: { amount: number; rides: number };
+  last7Days: { amount: number; rides: number };
+  totals: { amount: number; rides: number };
+  last7DaysData?: Array<{ date: string; amount: number; rides: number }>;
+  cartStats?: {
+    byId: Record<string, number>;
+    byType: Record<string, number>;
+  };
 }
 
-// Helper function for comma formatting
+type DailyCartData = {
+  cart_stats_by_date?: Record<string, {
+    cart_by_id_count?: Record<string, number>;
+    cart_by_type_count?: Record<string, number>;
+  }>;
+  cart_id_to_rfid?: Record<string, string>;
+};
+
+interface RecentSession {
+  session_id?: string;
+  name?: string;
+  start_time?: string;
+  end_time?: string;
+  active?: boolean;
+}
+
 const formatNumber = (num: number) => num?.toLocaleString('en-US');
 
 export default function Page() {
-  // 1. Local state for analytics data
-  const [ridesData, setRidesData] = useState<AnalyticsData>({
-    today: 0,
-    yesterday: 0,
-    last7Days: 0,
+  const [stats, setStats] = useState<DashboardStats>({
+    today: { amount: 0, rides: 0 },
+    yesterday: { amount: 0, rides: 0 },
+    last7Days: { amount: 0, rides: 0 },
+    totals: { amount: 0, rides: 0 },
+    last7DaysData: [],
+    cartStats: { byId: {}, byType: {} },
   });
 
-  const [invoicesData, setInvoicesData] = useState<AnalyticsData>({
-    today: 0,
-    yesterday: 0,
-    last7Days: 0,
-  });
-
-  const [ridesLoading, setRidesLoading] = useState<boolean>(false);
-  const [invoicesLoading, setInvoicesLoading] = useState<boolean>(false);
+  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [sessionsLoading, setSessionsLoading] = useState<boolean>(true);
   const [creating, setCreating] = useState<boolean>(false);
+  const [dailyCartData, setDailyCartData] = useState<DailyCartData>({});
   const navigate = useNavigate();
   
-  useEffect(() => {
-    fetchAnalyticsData();
+  const fetchRecentSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const response = await api.session.getCompletedSessions({
+        page: 1,
+        pageSize: 5,
+      });
+      const sessions = response.sessions || [];
+      setRecentSessions(sessions);
+    } catch (error) {
+      console.error('Failed to fetch recent sessions:', error);
+    } finally {
+      setSessionsLoading(false);
+    }
   }, []);
 
-  const fetchAnalyticsData = async () => {
-    setRidesLoading(true);
-    setInvoicesLoading(true);
-    
+  const fetchDailyCartStats = useCallback(async () => {
     try {
-      const ridesRes = await apiClient.get('/ride-stats');
-      setRidesData(ridesRes.data);
+      const today = new Date();
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      
+      const startDate = sevenDaysAgo.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
+      
+      const data = await dashboardApi.getCartStats(startDate, endDate);
+      setDailyCartData(data);
     } catch (error) {
-      console.error('Failed to fetch rides data:', error);
-    } finally {
-      setRidesLoading(false);
+      console.error('Failed to fetch daily cart stats:', error);
     }
-    
+  }, []);
+
+  const fetchAnalyticsData = useCallback(async () => {
+    setLoading(true);
     try {
-      const invoicesRes = await apiClient.get('/invoice-stats');
-      setInvoicesData(invoicesRes.data);
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const data = await dashboardApi.getDashboardStats(timezone);
+      setStats(data);
+      await Promise.all([fetchRecentSessions(), fetchDailyCartStats()]);
     } catch (error) {
-      console.error('Failed to fetch invoices data:', error);
+      console.error('Failed to fetch dashboard stats:', error);
     } finally {
-      setInvoicesLoading(false);
+      setLoading(false);
     }
-  };
+  }, [fetchRecentSessions, fetchDailyCartStats]);
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData]);
 
   const handleCreateSession = async () => {
     setCreating(true);
@@ -90,43 +137,42 @@ export default function Page() {
     await fetchAnalyticsData();
   };
 
-  // 4. Define your dashboard cards
   const DASHBOARD_CARDS = [
     {
       title: 'Rides (Today)',
       color: 'primary' as const,
-      value: ridesData.today,
-      loading: ridesLoading,
+      value: stats.today.rides,
+      loading,
     },
     {
       title: 'Rides (Yesterday)',
       color: 'primary' as const,
-      value: ridesData.yesterday,
-      loading: ridesLoading,
+      value: stats.yesterday.rides,
+      loading,
     },
     {
       title: 'Rides (Last 7 days)',
       color: 'primary' as const,
-      value: ridesData.last7Days,
-      loading: ridesLoading,
+      value: stats.last7Days.rides,
+      loading,
     },
     {
       title: 'Collection (Today)',
       color: 'success' as const,
-      value: invoicesData.today,
-      loading: invoicesLoading,
+      value: stats.today.amount,
+      loading,
     },
     {
       title: 'Collection (Yesterday)',
       color: 'success' as const,
-      value: invoicesData.yesterday,
-      loading: invoicesLoading,
+      value: stats.yesterday.amount,
+      loading,
     },
     {
       title: 'Collection (Last 7 days)',
       color: 'success' as const,
-      value: invoicesData.last7Days,
-      loading: invoicesLoading,
+      value: stats.last7Days.amount,
+      loading,
     },
   ] as const;
 
@@ -155,7 +201,6 @@ export default function Page() {
         <Grid container spacing={3}>
           {DASHBOARD_CARDS.map((card, index) => (
             <Grid key={index} item xs={12} md={4}>
-              {/* Wrapper Box with position: relative */}
               <Box sx={{ position: 'relative' }}>
                 <Card
                   sx={{
@@ -197,7 +242,6 @@ export default function Page() {
                   </CardContent>
                 </Card>
 
-                {/* Overlay Loader - only shows when loading */}
                 {card.loading && (
                   <Box
                     sx={{
@@ -210,8 +254,8 @@ export default function Page() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderRadius: 1, // match card corners if desired
-                      zIndex: 9999, // ensure it's on top
+                      borderRadius: 1,
+                      zIndex: 9999,
                     }}
                   >
                     <CircularProgress />
@@ -220,6 +264,49 @@ export default function Page() {
               </Box>
             </Grid>
           ))}
+        </Grid>
+
+        <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
+            <StatsGraph
+              title="Last 7 Days Statistics"
+              subheader="Rides and Collection Overview"
+              data={stats.last7DaysData || []}
+              loading={loading}
+            />
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid item xs={12} md={6}>
+            <CartStatsGraph
+              title="Cart Usage by RFID"
+              subheader="Top carts by number of rides"
+              data={stats.cartStats?.byId || {}}
+              dailyData={dailyCartData}
+              loading={loading}
+              type="byId"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <CartStatsGraph
+              title="Cart Usage by Type"
+              subheader="Cart types by number of rides"
+              data={stats.cartStats?.byType || {}}
+              dailyData={dailyCartData}
+              loading={loading}
+              type="byType"
+            />
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid item xs={12}>
+            <RecentSessions
+              sessions={recentSessions}
+              loading={sessionsLoading}
+            />
+          </Grid>
         </Grid>
       </Box>
     </>
