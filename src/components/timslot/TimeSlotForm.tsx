@@ -18,9 +18,10 @@ interface TimeSlotFormProps {
   onClose: () => void;
   slot?: TimeSlot | null;
   day: string;
+  onCustomSubmit?: (data: Omit<TimeSlot, 'id'>) => void;
 }
 
-export default function TimeSlotForm({ open, onClose, slot, day }: TimeSlotFormProps) {
+export default function TimeSlotForm({ open, onClose, slot, day, onCustomSubmit }: TimeSlotFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     start_time: '',
@@ -53,7 +54,7 @@ export default function TimeSlotForm({ open, onClose, slot, day }: TimeSlotFormP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     const data = {
       ...formData,
       day: day.toLowerCase(),
@@ -63,7 +64,9 @@ export default function TimeSlotForm({ open, onClose, slot, day }: TimeSlotFormP
     };
 
     try {
-      if (slot) {
+      if (onCustomSubmit) {
+        onCustomSubmit(data);
+      } else if (slot) {
         await updateTimeSlot(slot.id, data);
       } else {
         await createTimeSlot(data);
