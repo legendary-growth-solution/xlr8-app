@@ -35,3 +35,8 @@ export const releaseTimeSlotsForDay = async (day: string): Promise<{ message: st
   const response = await apiClient.post('/timeslots/release-day', { day: day.toLowerCase() });
   return response.data;
 };
+
+export const toggleTimeSlotActive = async (id: string): Promise<{ message: string; timeslot: TimeSlot }> => {
+  const response = await apiClient.post(`/timeslots/${id}/toggle-active`);
+  return response.data;
+};
