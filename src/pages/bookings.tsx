@@ -47,9 +47,9 @@ import { getTimeSlots } from 'src/services/api/timeslots';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import Toast, { showToast } from 'src/components/toast';
+import { TruncatedText } from 'src/components/common/TruncatedText';
 import ConversionAnimation from 'src/components/animations/ConversionAnimation';
 import { NewBookingDialog, BulkCreateSessionDialog } from 'src/components/booking';
-import { TruncatedText } from 'src/components/common/TruncatedText';
 
 const TABLE_HEAD = [
   { id: 'select', label: '', width: 50 },
@@ -73,6 +73,8 @@ const CONVERSION_STEPS = [
   'Finalizing'
 ];
 
+type BookingFilter = 'default' | 'paid' | 'failed' | 'paid_not_completed' | 'completed';
+
 export default function BookingsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -81,6 +83,7 @@ export default function BookingsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [bookingFilter, setBookingFilter] = useState<BookingFilter>('default');
   const convertLoading = useBoolean(false);
   const convertDialog = useBoolean(false);
   const conversionProgress = useBoolean(false);
@@ -106,6 +109,7 @@ export default function BookingsPage() {
       const response = await bookingApi.list({
         page: page + 1,
         pageSize: rowsPerPage,
+        status: bookingFilter,
       });
       setBookings(response.bookings);
       setTotalCount(response.totalCount);
@@ -115,7 +119,7 @@ export default function BookingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, bookingFilter]);
 
   const checkActiveSession = async () => {
     try {
@@ -130,12 +134,11 @@ export default function BookingsPage() {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      await getBookings();
-      await checkActiveSession();
-    };
-    fetchData();
+    getBookings();
+    checkActiveSession();
+  }, [getBookings]);
 
+  useEffect(() => {
     const fetchPlans = async () => {
       try {
         const data = await api.plan.getPlans();
@@ -166,15 +169,29 @@ export default function BookingsPage() {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [getBookings]);
+  }, []);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
+
+  const handleFilterChange = (filter: BookingFilter) => {
+    setBookingFilter(filter);
+    setPage(0);
+  };
+
+  const filterConfigs = [
+    { key: 'default' as BookingFilter, label: 'Active', minWidth: 80 },
+    { key: 'paid_not_completed' as BookingFilter, label: 'Active User Bookings', minWidth: 120 },
+    { key: 'all' as BookingFilter, label: 'All', minWidth: 80 },
+    { key: 'paid' as BookingFilter, label: 'Paid', minWidth: 80 },
+    { key: 'completed' as BookingFilter, label: 'Completed', minWidth: 100 },
+    { key: 'failed' as BookingFilter, label: 'Failed', minWidth: 80 },
+  ];
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
@@ -561,6 +578,20 @@ export default function BookingsPage() {
               Manage Time Slots
             </Button>
           </Stack>
+        </Stack>
+
+        <Stack direction="row" spacing={1} mb={3}>
+          {filterConfigs.map((config) => (
+            <Button
+              key={config.key}
+              variant={bookingFilter === config.key ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => handleFilterChange(config.key)}
+              sx={{ minWidth: config.minWidth }}
+            >
+              {config.label}
+            </Button>
+          ))}
         </Stack>
 
         <Card>

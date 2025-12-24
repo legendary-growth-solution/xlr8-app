@@ -10,6 +10,7 @@ interface BookingListResponse {
 interface PaginationParams {
   page?: number;
   pageSize?: number;
+  status?: 'default' | 'paid' | 'failed' | 'paid_not_completed' | 'completed' | 'all';
 }
 
 export const bookingApi = {
