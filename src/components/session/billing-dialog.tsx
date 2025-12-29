@@ -264,8 +264,9 @@ export function BillingDialog({
 
   const getPlans = () => {
     setLoadingPlans(true);
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     billingApi
-      .getPlans()
+      .getPlans({ day: today })
       .then((response) => {
         const parsedResponse = response.data as { plans?: any[]; data?: any };
         const fetchedPlans = parsedResponse.plans ?? parsedResponse.data ?? response.data;

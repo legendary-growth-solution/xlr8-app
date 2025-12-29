@@ -38,6 +38,7 @@ interface PlanFormData {
   timeInMinutes: number;
   amount: number;
   level: number;
+  plan_type?: 'weekday' | 'weekend' | '';
 }
 
 const defaultPlanData: PlanFormData = {
@@ -45,6 +46,7 @@ const defaultPlanData: PlanFormData = {
   timeInMinutes: 15,
   amount: 0,
   level: 1,
+  plan_type: '',
 };
 
 export default function TimeManagementPage() {
@@ -59,6 +61,7 @@ export default function TimeManagementPage() {
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'weekday' | 'weekend'>('all');
 
   useEffect(() => {
     fetchPlans();
@@ -86,6 +89,7 @@ export default function TimeManagementPage() {
       timeInMinutes: plan.timeInMinutes,
       amount: plan.amount,
       level: plan.level || 1,
+      plan_type: plan.plan_type || '',
     });
     setDialogError(null);
     dialog.onTrue();
@@ -113,6 +117,7 @@ export default function TimeManagementPage() {
         timeInMinutes: formData.timeInMinutes,
         amount: formData.amount || 0,
         level: formData.level || 1,
+        plan_type: formData.plan_type || null,
       };
       
       if (selectedPlan) {
@@ -172,6 +177,19 @@ export default function TimeManagementPage() {
     }
   };
 
+  const filteredPlans = plans.filter((plan) => {
+    if (filterType === 'all') return true;
+    
+    let pType = plan.plan_type;
+    if (!pType) {
+      const name = (plan.title || '').toLowerCase();
+      if (name.includes('weekday')) pType = 'weekday';
+      else if (name.includes('weekend')) pType = 'weekend';
+      else pType = 'weekend';
+    }
+    return pType === filterType;
+  });
+
   return (
     <>
       <Helmet>
@@ -186,13 +204,27 @@ export default function TimeManagementPage() {
         )}
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
           <Typography variant="h4">Time Plans</Typography>
-          <Button
-            variant="contained"
-            startIcon={<Iconify icon="eva:plus-fill" />}
-            onClick={handleAdd}
-          >
-            New Plan
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              select
+              size="small"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as any)}
+              SelectProps={{ native: true }}
+              sx={{ minWidth: 120 }}
+            >
+              <option value="all">All Types</option>
+              <option value="weekday">Weekday</option>
+              <option value="weekend">Weekend</option>
+            </TextField>
+            <Button
+              variant="contained"
+              startIcon={<Iconify icon="eva:plus-fill" />}
+              onClick={handleAdd}
+            >
+              New Plan
+            </Button>
+          </Stack>
         </Stack>
 
         <Card>
@@ -208,18 +240,34 @@ export default function TimeManagementPage() {
                   <TableCell align="center">Name</TableCell>
                   <TableCell align="center">Level</TableCell>
                   <TableCell align="center">Time (mins)</TableCell>
-                  <TableCell align="center">Cost (₹)</TableCell>
+                   <TableCell align="center">Cost (₹)</TableCell>
+                  <TableCell align="center">Type</TableCell>
                   <TableCell align="center">Enabled</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
-              <TableBody>
-                {plans?.map((plan) => (
+               <TableBody>
+                {filteredPlans?.map((plan) => (
                   <TableRow key={plan.plan_id}>
                     <TableCell align="center">{plan.title}</TableCell>
                     <TableCell align="center">{plan.level}</TableCell>
                     <TableCell align="center">{plan.timeInMinutes}</TableCell>
-                    <TableCell align="center">₹ {plan.amount}</TableCell>
+                     <TableCell align="center">₹ {plan.amount}</TableCell>
+                    <TableCell align="center">
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          textTransform: 'capitalize',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          bgcolor: (theme) => plan.plan_type === 'weekday' ? theme.palette.info.lighter : theme.palette.warning.lighter,
+                          color: (theme) => plan.plan_type === 'weekday' ? theme.palette.info.darker : theme.palette.warning.darker,
+                        }}
+                      >
+                        {plan.plan_type || 'Auto'}
+                      </Typography>
+                    </TableCell>
                     <TableCell align="center">
                       <Switch
                         checked={!(plan.is_disabled ?? false)}
@@ -273,13 +321,26 @@ export default function TimeManagementPage() {
               onChange={(e) => setFormData({ ...formData, timeInMinutes: Number(e.target.value) })}
               error={dialogError?.includes('Time') || dialogError?.includes('timeInMinutes')}
             />
-            <TextField
+             <TextField
               fullWidth
               type="number"
               label="Cost (₹)"
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
             />
+            <TextField
+              fullWidth
+              select
+              label="Plan Type"
+              value={formData.plan_type}
+              onChange={(e) => setFormData({ ...formData, plan_type: e.target.value as any })}
+              SelectProps={{ native: true }}
+              InputLabelProps={{ shrink: true }}
+            >
+              <option value="">Auto (Name-based)</option>
+              <option value="weekday">Weekday</option>
+              <option value="weekend">Weekend</option>
+            </TextField>
           </Stack>
         </DialogContent>
         <DialogActions>

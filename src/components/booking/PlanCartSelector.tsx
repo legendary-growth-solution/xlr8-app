@@ -42,9 +42,22 @@ export function PlanCartSelector({
 }: PlanCartSelectorProps) {
   const [masterCartType, setMasterCartType] = useState('2');
   const [masterPlan, setMasterPlan] = useState('');
+  const [selectedDayType, setSelectedDayType] = useState<'all' | 'weekday' | 'weekend'>('all');
+
+  const getDayType = (plan: Plan) => {
+    if (plan.plan_type) return plan.plan_type;
+    const name = (plan.title || '').toLowerCase();
+    if (name.includes('weekday')) return 'weekday';
+    if (name.includes('weekend')) return 'weekend';
+    return 'weekend';
+  };
 
   const getFilteredPlans = (cartLevel: string) => 
-    plans.filter(p => (p.level || 1) === Number(cartLevel));
+    plans.filter(p => {
+      const matchLevel = (p.level || 1) === Number(cartLevel);
+      const matchDay = selectedDayType === 'all' || getDayType(p) === selectedDayType;
+      return matchLevel && matchDay;
+    });
 
   const filteredMasterPlans = getFilteredPlans(masterCartType);
 
@@ -150,6 +163,22 @@ export function PlanCartSelector({
           label="Same plan and cart type for everyone"
           sx={{ mb: 2 }}
         />
+
+        <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+          <FormControl sx={{ minWidth: 150 }}>
+            <InputLabel size="small">Plan Type Filter</InputLabel>
+            <Select
+              size="small"
+              value={selectedDayType}
+              label="Plan Type Filter"
+              onChange={(e) => setSelectedDayType(e.target.value as any)}
+            >
+              <MenuItem value="all">All Plans</MenuItem>
+              <MenuItem value="weekday">Weekday Plans</MenuItem>
+              <MenuItem value="weekend">Weekend Plans</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
 
         {sameForAll ? (
           <Stack spacing={2}>

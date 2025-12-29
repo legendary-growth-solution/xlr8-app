@@ -115,7 +115,7 @@ export const api = {
       axios.post(apiEndpoints.cart.unassign(cartId)).then((res) => res.data),
   },
   plan: {
-    getPlans: () => axios.get(apiEndpoints.plan.plan).then((res) => res.data),
+    getPlans: (params?: { date?: string; day?: string }) => axios.get(apiEndpoints.plan.plan, { params }).then((res) => res.data),
   },
   billing: {
     create: (data: object) =>
