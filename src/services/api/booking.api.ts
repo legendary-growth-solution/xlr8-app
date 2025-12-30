@@ -7,6 +7,12 @@ interface BookingListResponse {
   totalCount: number;
 }
 
+interface BulkDeleteResponse {
+  message: string;
+  deleted_count: number;
+  errors?: string[];
+}
+
 interface PaginationParams {
   page?: number;
   pageSize?: number;
@@ -40,6 +46,11 @@ export const bookingApi = {
 
   bulkConvert: async (bookingIds: string[]): Promise<BookingConvertResponse> => {
     const response = await apiClient.post(API_ENDPOINTS.BOOKINGS.BULK_CONVERT, { booking_ids: bookingIds });
+    return response.data;
+  },
+
+  bulkDelete: async (bookingIds: string[]): Promise<BulkDeleteResponse> => {
+    const response = await apiClient.post(API_ENDPOINTS.BOOKINGS.BULK_DELETE, { booking_ids: bookingIds });
     return response.data;
   },
 

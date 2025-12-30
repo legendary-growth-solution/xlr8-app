@@ -102,6 +102,8 @@ export default function BookingsPage() {
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const [bulkCreateLoading, setBulkCreateLoading] = useState(false);
   const bulkCreateDialog = useBoolean(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const bulkDeleteDialog = useBoolean(false);
 
   const getBookings = useCallback(async () => {
     try {
@@ -342,6 +344,36 @@ export default function BookingsPage() {
     }
   };
 
+  const handleBulkDeleteBookings = async () => {
+    if (selectedBookings.length === 0) return;
+
+    try {
+      setBulkDeleteLoading(true);
+
+      const response = await bookingApi.bulkDelete(selectedBookings);
+
+      if (response.deleted_count > 0) {
+        showToast.success(`Successfully deleted ${response.deleted_count} booking${response.deleted_count > 1 ? 's' : ''}`);
+        setSelectedBookings([]);
+        bulkDeleteDialog.onFalse();
+        getBookings();
+      } else {
+        throw new Error('Failed to delete bookings');
+      }
+
+      if (response.errors && response.errors.length > 0) {
+        console.warn('Some bookings could not be deleted:', response.errors);
+      }
+
+    } catch (error) {
+      console.error('Error deleting bookings:', error);
+      showToast.error(error?.response?.data?.message || error?.response?.data?.error || 'Failed to delete bookings');
+    } finally {
+      setBulkDeleteLoading(false);
+      bulkDeleteDialog.onFalse();
+    }
+  };
+
   const handleSelectBooking = (bookingId: string, checked: boolean) => {
     if (checked) {
       setSelectedBookings(prev => [...prev, bookingId]);
@@ -546,18 +578,28 @@ export default function BookingsPage() {
       </Helmet>
 
       <Container maxWidth={false}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
           <Typography variant="h4">Bookings</Typography>
           <Stack direction="row" spacing={2}>
             {selectedBookings.length > 0 && (
-              <Button
-                variant="contained"
-                color="success"
-                onClick={bulkCreateDialog.onTrue}
-                startIcon={<Iconify icon="eva:play-circle-fill" />}
-              >
-                Create Session ({selectedBookings.length} groups)
-              </Button>
+              <>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={bulkDeleteDialog.onTrue}
+                  startIcon={<Iconify icon="eva:trash-2-fill" />}
+                >
+                  Delete ({selectedBookings.length})
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={bulkCreateDialog.onTrue}
+                  startIcon={<Iconify icon="eva:play-circle-fill" />}
+                >
+                  Create Session ({selectedBookings.length} groups)
+                </Button>
+              </>
             )}
             <Button
               variant="contained"
@@ -877,6 +919,39 @@ export default function BookingsPage() {
         onConfirm={handleBulkCreateSessions}
         loading={bulkCreateLoading}
       />
+
+      <Dialog
+        open={bulkDeleteDialog.value}
+        onClose={bulkDeleteDialog.onFalse}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Delete Multiple Bookings</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Are you sure you want to delete {selectedBookings.length} booking{selectedBookings.length > 1 ? 's' : ''}?
+            This action cannot be undone.
+          </Typography>
+          <Box sx={{ bgcolor: 'warning.light', p: 2, borderRadius: 1 }}>
+            <Typography variant="body2" color="warning.dark">
+              <strong>Note:</strong> Only pending bookings will be deleted. Completed bookings will be skipped.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={bulkDeleteDialog.onFalse} color="inherit">
+            Cancel
+          </Button>
+          <LoadingButton
+            onClick={handleBulkDeleteBookings}
+            color="error"
+            variant="contained"
+            loading={bulkDeleteLoading}
+          >
+            Delete {selectedBookings.length} Booking{selectedBookings.length > 1 ? 's' : ''}
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
 
       <Toast />
     </>

@@ -56,6 +56,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => createEndpoint(`/bookings/${id}`),
     CONVERT: (id: string) => createEndpoint(`/bookings/${id}/convert`),
     BULK_CONVERT: createEndpoint('/bookings/bulk-convert'),
+    BULK_DELETE: createEndpoint('/bookings/bulk-delete'),
   },
   USERS: {
     LIST: createEndpoint('/users'),
