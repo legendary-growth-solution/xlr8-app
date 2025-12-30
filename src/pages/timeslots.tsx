@@ -11,6 +11,7 @@ import {
   CircularProgress,
   IconButton,
   Stack,
+  Switch,
   Tab,
   Tabs,
   Tooltip,
@@ -26,7 +27,7 @@ import DeleteConfirmation from 'src/components/timslot/DeleteConfirmation';
 import ReleaseSlotDialog from 'src/components/timslot/ReleaseSlotDialog';
 import TimeSlotForm from 'src/components/timslot/TimeSlotForm';
 
-import { createTimeSlot, deleteTimeSlot, getTimeSlotsForDay, releaseTimeSlot, releaseTimeSlotsForDay } from 'src/services/api/timeslots';
+import { createTimeSlot, deleteTimeSlot, getTimeSlotsForDay, releaseTimeSlot, releaseTimeSlotsForDay, toggleTimeSlotActive } from 'src/services/api/timeslots';
 import type { TimeSlot } from 'src/types/bookings';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -66,6 +67,7 @@ export default function TimeSlotsPage() {
   const [releaseSlot, setReleaseSlot] = useState<TimeSlot | null>(null);
   const [bulkReleaseDialogOpen, setBulkReleaseDialogOpen] = useState(false);
   const [releasing, setReleasing] = useState(false);
+  const [togglingSlotId, setTogglingSlotId] = useState<string | null>(null);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedDay(newValue);
@@ -118,6 +120,18 @@ export default function TimeSlotsPage() {
       console.error('Error releasing time slots:', error);
     } finally {
       setReleasing(false);
+    }
+  };
+
+  const handleToggleActive = async (slot: TimeSlot) => {
+    setTogglingSlotId(slot.id);
+    try {
+      await toggleTimeSlotActive(slot.id);
+      fetchTimeSlots();
+    } catch (error) {
+      console.error('Error toggling time slot:', error);
+    } finally {
+      setTogglingSlotId(null);
     }
   };
 
@@ -309,6 +323,7 @@ export default function TimeSlotsPage() {
                       justifyContent: 'space-between',
                       borderBottom: '1px solid',
                       borderColor: 'divider',
+                      opacity: slot.is_active === false ? 0.5 : 1,
                     }}
                   >
                     <Stack direction="row" spacing={2} alignItems="center">
@@ -321,6 +336,14 @@ export default function TimeSlotsPage() {
                           size="small"
                           color="warning"
                           variant="outlined"
+                        />
+                      )}
+                      {slot.is_active === false && (
+                        <Chip
+                          label="Disabled"
+                          size="small"
+                          color="error"
+                          variant="filled"
                         />
                       )}
                     </Stack>
@@ -348,6 +371,14 @@ export default function TimeSlotsPage() {
                       >
                         <Iconify icon="eva:trash-2-fill" />
                       </IconButton>
+                      <Tooltip title={slot.is_active === false ? 'Enable slot' : 'Disable slot'}>
+                        <Switch
+                          size="small"
+                          checked={slot.is_active !== false}
+                          onChange={() => handleToggleActive(slot)}
+                          disabled={copyMode || togglingSlotId === slot.id}
+                        />
+                      </Tooltip>
                     </Stack>
                   </Box>
                 );
