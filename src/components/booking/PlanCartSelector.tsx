@@ -44,13 +44,7 @@ export function PlanCartSelector({
   const [masterPlan, setMasterPlan] = useState('');
   const [selectedDayType, setSelectedDayType] = useState<'all' | 'weekday' | 'weekend'>('all');
 
-  const getDayType = (plan: Plan) => {
-    if (plan.plan_type) return plan.plan_type;
-    const name = (plan.title || '').toLowerCase();
-    if (name.includes('weekday')) return 'weekday';
-    if (name.includes('weekend')) return 'weekend';
-    return 'weekend';
-  };
+  const getDayType = (plan: Plan) => plan.plan_type || '';
 
   const getFilteredPlans = (cartLevel: string) => 
     plans.filter(p => {

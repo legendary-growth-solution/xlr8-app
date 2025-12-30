@@ -23,7 +23,8 @@ import {
   DialogActions,
   DialogContent,
   TableContainer,
-  CircularProgress
+  CircularProgress,
+  FormControlLabel
 } from '@mui/material';
 
 import { useBoolean } from 'src/hooks/use-boolean';
@@ -39,6 +40,7 @@ interface PlanFormData {
   amount: number;
   level: number;
   plan_type?: 'weekday' | 'weekend' | '';
+  is_disabled: boolean;
 }
 
 const defaultPlanData: PlanFormData = {
@@ -47,6 +49,7 @@ const defaultPlanData: PlanFormData = {
   amount: 0,
   level: 1,
   plan_type: '',
+  is_disabled: false,
 };
 
 export default function TimeManagementPage() {
@@ -90,6 +93,7 @@ export default function TimeManagementPage() {
       amount: plan.amount,
       level: plan.level || 1,
       plan_type: plan.plan_type || '',
+      is_disabled: plan.is_disabled || false,
     });
     setDialogError(null);
     dialog.onTrue();
@@ -103,8 +107,8 @@ export default function TimeManagementPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.title || !formData.timeInMinutes) {
-      setDialogError('Name and Time are required fields');
+    if (!formData.title || !formData.timeInMinutes || !formData.plan_type) {
+      setDialogError('Name, Time, and Plan Type are required fields');
       return;
     }
 
@@ -118,6 +122,7 @@ export default function TimeManagementPage() {
         amount: formData.amount || 0,
         level: formData.level || 1,
         plan_type: formData.plan_type || null,
+        is_disabled: formData.is_disabled,
       };
       
       if (selectedPlan) {
@@ -179,15 +184,7 @@ export default function TimeManagementPage() {
 
   const filteredPlans = plans.filter((plan) => {
     if (filterType === 'all') return true;
-    
-    let pType = plan.plan_type;
-    if (!pType) {
-      const name = (plan.title || '').toLowerCase();
-      if (name.includes('weekday')) pType = 'weekday';
-      else if (name.includes('weekend')) pType = 'weekend';
-      else pType = 'weekend';
-    }
-    return pType === filterType;
+    return plan.plan_type === filterType;
   });
 
   return (
@@ -265,7 +262,7 @@ export default function TimeManagementPage() {
                           color: (theme) => plan.plan_type === 'weekday' ? theme.palette.info.darker : theme.palette.warning.darker,
                         }}
                       >
-                        {plan.plan_type || 'Auto'}
+                        {plan.plan_type}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -337,10 +334,20 @@ export default function TimeManagementPage() {
               SelectProps={{ native: true }}
               InputLabelProps={{ shrink: true }}
             >
-              <option value="">Auto (Name-based)</option>
+              <option value="" disabled>Select Type</option>
               <option value="weekday">Weekday</option>
               <option value="weekend">Weekend</option>
             </TextField>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!formData.is_disabled}
+                  onChange={(e) => setFormData({ ...formData, is_disabled: !e.target.checked })}
+                />
+              }
+              label={!formData.is_disabled ? 'Status: Active' : 'Status: Inactive'}
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
