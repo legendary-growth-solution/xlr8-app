@@ -13,6 +13,7 @@ import {
   TableHead,
   TableRow,
   Typography,
+  IconButton,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -144,7 +145,7 @@ export default function UserHistoryPage() {
 
         <Box mb={4} textAlign="center">
           <Typography variant="h4" gutterBottom>
-            {sessions.user_name ? `${sessions.user_name}&apos;s History` : 'User History'}
+            {sessions.user_name ? `${sessions.user_name}'s History` : 'User History'}
           </Typography>
           {sessions.total_count > 0 && (
             <Typography variant="body2" color="text.secondary">
@@ -165,6 +166,7 @@ export default function UserHistoryPage() {
                       <TableCell align="right">Laps</TableCell>
                       <TableCell align="right">Best Lap</TableCell>
                       <TableCell align="right">Total Time</TableCell>
+                      <TableCell align="right" />
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -182,6 +184,17 @@ export default function UserHistoryPage() {
                           {session.performance?.total_time
                             ? `${Math.floor(session.performance.total_time)}m`
                             : 'N/A'}
+                        </TableCell>
+                        <TableCell align="right">
+                           <IconButton
+                             size="small"
+                             onClick={(e: React.MouseEvent) => {
+                               e.stopPropagation();
+                               navigate(`/sessions/${session.session_id}`);
+                             }}
+                           >
+                             <Iconify icon="eva:arrow-forward-fill" width={20} />
+                           </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
