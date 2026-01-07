@@ -58,4 +58,8 @@ export const apiEndpoints = {
   review: {
     sendReviewLink: (sessionId: string) => `${BASE_URL}/send-review-link/${sessionId}`,
   },
+  dashboard: {
+    stats: `${BASE_URL}/dashboard-stats`,
+    recentSessions: `${BASE_URL}/recent-sessions`,
+  },
 };

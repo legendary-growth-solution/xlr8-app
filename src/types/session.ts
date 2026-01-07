@@ -64,6 +64,7 @@ export interface Plan {
   timeInMinutes: number;
   title: string;
   level?: number;
+  plan_type?: 'weekday' | 'weekend';
 }
 
 export interface BillingData {

@@ -6,4 +6,6 @@ export interface TimeSlot {
   l1_max_slots: number;
   l2_max_slots: number;
   l3_max_slots: number;
+  last_booked_for?: string;
+  is_active?: boolean;
 }

@@ -47,9 +47,9 @@ import { getTimeSlots } from 'src/services/api/timeslots';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import Toast, { showToast } from 'src/components/toast';
+import { TruncatedText } from 'src/components/common/TruncatedText';
 import ConversionAnimation from 'src/components/animations/ConversionAnimation';
 import { NewBookingDialog, BulkCreateSessionDialog } from 'src/components/booking';
-import { TruncatedText } from 'src/components/common/TruncatedText';
 
 const TABLE_HEAD = [
   { id: 'select', label: '', width: 50 },
@@ -73,6 +73,8 @@ const CONVERSION_STEPS = [
   'Finalizing'
 ];
 
+type BookingFilter = 'default' | 'paid' | 'failed' | 'paid_not_completed' | 'completed';
+
 export default function BookingsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -81,6 +83,7 @@ export default function BookingsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [bookingFilter, setBookingFilter] = useState<BookingFilter>('default');
   const convertLoading = useBoolean(false);
   const convertDialog = useBoolean(false);
   const conversionProgress = useBoolean(false);
@@ -99,6 +102,8 @@ export default function BookingsPage() {
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const [bulkCreateLoading, setBulkCreateLoading] = useState(false);
   const bulkCreateDialog = useBoolean(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const bulkDeleteDialog = useBoolean(false);
 
   const getBookings = useCallback(async () => {
     try {
@@ -106,6 +111,7 @@ export default function BookingsPage() {
       const response = await bookingApi.list({
         page: page + 1,
         pageSize: rowsPerPage,
+        status: bookingFilter,
       });
       setBookings(response.bookings);
       setTotalCount(response.totalCount);
@@ -115,7 +121,7 @@ export default function BookingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, bookingFilter]);
 
   const checkActiveSession = async () => {
     try {
@@ -130,12 +136,11 @@ export default function BookingsPage() {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      await getBookings();
-      await checkActiveSession();
-    };
-    fetchData();
+    getBookings();
+    checkActiveSession();
+  }, [getBookings]);
 
+  useEffect(() => {
     const fetchPlans = async () => {
       try {
         const data = await api.plan.getPlans();
@@ -166,15 +171,29 @@ export default function BookingsPage() {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [getBookings]);
+  }, []);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
+
+  const handleFilterChange = (filter: BookingFilter) => {
+    setBookingFilter(filter);
+    setPage(0);
+  };
+
+  const filterConfigs = [
+    { key: 'default' as BookingFilter, label: 'Active', minWidth: 80 },
+    { key: 'paid_not_completed' as BookingFilter, label: 'Active User Bookings', minWidth: 120 },
+    { key: 'all' as BookingFilter, label: 'All', minWidth: 80 },
+    { key: 'paid' as BookingFilter, label: 'Paid', minWidth: 80 },
+    { key: 'completed' as BookingFilter, label: 'Completed', minWidth: 100 },
+    { key: 'failed' as BookingFilter, label: 'Failed', minWidth: 80 },
+  ];
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
@@ -322,6 +341,36 @@ export default function BookingsPage() {
     } finally {
       setBulkCreateLoading(false);
       bulkCreateDialog.onFalse();
+    }
+  };
+
+  const handleBulkDeleteBookings = async () => {
+    if (selectedBookings.length === 0) return;
+
+    try {
+      setBulkDeleteLoading(true);
+
+      const response = await bookingApi.bulkDelete(selectedBookings);
+
+      if (response.deleted_count > 0) {
+        showToast.success(`Successfully deleted ${response.deleted_count} booking${response.deleted_count > 1 ? 's' : ''}`);
+        setSelectedBookings([]);
+        bulkDeleteDialog.onFalse();
+        getBookings();
+      } else {
+        throw new Error('Failed to delete bookings');
+      }
+
+      if (response.errors && response.errors.length > 0) {
+        console.warn('Some bookings could not be deleted:', response.errors);
+      }
+
+    } catch (error) {
+      console.error('Error deleting bookings:', error);
+      showToast.error(error?.response?.data?.message || error?.response?.data?.error || 'Failed to delete bookings');
+    } finally {
+      setBulkDeleteLoading(false);
+      bulkDeleteDialog.onFalse();
     }
   };
 
@@ -529,18 +578,28 @@ export default function BookingsPage() {
       </Helmet>
 
       <Container maxWidth={false}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
           <Typography variant="h4">Bookings</Typography>
           <Stack direction="row" spacing={2}>
             {selectedBookings.length > 0 && (
-              <Button
-                variant="contained"
-                color="success"
-                onClick={bulkCreateDialog.onTrue}
-                startIcon={<Iconify icon="eva:play-circle-fill" />}
-              >
-                Create Session ({selectedBookings.length} groups)
-              </Button>
+              <>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={bulkDeleteDialog.onTrue}
+                  startIcon={<Iconify icon="eva:trash-2-fill" />}
+                >
+                  Delete ({selectedBookings.length})
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={bulkCreateDialog.onTrue}
+                  startIcon={<Iconify icon="eva:play-circle-fill" />}
+                >
+                  Create Session ({selectedBookings.length} groups)
+                </Button>
+              </>
             )}
             <Button
               variant="contained"
@@ -561,6 +620,20 @@ export default function BookingsPage() {
               Manage Time Slots
             </Button>
           </Stack>
+        </Stack>
+
+        <Stack direction="row" spacing={1} mb={3}>
+          {filterConfigs.map((config) => (
+            <Button
+              key={config.key}
+              variant={bookingFilter === config.key ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => handleFilterChange(config.key)}
+              sx={{ minWidth: config.minWidth }}
+            >
+              {config.label}
+            </Button>
+          ))}
         </Stack>
 
         <Card>
@@ -846,6 +919,39 @@ export default function BookingsPage() {
         onConfirm={handleBulkCreateSessions}
         loading={bulkCreateLoading}
       />
+
+      <Dialog
+        open={bulkDeleteDialog.value}
+        onClose={bulkDeleteDialog.onFalse}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Delete Multiple Bookings</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Are you sure you want to delete {selectedBookings.length} booking{selectedBookings.length > 1 ? 's' : ''}?
+            This action cannot be undone.
+          </Typography>
+          <Box sx={{ bgcolor: 'warning.light', p: 2, borderRadius: 1 }}>
+            <Typography variant="body2" color="warning.dark">
+              <strong>Note:</strong> Only pending bookings will be deleted. Completed bookings will be skipped.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={bulkDeleteDialog.onFalse} color="inherit">
+            Cancel
+          </Button>
+          <LoadingButton
+            onClick={handleBulkDeleteBookings}
+            color="error"
+            variant="contained"
+            loading={bulkDeleteLoading}
+          >
+            Delete {selectedBookings.length} Booking{selectedBookings.length > 1 ? 's' : ''}
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
 
       <Toast />
     </>

@@ -7,25 +7,48 @@ import {
   Box,
   Button,
   Card,
+  Chip,
   CircularProgress,
   IconButton,
   Stack,
+  Switch,
   Tab,
   Tabs,
+  Tooltip,
   Typography
 } from '@mui/material';
 
 import { Iconify } from 'src/components/iconify';
 
+import BulkReleaseDialog from 'src/components/timslot/BulkReleaseDialog';
 import CopyModeSection from 'src/components/timslot/CopyModeSection';
 import CopySlotsDialog from 'src/components/timslot/CopySlotsDialog';
 import DeleteConfirmation from 'src/components/timslot/DeleteConfirmation';
+import ReleaseSlotDialog from 'src/components/timslot/ReleaseSlotDialog';
 import TimeSlotForm from 'src/components/timslot/TimeSlotForm';
 
-import { createTimeSlot, deleteTimeSlot, getTimeSlotsForDay } from 'src/services/api/timeslots';
+import { createTimeSlot, deleteTimeSlot, getTimeSlotsForDay, releaseTimeSlot, releaseTimeSlotsForDay, toggleTimeSlotActive } from 'src/services/api/timeslots';
 import type { TimeSlot } from 'src/types/bookings';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const isSlotOccupiedInComingWeek = (lastBookedFor?: string): boolean => {
+  if (!lastBookedFor) return false;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const bookedDate = new Date(lastBookedFor);
+  bookedDate.setHours(0, 0, 0, 0);
+  
+  const weekFromNow = new Date(today);
+  weekFromNow.setDate(weekFromNow.getDate() + 7);
+  
+  return bookedDate >= today && bookedDate <= weekFromNow;
+};
+
+const hasOccupiedSlots = (slots: TimeSlot[]): boolean =>
+  slots.some(slot => isSlotOccupiedInComingWeek(slot.last_booked_for));
 
 export default function TimeSlotsPage() {
   const [selectedDay, setSelectedDay] = useState(0);
@@ -40,6 +63,11 @@ export default function TimeSlotsPage() {
   const [copySourceDay, setCopySourceDay] = useState('');
   const [copiedSlots, setCopiedSlots] = useState<TimeSlot[]>([]);
   const [editingCopiedSlot, setEditingCopiedSlot] = useState<TimeSlot | null>(null);
+
+  const [releaseSlot, setReleaseSlot] = useState<TimeSlot | null>(null);
+  const [bulkReleaseDialogOpen, setBulkReleaseDialogOpen] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [togglingSlotId, setTogglingSlotId] = useState<string | null>(null);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedDay(newValue);
@@ -60,10 +88,50 @@ export default function TimeSlotsPage() {
       try {
         await deleteTimeSlot(deleteSlot.id);
         setDeleteSlot(null);
-        fetchTimeSlots(); // Refresh data after deletion
+        fetchTimeSlots();
       } catch (error) {
         console.error('Error deleting time slot:', error);
       }
+    }
+  };
+
+  const handleReleaseConfirm = async () => {
+    if (releaseSlot) {
+      setReleasing(true);
+      try {
+        await releaseTimeSlot(releaseSlot.id);
+        setReleaseSlot(null);
+        fetchTimeSlots();
+      } catch (error) {
+        console.error('Error releasing time slot:', error);
+      } finally {
+        setReleasing(false);
+      }
+    }
+  };
+
+  const handleBulkReleaseConfirm = async () => {
+    setReleasing(true);
+    try {
+      await releaseTimeSlotsForDay(DAYS[selectedDay]);
+      setBulkReleaseDialogOpen(false);
+      fetchTimeSlots();
+    } catch (error) {
+      console.error('Error releasing time slots:', error);
+    } finally {
+      setReleasing(false);
+    }
+  };
+
+  const handleToggleActive = async (slot: TimeSlot) => {
+    setTogglingSlotId(slot.id);
+    try {
+      await toggleTimeSlotActive(slot.id);
+      fetchTimeSlots();
+    } catch (error) {
+      console.error('Error toggling time slot:', error);
+    } finally {
+      setTogglingSlotId(null);
     }
   };
 
@@ -167,6 +235,8 @@ export default function TimeSlotsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDay]);
 
+  const filteredSlots = slots.filter((slot) => slot.day.toLowerCase() === DAYS[selectedDay].toLowerCase());
+
   return (
     <>
       <Helmet>
@@ -177,6 +247,17 @@ export default function TimeSlotsPage() {
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
           <Typography variant="h4">Time Slots</Typography>
           <Stack direction="row" spacing={2}>
+            {hasOccupiedSlots(filteredSlots) && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<Iconify icon="eva:unlock-fill" />}
+                onClick={() => setBulkReleaseDialogOpen(true)}
+                disabled={copyMode}
+              >
+                Release All
+              </Button>
+            )}
             <Button
               variant="outlined"
               startIcon={<Iconify icon="eva:copy-fill" />}
@@ -230,9 +311,9 @@ export default function TimeSlotsPage() {
                 No time slots found for {DAYS[selectedDay]}. Click <b>Add Slot</b> to create one.
               </Alert>
             ) : (
-              slots
-                .filter((slot) => slot.day.toLowerCase() === DAYS[selectedDay].toLowerCase())
-                .map((slot) => (
+              filteredSlots.map((slot) => {
+                const isOccupied = isSlotOccupiedInComingWeek(slot.last_booked_for);
+                return (
                   <Box
                     key={slot.id}
                     sx={{
@@ -242,12 +323,43 @@ export default function TimeSlotsPage() {
                       justifyContent: 'space-between',
                       borderBottom: '1px solid',
                       borderColor: 'divider',
+                      opacity: slot.is_active === false ? 0.5 : 1,
                     }}
                   >
-                    <Typography>
-                      {slot.start_time} - {slot.end_time} (L1 : {slot.l1_max_slots}, L2 : {slot.l2_max_slots}, L3 : {slot.l3_max_slots} slots)
-                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Typography>
+                        {slot.start_time} - {slot.end_time} (L1 : {slot.l1_max_slots}, L2 : {slot.l2_max_slots}, L3 : {slot.l3_max_slots} slots)
+                      </Typography>
+                      {isOccupied && (
+                        <Chip
+                          label={`Booked: ${slot.last_booked_for}`}
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                        />
+                      )}
+                      {slot.is_active === false && (
+                        <Chip
+                          label="Disabled"
+                          size="small"
+                          color="error"
+                          variant="filled"
+                        />
+                      )}
+                    </Stack>
                     <Stack direction="row" spacing={1}>
+                      {isOccupied && (
+                        <Tooltip title="Release slot">
+                          <IconButton
+                            onClick={() => setReleaseSlot(slot)}
+                            size="small"
+                            color="warning"
+                            disabled={copyMode}
+                          >
+                            <Iconify icon="eva:unlock-fill" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <IconButton onClick={() => handleEdit(slot)} size="small" disabled={copyMode}>
                         <Iconify icon="eva:edit-fill" />
                       </IconButton>
@@ -259,9 +371,18 @@ export default function TimeSlotsPage() {
                       >
                         <Iconify icon="eva:trash-2-fill" />
                       </IconButton>
+                      <Tooltip title={slot.is_active === false ? 'Enable slot' : 'Disable slot'}>
+                        <Switch
+                          size="small"
+                          checked={slot.is_active !== false}
+                          onChange={() => handleToggleActive(slot)}
+                          disabled={copyMode || togglingSlotId === slot.id}
+                        />
+                      </Tooltip>
                     </Stack>
                   </Box>
-                ))
+                );
+              })
             )}
           </Box>
         </Card>
@@ -286,6 +407,23 @@ export default function TimeSlotsPage() {
           onCopy={handleCopySlots}
           currentDay={DAYS[selectedDay]}
           days={DAYS}
+        />
+
+        <ReleaseSlotDialog
+          open={Boolean(releaseSlot)}
+          onClose={() => setReleaseSlot(null)}
+          onConfirm={handleReleaseConfirm}
+          slot={releaseSlot}
+          releasing={releasing}
+        />
+
+        <BulkReleaseDialog
+          open={bulkReleaseDialogOpen}
+          onClose={() => setBulkReleaseDialogOpen(false)}
+          onConfirm={handleBulkReleaseConfirm}
+          day={DAYS[selectedDay]}
+          slots={filteredSlots}
+          releasing={releasing}
         />
       </Box>
     </>

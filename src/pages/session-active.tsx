@@ -100,7 +100,8 @@ export default function SessionActivePage() {
   }, []);
 
   const getPlans = useCallback(() => {
-    api.plan.getPlans()
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    api.plan.getPlans({ day: today })
       .then((res) => {
         setPlans(res?.plans);
       })

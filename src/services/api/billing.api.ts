@@ -4,8 +4,8 @@ import { apiClient } from './api-client';
 import { API_ENDPOINTS } from './endpoints';
 
 export const billingApi = {
-  getPlans: () => 
-    apiClient.get<{ plans: any[] }>(API_ENDPOINTS.billing.plans),
+  getPlans: (params?: { date?: string; day?: string }) => 
+    apiClient.get<{ plans: any[] }>(API_ENDPOINTS.billing.plans, { params }),
 
   getDiscountCodes: () => 
     apiClient.get(API_ENDPOINTS.billing.discountCodes),

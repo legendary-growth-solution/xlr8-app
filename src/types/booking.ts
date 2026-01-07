@@ -27,6 +27,7 @@ export interface Booking {
   updated_at: string;
   notes?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  payment_status: 'pending' | 'payment_initiated' | 'paid' | 'failed';
   source?: string;
   discount_code?: string;
   total?: number;

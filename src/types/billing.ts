@@ -11,6 +11,7 @@ export interface Plan {
   cost: number;
   is_disabled?: boolean;
   description?: string;
+  plan_type?: 'weekday' | 'weekend';
 }
 
 export interface DiscountCode {

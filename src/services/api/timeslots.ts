@@ -25,3 +25,18 @@ export const updateTimeSlot = async (id: string, data: Partial<TimeSlot>): Promi
 export const deleteTimeSlot = async (id: string): Promise<void> => {
   await apiClient.delete(`/timeslots/${id}`);
 };
+
+export const releaseTimeSlot = async (id: string): Promise<{ message: string; timeslot: TimeSlot }> => {
+  const response = await apiClient.post(`/timeslots/${id}/release`);
+  return response.data;
+};
+
+export const releaseTimeSlotsForDay = async (day: string): Promise<{ message: string; released_count: number; released_slots: TimeSlot[] }> => {
+  const response = await apiClient.post('/timeslots/release-day', { day: day.toLowerCase() });
+  return response.data;
+};
+
+export const toggleTimeSlotActive = async (id: string): Promise<{ message: string; timeslot: TimeSlot }> => {
+  const response = await apiClient.post(`/timeslots/${id}/toggle-active`);
+  return response.data;
+};

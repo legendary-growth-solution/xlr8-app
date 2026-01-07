@@ -9,7 +9,15 @@ export const api = {
       axios.post(apiEndpoints.session.endSession(sessionId), data).then((res) => res.data),
     get: (sessionId: string) =>
       axios.get(apiEndpoints.session.sessionById(sessionId)).then((res) => res.data),
-    getCompletedSessions: () => axios.get(apiEndpoints.session.completedSessions).then((res) => res.data),
+    getCompletedSessions: (params?: { page?: number; pageSize?: number }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.pageSize) searchParams.set('pageSize', params.pageSize.toString());
+      const url = searchParams.toString() 
+        ? `${apiEndpoints.session.completedSessions}?${searchParams.toString()}`
+        : apiEndpoints.session.completedSessions;
+      return axios.get(url).then((res) => res.data);
+    },
     getSessionLaps: (sessionId: string) =>
       axios.get(apiEndpoints.session.sessionLaps(sessionId)).then((res) => res.data),
     getSessionLeaderboard: (sessionId: string) =>
@@ -115,7 +123,7 @@ export const api = {
       axios.post(apiEndpoints.cart.unassign(cartId)).then((res) => res.data),
   },
   plan: {
-    getPlans: () => axios.get(apiEndpoints.plan.plan).then((res) => res.data),
+    getPlans: (params?: { date?: string; day?: string }) => axios.get(apiEndpoints.plan.plan, { params }).then((res) => res.data),
   },
   billing: {
     create: (data: object) =>
