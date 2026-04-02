@@ -258,7 +258,7 @@ export default function CartManagementPage() {
         variant="outlined"
         color="error"
         onClick={() => setUnassignCartId(cart.cart_id || '')}
-        disabled={cart.status !== 'in-use'}
+        disabled={cart.status !== 'in-use' && (cart as any).status !== 'in_use'}
       >
         Unassign Cart
       </Button>
