@@ -1,5 +1,6 @@
 import { LoadingButton } from '@mui/lab';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -20,6 +21,7 @@ import { Iconify } from 'src/components/iconify';
 import DataTable from 'src/components/table/DataTable';
 import { showToast } from 'src/components/toast';
 import { userApi } from 'src/services/api/user.api';
+import { API_ENDPOINTS } from 'src/services/api/endpoints';
 import { User } from 'src/types/user';
 import { formatLapTime } from 'src/utils/timeFormatter';
 import { HighlightedText } from 'src/components/common/HighlightedText';
@@ -40,6 +42,8 @@ export default function UserManagementPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [userStats, setUserStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportProgress, setExportProgress] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -133,6 +137,63 @@ export default function UserManagementPage() {
       sx: { whiteSpace: 'nowrap' },
     },
   ];
+
+  const handleExportUsers = () => {
+    if (exportLoading) return;
+
+    setExportLoading(true);
+    setExportProgress('Generating export data, this will be available for download shortly...');
+
+    const ws = new WebSocket(API_ENDPOINTS.USERS.EXPORT_WS);
+
+    ws.onopen = () => {
+      const token = localStorage.getItem('accessToken');
+      ws.send(JSON.stringify({ token }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === 'progress') {
+          setExportProgress(`Generating export... ${msg.processed}/${msg.total} records processed`);
+        } else if (msg.type === 'completed') {
+          const blob = new Blob([msg.csv_data], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'users_export.csv';
+          a.click();
+          URL.revokeObjectURL(url);
+          ws.close();
+          setExportLoading(false);
+          setExportProgress(null);
+          showToast.success('User data exported successfully!');
+        } else if (msg.type === 'error') {
+          console.error('Export failed:', msg.message);
+          ws.close();
+          setExportLoading(false);
+          setExportProgress(null);
+          showToast.error(msg.message || 'Export failed. Please try again.');
+        }
+      } catch (err) {
+        console.error('Failed to parse export WebSocket message:', err);
+      }
+    };
+
+    ws.onerror = () => {
+      setExportLoading(false);
+      setExportProgress(null);
+      showToast.error('Export failed. Please try again.');
+    };
+
+    ws.onclose = (event) => {
+      if (event.code !== 1000 && event.code !== 1001) {
+        setExportLoading(false);
+        setExportProgress(null);
+      }
+    };
+  };
 
   const fetchUsers = async (resetPage = false) => {
     try {
@@ -283,17 +344,38 @@ export default function UserManagementPage() {
       </Helmet>
 
       <Box sx={{ p: 3 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={exportLoading ? 2 : 5}>
           <Typography variant="h4">User Management</Typography>
 
-          <Button
-            variant="contained"
-            startIcon={<Iconify icon="eva:plus-fill" />}
-            onClick={() => navigate('/users/create')}
-          >
-            New User
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <LoadingButton
+              variant="outlined"
+              loading={exportLoading}
+              startIcon={!exportLoading ? <Iconify icon="eva:download-fill" /> : undefined}
+              onClick={handleExportUsers}
+            >
+              Export User Data
+            </LoadingButton>
+
+            <Button
+              variant="contained"
+              startIcon={<Iconify icon="eva:plus-fill" />}
+              onClick={() => navigate('/users/create')}
+            >
+              New User
+            </Button>
+          </Stack>
         </Stack>
+
+        {exportLoading && exportProgress && (
+          <Alert
+            severity="info"
+            icon={<CircularProgress size={16} />}
+            sx={{ mb: 3 }}
+          >
+            {exportProgress}
+          </Alert>
+        )}
 
         <Card sx={{ p: 3 }}>
           <Stack spacing={2}>
