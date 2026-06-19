@@ -1,9 +1,15 @@
-import type { DiscountCode, BillingDetails } from 'src/types/billing';
+import type { DiscountCode, BillingDetails, BookingRules } from 'src/types/billing';
 
 import { apiClient } from './api-client';
 import { API_ENDPOINTS } from './endpoints';
 
 export const billingApi = {
+  getBookingRules: () => 
+    apiClient.get<BookingRules>(API_ENDPOINTS.billing.bookingRules),
+
+  updateBookingRules: (data: Partial<BookingRules>) => 
+    apiClient.put<BookingRules>(API_ENDPOINTS.billing.bookingRules, data),
+
   getPlans: (params?: { date?: string; day?: string }) => 
     apiClient.get<{ plans: any[] }>(API_ENDPOINTS.billing.plans, { params }),
 

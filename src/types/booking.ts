@@ -31,6 +31,7 @@ export interface Booking {
   source?: string;
   discount_code?: string;
   total?: number;
+  is_default_discount_applied?: boolean;
 }
 
 export interface BookingConvertResponse {

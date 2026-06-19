@@ -89,6 +89,7 @@ export const API_ENDPOINTS = {
     plans: '/plans',
     discountCodes: '/discounts',
     validateDiscountCode: () => `/discounts/validate-code`,
+    bookingRules: '/app-config/booking-rules',
     generateBill: (sessionId: string, groupId: string) => `/billing/sessions/${sessionId}/groups/${groupId}/generate`,
     getBillingData: (sessionId: string, groupId: string) => `/billing/sessions/${sessionId}/groups/${groupId}/data`,
     allInvoices: createEndpoint('/billing/all-invoices'),

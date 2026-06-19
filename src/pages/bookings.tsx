@@ -440,7 +440,7 @@ export default function BookingsPage() {
   };
 
   const renderBookingRow = (booking: Booking) => {
-    const { booking_id, date, time_slot, race_time_display, users, status, created_at, notes, discount_code, total } = booking;
+    const { booking_id, date, time_slot, race_time_display, users, status, created_at, notes, discount_code, total, is_default_discount_applied } = booking;
     const isPending = !booking.is_completed;
     const { canConvert, message } = canConvertBooking(booking);
 
@@ -488,11 +488,17 @@ export default function BookingsPage() {
         </TableCell>
 
         <TableCell>
-          {discount_code ? (
-            <Chip label={discount_code} color="primary" size="small" />
-          ) : (
-            <Typography variant="body2" color="text.secondary">-</Typography>
-          )}
+          <Stack spacing={0.5} alignItems="flex-start">
+            {discount_code && (
+              <Chip label={discount_code} color="primary" size="small" />
+            )}
+            {is_default_discount_applied && (
+              <Chip label="App Discount" color="info" size="small" variant="outlined" />
+            )}
+            {!discount_code && !is_default_discount_applied && (
+              <Typography variant="body2" color="text.secondary">-</Typography>
+            )}
+          </Stack>
         </TableCell>
         
         <TableCell>

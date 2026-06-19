@@ -47,3 +47,9 @@ export const defaultDiscountData: DiscountFormData = {
   value: 0,
   status: 'active',
 };
+
+export interface BookingRules {
+  default_discount_enabled: boolean;
+  default_discount_percent: number;
+}
+
