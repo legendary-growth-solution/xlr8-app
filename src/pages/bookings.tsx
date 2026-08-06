@@ -219,8 +219,11 @@ export default function BookingsPage() {
   const handleConvertBooking = async () => {
     if (!selectedBooking) return;
     
+    convertLoading.onTrue();
+    
     const isActive = await checkActiveSession();
     if (isActive) {
+      convertLoading.onFalse();
       showToast.error('Conversion is not allowed while a session is active');
       return;
     }
@@ -870,6 +873,7 @@ export default function BookingsPage() {
             <LoadingButton
               variant="contained"
               loading={convertLoading.value}
+              disabled={convertLoading.value}
               onClick={handleConvertBooking}
             >
               Convert to Session

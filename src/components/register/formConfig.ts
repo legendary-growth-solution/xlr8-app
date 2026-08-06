@@ -1,21 +1,41 @@
 export const initialFormData = {
+  firstName: '',
+  lastName: '',
   name: '',
   email: '',
+  countryCode: '+91',
   phone: '',
+  age: '',
   dob: '',
   selfCheckin: true,
 };
 
 export const formFields = [
   {
-    name: 'name' as const,
-    label: 'Full Name',
+    name: 'firstName' as const,
+    label: 'First Name',
+    required: true,
+  },
+  {
+    name: 'lastName' as const,
+    label: 'Last Name',
+    required: true,
+  },
+  {
+    name: 'age' as const,
+    label: 'Age',
+    type: 'number',
     required: true,
   },
   {
     name: 'email' as const,
     label: 'Email Address',
     type: 'email',
+    required: true,
+  },
+  {
+    name: 'countryCode' as const,
+    label: 'Country Code',
     required: true,
   },
   {

@@ -3,8 +3,13 @@ import { Group, Session } from './session';
 export interface BookingUser {
   user_id: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   phone: string;
+  country_code?: string;
+  full_phone?: string;
+  age?: number;
   plan_id: string;
   plan_name?: string;
   plan_amount?: number;

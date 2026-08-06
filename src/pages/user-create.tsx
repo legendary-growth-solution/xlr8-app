@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { userApi } from 'src/services/api/user.api';
+import { CountryCodeSelect } from 'src/components/common/CountryCodeSelect';
 
 export default function UserCreatePage() {
   const navigate = useNavigate();
@@ -11,9 +12,10 @@ export default function UserCreatePage() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    age: '',
     email: '',
+    countryCode: '+91',
     phone: '',
-    // dob: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -28,6 +30,10 @@ export default function UserCreatePage() {
       newErrors.lastName = 'Last Name is required';
     }
 
+    if (!formData.age || Number.isNaN(Number(formData.age)) || Number(formData.age) <= 0) {
+      newErrors.age = 'Valid age is required';
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -36,8 +42,6 @@ export default function UserCreatePage() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone is required';
-    } else if (!/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = 'Phone must be exactly 10 digits';
     }
 
     setErrors(newErrors);
@@ -51,10 +55,19 @@ export default function UserCreatePage() {
       return;
     }
 
+    const rawPhone = formData.phone.trim();
+    const cc = formData.countryCode.trim() || '+91';
+    const fullPhone = `${cc}${rawPhone}`;
+
     const submitData = {
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      phone: formData.phone,
+      first_name: formData.firstName.trim(),
+      last_name: formData.lastName.trim(),
+      name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+      email: formData.email.trim(),
+      age: Number(formData.age),
+      country_code: cc,
+      phone: rawPhone,
+      full_phone: fullPhone,
     };
 
     try {
@@ -86,7 +99,7 @@ export default function UserCreatePage() {
         <Card sx={{ p: 3 }}>
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="First Name"
@@ -98,7 +111,7 @@ export default function UserCreatePage() {
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Last Name"
@@ -110,7 +123,21 @@ export default function UserCreatePage() {
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Age"
+                  value={formData.age}
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  required
+                  error={!!errors.age}
+                  helperText={errors.age}
+                  inputProps={{ min: 1, max: 120 }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   type="email"
@@ -123,16 +150,23 @@ export default function UserCreatePage() {
                 />
               </Grid>
 
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Phone Number"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value.slice(0, 10) })}
-                  error={!!errors.phone}
-                  required
-                  helperText={errors.phone}
-                />
+              <Grid item xs={12} sm={6}>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CountryCodeSelect
+                    value={formData.countryCode}
+                    onChange={(val) => setFormData({ ...formData, countryCode: val })}
+                    sx={{ minWidth: 100 }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    required
+                    error={!!errors.phone}
+                    helperText={errors.phone}
+                  />
+                </Stack>
               </Grid>
 
               {/* <Grid item xs={12}>

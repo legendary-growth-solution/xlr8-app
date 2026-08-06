@@ -16,8 +16,16 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First Name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last Name is required';
+    }
+
+    if (!formData.age || Number.isNaN(Number(formData.age)) || Number(formData.age) <= 0) {
+      newErrors.age = 'Valid age is required';
     }
 
     if (!formData.email.trim()) {
@@ -28,8 +36,6 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone is required';
-    } else if (!/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = 'Phone must be exactly 10 digits';
     }
 
     setErrors(newErrors);
@@ -45,8 +51,22 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
     try {
       setLoading(true);
-      formData.selfCheckin = true;
-      await userApi.create(formData);
+      const rawPhone = formData.phone.trim();
+      const cc = formData.countryCode.trim() || '+91';
+      const fullPhone = `${cc}${rawPhone}`;
+      const payload = {
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        email: formData.email.trim(),
+        age: Number(formData.age),
+        country_code: cc,
+        phone: rawPhone,
+        full_phone: fullPhone,
+        dob: formData.dob,
+        selfCheckin: true,
+      };
+      await userApi.create(payload);
       onSuccess();
     } catch (error) {
       console.error('Error registering user:', error);
@@ -62,10 +82,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const handleInputChange = (field: keyof typeof formData) => (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    let value = e.target.value;
-    if (field === 'phone') {
-      value = value.slice(0, 10);
-    }
+    const value = e.target.value;
     setFormData({ ...formData, [field]: value });
   };
 

@@ -46,8 +46,9 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
 
   useEffect(() => {
     if (open && plans.length > 0) {
+      const defaultPlan = plans.find(p => (p.level || 1) === 2) || plans[0];
       const initialSelections: PlanCartSelection[] = [{
-        planId: plans[0].plan_id,
+        planId: defaultPlan.plan_id,
         cartType: '2',
         count: peopleCount,
       }];
@@ -57,20 +58,22 @@ export function NewBookingDialog({ open, onClose, onSubmitSuccess, plans }: NewB
 
   useEffect(() => {
     if (sameForAll && plans.length > 0) {
+      const defaultPlan = plans.find(p => (p.level || 1) === 2) || plans[0];
       setSelections(prevSelections => {
         const masterSelection = prevSelections[0] || {
-          planId: plans[0].plan_id,
+          planId: defaultPlan.plan_id,
           cartType: '2',
           count: peopleCount,
         };
         return [{ ...masterSelection, count: peopleCount }];
       });
     } else if (!sameForAll) {
+      const defaultPlan = plans.find(p => (p.level || 1) === 2) || plans[0];
       setSelections(prevSelections => {
         const individualSelections: PlanCartSelection[] = Array.from(
           { length: peopleCount },
           (_, index) => prevSelections[index] || {
-            planId: plans[0]?.plan_id || '',
+            planId: defaultPlan?.plan_id || '',
             cartType: '2',
             count: 1,
           }

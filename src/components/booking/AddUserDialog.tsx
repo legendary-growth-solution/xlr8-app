@@ -17,6 +17,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { BookingUser } from 'src/types/booking';
 import { Plan } from 'src/types/session';
+import { CountryCodeSelect } from 'src/components/common/CountryCodeSelect';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -27,13 +28,19 @@ interface AddUserDialogProps {
 
 const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) => {
   const [newUser, setNewUser] = useState<{
-    name: string;
+    firstName: string;
+    lastName: string;
+    age: string;
+    country_code: string;
     phone: string;
     email: string;
     plan_id: string;
     time_in_minutes?: number;
   }>({
-    name: '',
+    firstName: '',
+    lastName: '',
+    age: '',
+    country_code: '+91',
     phone: '',
     email: '',
     plan_id: plans.length > 0 ? plans[0].plan_id : '',
@@ -41,7 +48,9 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
   });
   
   const [formErrors, setFormErrors] = useState<{
-    name?: string;
+    firstName?: string;
+    lastName?: string;
+    age?: string;
     phone?: string;
   }>({});
 
@@ -68,7 +77,10 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
   useEffect(() => {
     if (open) {
       setNewUser({
-        name: '',
+        firstName: '',
+        lastName: '',
+        age: '',
+        country_code: '+91',
         phone: '',
         email: '',
         plan_id: plans.length > 0 ? plans[0].plan_id : '',
@@ -79,10 +91,18 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
   }, [open, plans]);
   
   const handleAddUser = () => {
-    const validationErrors: { name?: string; phone?: string } = {};
+    const validationErrors: { firstName?: string; lastName?: string; age?: string; phone?: string } = {};
 
-    if (!newUser.name) {
-      validationErrors.name = 'Name is required';
+    if (!newUser.firstName.trim()) {
+      validationErrors.firstName = 'First Name is required';
+    }
+
+    if (!newUser.lastName.trim()) {
+      validationErrors.lastName = 'Last Name is required';
+    }
+
+    if (!newUser.age || Number.isNaN(Number(newUser.age)) || Number(newUser.age) <= 0) {
+      validationErrors.age = 'Valid age is required';
     }
 
     if (!newUser.phone) {
@@ -99,11 +119,20 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
       return;
     }
     
+    const cc = newUser.country_code.trim() || '+91';
+    const fullPhone = `${cc}${newUser.phone}`;
+    const fullName = `${newUser.firstName.trim()} ${newUser.lastName.trim()}`;
+
     onAddUser({
       user_id: `new-${Date.now()}`,
-      name: newUser.name,
+      name: fullName,
+      first_name: newUser.firstName.trim(),
+      last_name: newUser.lastName.trim(),
       email: newUser.email,
       phone: newUser.phone,
+      country_code: cc,
+      full_phone: fullPhone,
+      age: Number(newUser.age),
       plan_id: newUser.plan_id,
       is_new: true,
       time_in_minutes: newUser.time_in_minutes,
@@ -131,32 +160,71 @@ const AddUserDialog = ({ open, onClose, onAddUser, plans }: AddUserDialogProps) 
       
       <DialogContent sx={{ pb: 2 }}>
         <Stack spacing={3} sx={{ mt: 2 }}>
-          <FormControl fullWidth error={!!formErrors.name}>
+          <Stack direction="row" spacing={2}>
+            <FormControl fullWidth error={!!formErrors.firstName}>
+              <TextField
+                label="First Name"
+                value={newUser.firstName}
+                onChange={(e) => {
+                  setNewUser({ ...newUser, firstName: e.target.value });
+                  if (e.target.value) {
+                    setFormErrors((prev) => ({ ...prev, firstName: undefined }));
+                  }
+                }}
+              />
+              {formErrors.firstName && <FormHelperText>{formErrors.firstName}</FormHelperText>}
+            </FormControl>
+
+            <FormControl fullWidth error={!!formErrors.lastName}>
+              <TextField
+                label="Last Name"
+                value={newUser.lastName}
+                onChange={(e) => {
+                  setNewUser({ ...newUser, lastName: e.target.value });
+                  if (e.target.value) {
+                    setFormErrors((prev) => ({ ...prev, lastName: undefined }));
+                  }
+                }}
+              />
+              {formErrors.lastName && <FormHelperText>{formErrors.lastName}</FormHelperText>}
+            </FormControl>
+          </Stack>
+
+          <FormControl fullWidth error={!!formErrors.age}>
             <TextField
-              label="Name *"
-              value={newUser.name}
+              label="Age"
+              type="number"
+              value={newUser.age}
               onChange={(e) => {
-                setNewUser({ ...newUser, name: e.target.value });
+                setNewUser({ ...newUser, age: e.target.value });
                 if (e.target.value) {
-                  setFormErrors((prev) => ({ ...prev, name: undefined }));
+                  setFormErrors((prev) => ({ ...prev, age: undefined }));
                 }
               }}
+              inputProps={{ min: 1, max: 120 }}
             />
-            {formErrors.name && <FormHelperText>{formErrors.name}</FormHelperText>}
+            {formErrors.age && <FormHelperText>{formErrors.age}</FormHelperText>}
           </FormControl>
 
-          <FormControl fullWidth error={!!formErrors.phone}>
-            <TextField
-              label="Phone *"
-              value={newUser.phone}
-              onChange={(e) => handlePhoneChange(e.target.value)}
-              inputMode="numeric"
-              inputProps={{
-                maxLength: 15,
-              }}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <CountryCodeSelect
+              value={newUser.country_code}
+              onChange={(val) => setNewUser({ ...newUser, country_code: val })}
+              sx={{ width: 140 }}
             />
-            {formErrors.phone && <FormHelperText>{formErrors.phone}</FormHelperText>}
-          </FormControl>
+            <FormControl fullWidth error={!!formErrors.phone}>
+              <TextField
+                label="Phone"
+                value={newUser.phone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                inputMode="numeric"
+                inputProps={{
+                  maxLength: 15,
+                }}
+              />
+              {formErrors.phone && <FormHelperText>{formErrors.phone}</FormHelperText>}
+            </FormControl>
+          </Stack>
 
           <FormControl fullWidth>
             <TextField
