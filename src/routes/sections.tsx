@@ -48,6 +48,7 @@ export const BillingsPage = lazy(() => import('src/pages/billings'));
 export const BookingsPage = lazy(() => import('src/pages/bookings'));
 export const Leaderboard = lazy(() => import('src/pages/leaderboard'));
 export const BannerManagementPage = lazy(() => import('src/pages/banner-management'));
+export const ReportsPage = lazy(() => import('src/pages/reports'));
 // ----------------------------------------------------------------------
 
 const renderFallback = (
@@ -128,6 +129,7 @@ export function Router() {
         { path: 'password-hash', element: <PasswordHashPage /> },
         { path: 'plans', element: <TimeManagementPage /> },
         { path: 'discounts', element: <DiscountManagementPage /> },
+        { path: 'reports', element: <ReportsPage /> },
         { path: 'billings', element: <BillingsPage /> },
         { path: 'inventory/items', element: <InventoryItemsPage /> },
         { path: 'inventory/logs', element: <InventoryLogsPage /> },

@@ -8,4 +8,5 @@ export const PATH_DASHBOARD = {
   root: ROOTS_DASHBOARD,
   users: path(ROOTS_DASHBOARD, 'users'),
   sessions: path(ROOTS_DASHBOARD, 'sessions'),
+  reports: path(ROOTS_DASHBOARD, 'reports'),
 }; 

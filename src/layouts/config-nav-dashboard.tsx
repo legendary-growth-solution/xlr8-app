@@ -80,6 +80,11 @@ const navConfig = [
     icon: <Iconify icon="solar:bill-list-bold-duotone" />,
   },
   {
+    title: 'Reports',
+    path: '/reports',
+    icon: <Iconify icon="solar:document-text-bold-duotone" />,
+  },
+  {
     title: 'Inventory',
     path: '/inventory',
     icon: <Iconify icon="solar:box-bold-duotone" />,
