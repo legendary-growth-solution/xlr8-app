@@ -37,8 +37,13 @@ import type { PlanCartSelection } from './bookingSummaryUtils';
 interface BookingUser {
   user_id: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   phone: string;
+  country_code?: string;
+  full_phone?: string;
+  age?: number;
   plan_id: string;
   cart_type_requested?: string;
   is_new?: boolean;
@@ -323,8 +328,13 @@ export const UserSelectionStep = forwardRef<
         users: users.map((user) => ({
           user_id: user.user_id,
           name: user.name,
+          first_name: user.first_name,
+          last_name: user.last_name,
           email: user.email,
           phone: user.phone,
+          country_code: user.country_code,
+          full_phone: user.full_phone,
+          age: user.age,
           plan_id: user.plan_id,
           plan_name: plans.find((p) => p.plan_id === user.plan_id)?.title || '',
           plan_amount: plans.find((p) => p.plan_id === user.plan_id)?.amount || 0,
@@ -364,12 +374,20 @@ export const UserSelectionStep = forwardRef<
   const handleSelectExistingUser = (user: any) => {
     if (selectedUserIndex !== null) {
       const updatedUsers = [...users];
+      const cc = user.country_code || '+91';
+      const rawPhone = user.phone || '';
+      const fullPhone = user.full_phone || (rawPhone.startsWith('+') ? rawPhone : `${cc}${rawPhone}`);
       updatedUsers[selectedUserIndex] = {
         ...updatedUsers[selectedUserIndex],
-        user_id: user.user_id,
+        user_id: user.user_id || fullPhone,
         name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email || '',
-        phone: user.phone,
+        phone: rawPhone,
+        country_code: cc,
+        full_phone: fullPhone,
+        age: user.age,
         is_new: false,
       };
       setUsers(updatedUsers);
@@ -377,15 +395,23 @@ export const UserSelectionStep = forwardRef<
     }
   };
 
-  const handleAddNewUser = (user: { name: string; phone: string; email?: string }) => {
+  const handleAddNewUser = (user: { name: string; first_name?: string; last_name?: string; phone: string; email?: string; age?: number; country_code?: string; full_phone?: string }) => {
     if (selectedUserIndex !== null) {
       const updatedUsers = [...users];
+      const cc = user.country_code || '+91';
+      const rawPhone = user.phone;
+      const fullPhone = user.full_phone || (rawPhone.startsWith('+') ? rawPhone : `${cc}${rawPhone}`);
       updatedUsers[selectedUserIndex] = {
         ...updatedUsers[selectedUserIndex],
         user_id: `new-${Date.now()}-${selectedUserIndex}`,
         name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email || '',
-        phone: user.phone,
+        phone: rawPhone,
+        country_code: cc,
+        full_phone: fullPhone,
+        age: user.age,
         is_new: true,
       };
       setUsers(updatedUsers);
@@ -398,12 +424,20 @@ export const UserSelectionStep = forwardRef<
     const nextIndex = getNextEmptyUserIndex();
     if (nextIndex !== -1) {
       const updatedUsers = [...users];
+      const cc = user.country_code || '+91';
+      const rawPhone = user.phone || '';
+      const fullPhone = user.full_phone || (rawPhone.startsWith('+') ? rawPhone : `${cc}${rawPhone}`);
       updatedUsers[nextIndex] = {
         ...updatedUsers[nextIndex],
-        user_id: user.user_id,
+        user_id: user.user_id || fullPhone,
         name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email || '',
-        phone: user.phone,
+        phone: rawPhone,
+        country_code: cc,
+        full_phone: fullPhone,
+        age: user.age,
         is_new: false,
       };
       setUsers(updatedUsers);

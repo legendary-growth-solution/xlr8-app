@@ -14,6 +14,11 @@ export interface HighlightResults {
 export interface User {
   email: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
+  age?: number;
+  country_code?: string;
+  full_phone?: string;
   user_id: string;
   phone: string;
   dob?: string;
