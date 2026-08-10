@@ -21,6 +21,8 @@ import { CartStatsGraph } from 'src/components/booking/cart-stats-graph';
 import { RecentSessions } from 'src/components/booking/recent-sessions';
 import { StatsGraph } from 'src/components/booking/stats-graph';
 import { dashboardApi } from 'src/services/api/dashboard.api';
+import { Iconify } from 'src/components/iconify';
+import { ReportDownloadDialog } from 'src/components/reports/ReportDownloadDialog';
 
 interface DashboardStats {
   today: { amount: number; rides: number };
@@ -67,6 +69,7 @@ export default function Page() {
   const [sessionsLoading, setSessionsLoading] = useState<boolean>(true);
   const [creating, setCreating] = useState<boolean>(false);
   const [dailyCartData, setDailyCartData] = useState<DailyCartData>({});
+  const [reportsOpen, setReportsOpen] = useState(false);
   const navigate = useNavigate();
   
   const fetchRecentSessions = useCallback(async () => {
@@ -189,14 +192,24 @@ export default function Page() {
       <Box sx={{ py: 5, px: 3 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4">Go Kart Racing Dashboard</Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleCreateSession}
-            disabled={creating}
-          >
-            {creating ? 'Creating...' : 'Create Session'}
-          </Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<Iconify icon="solar:document-text-bold-duotone" />}
+              onClick={() => navigate('/reports')}
+            >
+              Reports
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCreateSession}
+              disabled={creating}
+            >
+              {creating ? 'Creating...' : 'Create Session'}
+            </Button>
+          </Stack>
         </Stack>
         <Grid container spacing={3}>
           {DASHBOARD_CARDS.map((card, index) => (
@@ -309,6 +322,11 @@ export default function Page() {
           </Grid>
         </Grid>
       </Box>
+
+      <ReportDownloadDialog
+        open={reportsOpen}
+        onClose={() => setReportsOpen(false)}
+      />
     </>
   );
 }

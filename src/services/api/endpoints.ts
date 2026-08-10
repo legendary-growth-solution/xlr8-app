@@ -4,6 +4,12 @@ export const BASE_URL = 'http://127.0.0.1:5000'
 
 export const createEndpoint = (path: string) => `${BASE_URL}${path}`;
 
+const getWsUrl = (path: string) => {
+  const wsProtocol = BASE_URL.startsWith('https') ? 'wss' : 'ws';
+  const urlWithoutProtocol = BASE_URL.replace(/^https?:\/\//, '');
+  return `${wsProtocol}://${urlWithoutProtocol}${path}`;
+};
+
 export const API_ENDPOINTS = {
   GENERATE_HASH: createEndpoint('/api/auth/generate-hash'),
   AUTH: {
@@ -66,11 +72,14 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => createEndpoint(`/users/${id}`),
     STATS: (id: string) => createEndpoint(`/users/${id}/stats`),
     SESSIONS: (id: string) => createEndpoint(`/users/${id}/sessions`),
-    EXPORT_WS: (() => {
-      const wsProtocol = BASE_URL.startsWith('https') ? 'wss' : 'ws';
-      const urlWithoutProtocol = BASE_URL.replace(/^https?:\/\//, '');
-      return `${wsProtocol}://${urlWithoutProtocol}/ws/export/users`;
-    })(),
+    EXPORT_WS: getWsUrl('/ws/export/users'),
+  },
+  REPORTS: {
+    USER_REPORT_WS: getWsUrl('/ws/export/user-report'),
+    FINANCE_REPORT_WS: getWsUrl('/ws/export/finance-report'),
+    DISCOUNT_REPORT_WS: getWsUrl('/ws/export/discount-report'),
+    UTILIZATION_REPORT_WS: getWsUrl('/ws/export/utilization-report'),
+    LEADERBOARD_REPORT_WS: getWsUrl('/ws/export/leaderboard-report'),
   },
   CARTS: {
     LIST: createEndpoint('/carts'),
