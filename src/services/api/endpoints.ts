@@ -66,6 +66,11 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => createEndpoint(`/users/${id}`),
     STATS: (id: string) => createEndpoint(`/users/${id}/stats`),
     SESSIONS: (id: string) => createEndpoint(`/users/${id}/sessions`),
+    EXPORT_WS: (() => {
+      const wsProtocol = BASE_URL.startsWith('https') ? 'wss' : 'ws';
+      const urlWithoutProtocol = BASE_URL.replace(/^https?:\/\//, '');
+      return `${wsProtocol}://${urlWithoutProtocol}/ws/export/users`;
+    })(),
   },
   CARTS: {
     LIST: createEndpoint('/carts'),
