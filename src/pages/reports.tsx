@@ -269,13 +269,13 @@ export default function ReportsPage() {
               iconPosition="start"
               sx={{ fontWeight: 600 }}
             />
-            <Tab
+            {/* <Tab
               value="discount"
               label="Discount & Promo ROI"
               icon={<Iconify icon="solar:ticket-bold-duotone" width={20} />}
               iconPosition="start"
               sx={{ fontWeight: 600 }}
-            />
+            /> */}
             <Tab
               value="utilization"
               label="Track Utilization"
@@ -283,13 +283,13 @@ export default function ReportsPage() {
               iconPosition="start"
               sx={{ fontWeight: 600 }}
             />
-            <Tab
+            {/* <Tab
               value="leaderboard"
               label="Racer Leaderboard"
               icon={<Iconify icon="solar:cup-star-bold-duotone" width={20} />}
               iconPosition="start"
               sx={{ fontWeight: 600 }}
-            />
+            /> */}
           </Tabs>
         </Box>
 
