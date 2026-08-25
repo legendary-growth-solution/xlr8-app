@@ -34,9 +34,7 @@ export default function UserCreatePage() {
       newErrors.age = 'Valid age is required';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
 
@@ -55,8 +53,11 @@ export default function UserCreatePage() {
       return;
     }
 
-    const rawPhone = formData.phone.trim();
+    let rawPhone = formData.phone.trim();
     const cc = formData.countryCode.trim() || '+91';
+    if (cc === '+91') {
+      rawPhone = rawPhone.replace(/^0+/, '');
+    }
     const fullPhone = `${cc}${rawPhone}`;
 
     const submitData = {
@@ -74,11 +75,12 @@ export default function UserCreatePage() {
       setLoading(true);
       await userApi.create(submitData);
       navigate('/users');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating user:', error);
+      const serverError = error.response?.data?.error || 'Failed to create user. Please try again.';
       setErrors(prev => ({
         ...prev,
-        submit: 'Failed to create user. Please try again.',
+        submit: serverError,
       }));
     } finally {
       setLoading(false);
@@ -144,7 +146,6 @@ export default function UserCreatePage() {
                   label="Email Address"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
                   error={!!errors.email}
                   helperText={errors.email}
                 />

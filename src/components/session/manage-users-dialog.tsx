@@ -194,14 +194,15 @@ export const ManageUsersDialog: React.FC<ManageUsersDialogProps> = ({
     );
     const isNewlySelected = new Set(Object.keys(selectedUsers));
 
-    const groupUsersAsUsers = group.users.map(groupUser => {
+    const groupUsersAsUsers: User[] = group.users.map(groupUser => {
       const existingUser = allUsers.find(u => u.user_id === groupUser.user_id);
-      return existingUser || {
+      return {
         user_id: groupUser.user_id,
         name: groupUser.user_name,
-        email: '',
-        phone: '',
-        race_active: groupUser.race_active
+        email: existingUser?.email || groupUser.email || '',
+        phone: existingUser?.phone || groupUser.phone || '',
+        race_active: groupUser.race_active,
+        highlight_result: existingUser?.highlight_result,
       };
     });
 

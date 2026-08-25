@@ -51,8 +51,11 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
     try {
       setLoading(true);
-      const rawPhone = formData.phone.trim();
+      let rawPhone = formData.phone.trim();
       const cc = formData.countryCode.trim() || '+91';
+      if (cc === '+91') {
+        rawPhone = rawPhone.replace(/^0+/, '');
+      }
       const fullPhone = `${cc}${rawPhone}`;
       const payload = {
         first_name: formData.firstName.trim(),
@@ -68,11 +71,12 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       };
       await userApi.create(payload);
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registering user:', error);
+      const serverError = error.response?.data?.error || 'Registration failed. Please try again.';
       setErrors(prev => ({
         ...prev,
-        submit: 'Registration failed. Please try again.',
+        submit: serverError,
       }));
     } finally {
       setLoading(false);

@@ -244,9 +244,14 @@ export default function UserManagementPage() {
     try {
       setEditLoading(true);
 
+      const currentCountryCode = editData.country_code || selectedUser.country_code || '+91';
       const cleanedData = Object.fromEntries(
         Object.entries(editData).filter(([_, v]) => v !== undefined && v !== '')
       );
+
+      if (currentCountryCode === '+91' && typeof cleanedData.phone === 'string') {
+        cleanedData.phone = cleanedData.phone.replace(/^0+/, '');
+      }
 
       await userApi.update(selectedUser.user_id, cleanedData);
 
@@ -254,8 +259,10 @@ export default function UserManagementPage() {
       setOpenEdit(false);
       setSelectedUser(null);
       setEditData({});
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user:', error);
+      const serverError = error.response?.data?.error || 'Failed to update user. Please try again.';
+      showToast.error(serverError);
     } finally {
       setEditLoading(false);
     }

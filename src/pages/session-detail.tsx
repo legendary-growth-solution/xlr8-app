@@ -6,7 +6,7 @@ import { ConfirmDialog } from 'src/components/dialog/confirm-dialog';
 import { GroupCard } from 'src/components/session/group-card';
 import { SessionDetailSkeleton } from 'src/components/skeleton/SessionDetailSkeleton';
 import Toast from 'src/components/toast';
-import { Session, Cart, User } from 'src/types/session';
+import { Session, Cart, User, Plan } from 'src/types/session';
 import { api } from 'src/api/api';
 import LiveLeaderboard from './live-leaderboard';
 
@@ -18,6 +18,7 @@ export default function SessionDetailPage() {
   const [session, setSession] = useState<Session>();
   const [carts, setCarts] = useState<Cart[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const navigate = useNavigate();
 
   const getSession = useCallback(() => {
@@ -46,6 +47,17 @@ export default function SessionDetailPage() {
       });
   }, []);
 
+  const getPlans = useCallback(() => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    api.plan.getPlans({ day: today })
+      .then((res) => {
+        setPlans(res?.plans || []);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
+
   const extractAllUsers = useCallback(
     (session1: Session): User[] => session1?.groups?.flatMap((group) => group?.users || []) || [],
     []
@@ -65,6 +77,7 @@ export default function SessionDetailPage() {
 
   useLayoutEffect(() => { getSession() }, [getSession]);
   useLayoutEffect(() => { getCarts() }, [getCarts]);
+  useLayoutEffect(() => { getPlans() }, [getPlans]);
   useLayoutEffect(() => {
     if (session) setUsers(extractAllUsers(session));
   }, [session, extractAllUsers]);
@@ -150,7 +163,7 @@ export default function SessionDetailPage() {
                     group={group}
                     carts={carts}
                     getCarts={getCarts}
-                    plans={[]}
+                    plans={plans}
                     handleAssignCart={() => {}}
                     handleRemoveUser={() => {}}
                     handleDeleteGroup={() => {}}

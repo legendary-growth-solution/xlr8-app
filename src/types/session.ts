@@ -14,6 +14,8 @@ export interface Group {
 }
 
 export interface User {
+  email?: string;
+  phone?: string;
   cart_id: string | null;
   plan_id: string;
   race_active: boolean;
