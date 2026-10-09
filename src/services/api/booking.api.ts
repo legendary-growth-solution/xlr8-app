@@ -1,4 +1,4 @@
-import { Booking, BookingConvertResponse } from 'src/types/booking';
+import { Booking, BookingConvertResponse, BookingRefreshPaymentResponse } from 'src/types/booking';
 import { API_ENDPOINTS } from './endpoints';
 import { apiClient } from './api-client';
 
@@ -56,6 +56,11 @@ export const bookingApi = {
 
   create: async (data: Partial<Booking>): Promise<Booking> => {
     const response = await apiClient.post(API_ENDPOINTS.BOOKINGS.LIST, data);
+    return response.data;
+  },
+
+  refreshPaymentStatus: async (id: string): Promise<BookingRefreshPaymentResponse> => {
+    const response = await apiClient.post(API_ENDPOINTS.BOOKINGS.REFRESH_PAYMENT_STATUS(id));
     return response.data;
   },
 }; 

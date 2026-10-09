@@ -53,15 +53,15 @@ import { NewBookingDialog, BulkCreateSessionDialog } from 'src/components/bookin
 
 const TABLE_HEAD = [
   { id: 'select', label: '', width: 50 },
-  { id: 'date', label: 'Date', width: 150 },
-  { id: 'time_slot', label: 'Time Slot', width: 150 },
-  { id: 'users', label: 'Users', width: 250 },
-  { id: 'total', label: 'Total', width: 120 },
+  { id: 'date', label: 'Date', width: 130 },
+  { id: 'time_slot', label: 'Time Slot', width: 130 },
+  { id: 'users', label: 'Users', width: 230 },
+  { id: 'total', label: 'Total', width: 110 },
   { id: 'discount', label: 'Discount', width: 100 },
-  { id: 'status', label: 'Status', width: 100 },
-  { id: 'notes', label: 'Notes', width: 200 },
-  { id: 'created_at', label: 'Created At', width: 150 },
-  { id: 'actions', label: 'Actions', width: 100 },
+  { id: 'status', label: 'Status', width: 150 },
+  { id: 'notes', label: 'Notes', width: 180 },
+  { id: 'created_at', label: 'Created At', width: 140 },
+  { id: 'actions', label: 'Actions', width: 220 },
 ];
 
 const CONVERSION_STEPS = [
@@ -79,6 +79,7 @@ export default function BookingsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [refreshingPaymentId, setRefreshingPaymentId] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -377,6 +378,39 @@ export default function BookingsPage() {
     }
   };
 
+  const handleRefreshPaymentStatus = async (bookingId: string) => {
+    try {
+      setRefreshingPaymentId(bookingId);
+      const response = await bookingApi.refreshPaymentStatus(bookingId);
+      if (response.success && response.updated) {
+        showToast.success(response.message || 'Payment verified! Status updated to Paid.');
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.booking_id === bookingId
+              ? {
+                  ...b,
+                  payment_status: response.payment_status,
+                  status: response.status,
+                  ...(response.order_id ? { payment_order_id: response.order_id } : {}),
+                }
+              : b
+          )
+        );
+      } else {
+        showToast.info(response.message || 'Payment is not yet completed in Razorpay.');
+      }
+    } catch (error: any) {
+      console.error('Error refreshing payment status:', error);
+      showToast.error(
+        error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          'Failed to refresh payment status'
+      );
+    } finally {
+      setRefreshingPaymentId(null);
+    }
+  };
+
   const handleSelectBooking = (bookingId: string, checked: boolean) => {
     if (checked) {
       setSelectedBookings(prev => [...prev, bookingId]);
@@ -443,8 +477,10 @@ export default function BookingsPage() {
   };
 
   const renderBookingRow = (booking: Booking) => {
-    const { booking_id, date, time_slot, race_time_display, users, status, created_at, notes, discount_code, total } = booking;
+    const { booking_id, date, time_slot, race_time_display, users, status, created_at, notes, discount_code, total, source } = booking;
     const isPending = !booking.is_completed;
+    const isAppBooking = source === 'app' || source === 'mobile' || (source !== 'admin' && (booking.payment_status === 'payment_initiated' || Boolean(booking.payment_order_id)));
+    const isPendingPayment = !booking.is_completed && isAppBooking && booking.payment_status !== 'paid';
     const { canConvert, message } = canConvertBooking(booking);
 
     return (
@@ -541,7 +577,22 @@ export default function BookingsPage() {
         </TableCell>
         
         <TableCell align="center">
-          <Stack direction="row" spacing={1} justifyContent="center">
+          <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
+            {isPendingPayment && (
+              <Tooltip title="Refresh Razorpay payment status" arrow>
+                <LoadingButton
+                  variant="outlined"
+                  color="warning"
+                  size="small"
+                  loading={refreshingPaymentId === booking_id}
+                  onClick={() => handleRefreshPaymentStatus(booking_id)}
+                  startIcon={<Iconify icon="eva:refresh-outline" />}
+                  sx={{ whiteSpace: 'nowrap', minWidth: 'auto', px: 1 }}
+                >
+                  Refresh
+                </LoadingButton>
+              </Tooltip>
+            )}
             <Tooltip title={!canConvert ? message : ''} arrow>
               <span>
                 <Button

@@ -36,6 +36,7 @@ export interface Booking {
   source?: string;
   discount_code?: string;
   total?: number;
+  payment_order_id?: string;
 }
 
 export interface BookingConvertResponse {
@@ -43,4 +44,14 @@ export interface BookingConvertResponse {
   message: string;
   session: Session;
   groups: Group[];
+}
+
+export interface BookingRefreshPaymentResponse {
+  success: boolean;
+  updated: boolean;
+  payment_status: 'pending' | 'payment_initiated' | 'paid' | 'failed';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  order_id?: string;
+  message?: string;
+  error?: string;
 } 
